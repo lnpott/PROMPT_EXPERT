@@ -32,6 +32,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Endpoint `/api/health` para diagnóstico da disponibilidade da base e da configuração da Gemini.
 - Perfil Grok inicial e cinco regras de qualidade persistidos no Supabase.
 - Testes automatizados de acesso aos endpoints, cobrindo método permitido, validação de entrada, configuração, dependências disponíveis e modo degradado.
+- Dependências instaladas removidas do versionamento para que a Vercel instale os binários corretos para Linux durante o build.
 
 ### Validado
 
