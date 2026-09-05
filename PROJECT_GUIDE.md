@@ -27,7 +27,10 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Projeto Supabase exclusivo criado na região de São Paulo.
 - Estrutura versionada de banco para perfis de modelo, regras e exemplos.
 - Leitura pública limitada a registros ativos; escrita bloqueada para visitantes.
-- Configuração de build da Vercel e modelo de variáveis públicas versionados.
+- Configuração de build da Vercel e modelo de variáveis de ambiente versionados.
+- Função de backend `/api/generate`, que combina o briefing, o perfil Grok e as regras ativas antes de chamar a Gemini.
+- Endpoint `/api/health` para diagnóstico da disponibilidade da base e da configuração da Gemini.
+- Perfil Grok inicial e cinco regras de qualidade persistidos no Supabase.
 
 ### Validado
 
@@ -36,17 +39,16 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Repositório local sincronizado com a branch principal do GitHub após o push confirmado.
 - Verificação de segurança do Supabase concluída sem alertas para a estrutura inicial.
 - Perfil Grok e cinco regras iniciais carregados e consultados com sucesso pela função de backend.
-- Fluxo local testado após a integração: o modo-base continua disponível enquanto a chave Gemini não existe.
+- Fluxo local testado após a integração: o modo-base continua disponível fora da Vercel ou enquanto a chave Gemini não existe.
 - Geração completa validada com Gemini Flash 3.8, perfil Grok e regras armazenadas no Supabase.
 
 ### Ainda não implementado
 
-- Chave Gemini cadastrada na Vercel e validação da geração dinâmica.
 - Carga do conteúdo do notebook.
-- Persistência de perfis de modelos, regras, exemplos ou histórico.
+- Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
-- Publicação na Vercel.
+- Correção e validação do primeiro deploy da Vercel.
 
 ## Arquitetura planejada
 
@@ -74,14 +76,14 @@ Prompt estruturado para o modelo de destino
 | Vercel | Publicar a aplicação e executar o backend quando necessário. |
 | GitHub | Versionar o código, documentação e mudanças auditáveis. |
 
-## Próximo marco: plataforma de teste
+## Próximo marco: primeiro deploy integrado
 
-Antes de conectar uma API de IA, consolidar a base do produto:
+O código e a base foram preparados. O próximo marco é fazer a integração entre GitHub, Vercel, Supabase e Gemini funcionar no ambiente publicado:
 
-1. Conectar o front-end a dados públicos controlados, sem chaves privadas no navegador.
-2. Publicar uma versão de teste na Vercel.
-3. Definir como o conteúdo do notebook será revisado e inserido na base.
-4. Adicionar o plano operacional de dez passos e atualizar este guia a cada marco.
+1. Consultar o erro do primeiro deploy da Vercel e corrigi-lo.
+2. Cadastrar `GEMINI_API_KEY` somente nas variáveis protegidas da Vercel.
+3. Testar `/api/health` e `/api/generate` na URL publicada.
+4. Registrar URL, resultado e evidência de validação neste guia.
 
 ## Plano operacional em dez passos
 
@@ -90,30 +92,21 @@ Antes de conectar uma API de IA, consolidar a base do produto:
 | 1 | Definir o produto, público e fluxo principal. | Concluída |
 | 2 | Criar e validar o MVP local de geração para Grok. | Concluída |
 | 3 | Versionar guia vivo, configuração Vercel e estrutura Supabase. | Concluída |
-| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Aguardando vínculo na Vercel |
-| 5 | Cadastrar a chave Gemini secreta na Vercel. | Aguardando vínculo na Vercel |
-| 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Implementada, aguardando deploy |
+| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Importada; erro de deploy aguardando acesso aos logs |
+| 5 | Cadastrar a chave Gemini secreta na Vercel. | Pendente após corrigir o deploy |
+| 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
 | 7 | Revisar e importar a base do notebook como conteúdo auditado. | Pendente |
 | 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
-| 9 | Escolher a API de IA e implementar a geração segura no backend. | Pendente |
+| 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída localmente com Gemini Flash 3.8 |
 | 10 | Executar validação de qualidade, segurança e publicação de produção. | Pendente |
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
-## Marco posterior: geração inteligente
-
-Após validar a plataforma de teste:
-
-1. Escolher a API de IA geradora: Grok/xAI ou OpenAI.
-2. Criar uma função de backend protegida para chamar essa API.
-3. Passar o briefing, o perfil de modelo e as regras ao gerador.
-4. Avaliar respostas com exemplos reais e registrar melhorias.
-
 ## Decisões pendentes
 
-- Qual API gerará os prompts: Grok/xAI ou OpenAI?
 - Onde está o notebook/base atual e em qual formato seu conteúdo será entregue?
 - O primeiro lançamento será aberto ao público ou restrito ao administrador?
+- Qual regra de retenção será usada para o futuro histórico de gerações?
 
 ## Variáveis de ambiente
 
@@ -122,3 +115,4 @@ O repositório contém `.env.example` com as variáveis da função de backend. 
 ## Regra de atualização
 
 Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ainda não implementado** e **Próximo marco**. Nenhuma etapa deve ser marcada como validada sem evidência de teste.
+
