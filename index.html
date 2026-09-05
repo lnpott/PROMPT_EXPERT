@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Transforme uma ideia em um prompt de programação pronto para usar." />
+    <title>Prompt Expert</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="Prompt Expert, início">Prompt <span>Expert</span></a>
+        <p class="status"><i></i> gerador local</p>
+      </header>
+
+      <section class="intro" id="top" aria-labelledby="page-title">
+        <p class="eyebrow">Do briefing ao código</p>
+        <h1 id="page-title">Descreva a ideia.<br /><em>Leve um prompt pronto.</em></h1>
+        <p class="lede">Transforme uma solicitação comum em uma instrução clara para o seu modelo de programação.</p>
+      </section>
+
+      <section class="workspace" aria-label="Gerador de prompts">
+        <div class="field-head">
+          <label for="brief">O que você quer construir?</label>
+          <span>Escreva como você falaria com alguém</span>
+        </div>
+        <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
+        <div class="controls">
+          <label class="model-picker" for="model">
+            <span>Modelo de destino</span>
+            <select id="model">
+              <option value="Grok">Grok</option>
+            </select>
+          </label>
+          <button id="generate" type="button">Gerar prompt <span aria-hidden="true">↗</span></button>
+        </div>
+      </section>
+
+      <section class="result is-empty" id="result" aria-live="polite" aria-labelledby="result-title">
+        <div class="result-head">
+          <div>
+            <p class="eyebrow">Prompt estruturado</p>
+            <h2 id="result-title">Pronto para o Grok</h2>
+          </div>
+          <button id="copy" class="copy" type="button" disabled>Copiar</button>
+        </div>
+        <pre id="output">Seu prompt aparecerá aqui.</pre>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
