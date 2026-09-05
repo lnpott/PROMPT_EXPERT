@@ -31,6 +31,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Função de backend `/api/generate`, que combina o briefing, o perfil Grok e as regras ativas antes de chamar a Gemini.
 - Endpoint `/api/health` para diagnóstico da disponibilidade da base e da configuração da Gemini.
 - Perfil Grok inicial e cinco regras de qualidade persistidos no Supabase.
+- Testes automatizados de acesso aos endpoints, cobrindo método permitido, validação de entrada, configuração, dependências disponíveis e modo degradado.
 
 ### Validado
 
@@ -41,6 +42,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Perfil Grok e cinco regras iniciais carregados e consultados com sucesso pela função de backend.
 - Fluxo local testado após a integração: o modo-base continua disponível fora da Vercel ou enquanto a chave Gemini não existe.
 - Geração completa validada com Gemini Flash 3.8, perfil Grok e regras armazenadas no Supabase.
+- Testes de acesso da API executados localmente com serviços externos simulados, sem usar credenciais reais.
 
 ### Ainda não implementado
 
@@ -99,6 +101,11 @@ O código e a base foram preparados. O próximo marco é fazer a integração en
 | 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
 | 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída localmente com Gemini Flash 3.8 |
 | 10 | Executar validação de qualidade, segurança e publicação de produção. | Pendente |
+
+## Evidências de verificação
+
+- `npm test`: valida seis cenários de acesso de `/api/generate` e `/api/health`, incluindo respostas 200, 400, 405, 503 e o fluxo integrado simulado.
+- `npm run build`: confirma que a inclusão da suíte não interfere no build de produção.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
