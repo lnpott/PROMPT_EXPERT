@@ -35,11 +35,13 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Fluxo principal testado no navegador: informar uma ideia, gerar o prompt e habilitar a cópia.
 - Repositório local sincronizado com a branch principal do GitHub após o push confirmado.
 - Verificação de segurança do Supabase concluída sem alertas para a estrutura inicial.
+- Perfil Grok e cinco regras iniciais carregados e consultados com sucesso pela função de backend.
+- Fluxo local testado após a integração: o modo-base continua disponível enquanto a chave Gemini não existe.
 
 ### Ainda não implementado
 
-- Geração dinâmica por API de IA.
-- Integração do front-end com Supabase e carga do conteúdo do notebook.
+- Chave Gemini cadastrada na Vercel e validação da geração dinâmica.
+- Carga do conteúdo do notebook.
 - Persistência de perfis de modelos, regras, exemplos ou histórico.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
@@ -88,8 +90,8 @@ Antes de conectar uma API de IA, consolidar a base do produto:
 | 2 | Criar e validar o MVP local de geração para Grok. | Concluída |
 | 3 | Versionar guia vivo, configuração Vercel e estrutura Supabase. | Concluída |
 | 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Aguardando vínculo na Vercel |
-| 5 | Cadastrar as variáveis públicas do Supabase na Vercel. | Aguardando vínculo na Vercel |
-| 6 | Conectar a interface aos perfis e regras públicos do Supabase. | Pendente |
+| 5 | Cadastrar a chave Gemini secreta na Vercel. | Aguardando vínculo na Vercel |
+| 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Implementada, aguardando deploy |
 | 7 | Revisar e importar a base do notebook como conteúdo auditado. | Pendente |
 | 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
 | 9 | Escolher a API de IA e implementar a geração segura no backend. | Pendente |
@@ -114,12 +116,7 @@ Após validar a plataforma de teste:
 
 ## Variáveis de ambiente
 
-O repositório contém `.env.example` com os únicos valores públicos que o front-end precisará quando a leitura do Supabase for ativada:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-
-Essas variáveis devem ser cadastradas na Vercel para os ambientes de preview e produção. Chaves privadas de IA ou `service_role` do Supabase nunca entram em variáveis `VITE_`, no GitHub ou neste guia.
+O repositório contém `.env.example` com as variáveis da função de backend. Para a primeira versão, basta cadastrar `GEMINI_API_KEY` na Vercel nos ambientes Preview e Production. `GEMINI_MODEL` é opcional. A função usa apenas a chave pública de leitura do Supabase, protegida pelas políticas de RLS; `service_role` nunca entra no GitHub, no front-end ou neste guia.
 
 ## Regra de atualização
 
