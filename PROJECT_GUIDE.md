@@ -45,6 +45,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Geração completa validada com Gemini Flash 3.8, perfil Grok e regras armazenadas no Supabase.
 - Testes de acesso da API executados localmente com serviços externos simulados, sem usar credenciais reais.
 - Acesso externo ao GitHub, Supabase e Gemini verificado em 5 de setembro de 2026; as limitações encontradas na Vercel estão registradas nas evidências abaixo.
+- Build de Preview da Vercel corrigido e concluído com sucesso após remover `node_modules` do versionamento.
 
 ### Ainda não implementado
 
@@ -52,7 +53,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
-- Correção do deploy da Vercel, autenticação da CLI e liberação controlada do acesso à aplicação publicada.
+- Deploy da branch principal, autenticação da CLI e liberação controlada do acesso à aplicação publicada na Vercel.
 
 ## Arquitetura planejada
 
@@ -96,7 +97,7 @@ O código e a base foram preparados. O próximo marco é fazer a integração en
 | 1 | Definir o produto, público e fluxo principal. | Concluída |
 | 2 | Criar e validar o MVP local de geração para Grok. | Concluída |
 | 3 | Versionar guia vivo, configuração Vercel e estrutura Supabase. | Concluída |
-| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Importada; erro de deploy aguardando acesso aos logs |
+| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Preview corrigido; produção aguarda merge e validação pública |
 | 5 | Cadastrar a chave Gemini secreta na Vercel. | Pendente após corrigir o deploy |
 | 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
 | 7 | Revisar e importar a base do notebook como conteúdo auditado. | Pendente |
@@ -116,9 +117,9 @@ O código e a base foram preparados. O próximo marco é fazer a integração en
 | GitHub | Positivo | `gh auth status` confirmou autenticação como `lnpott`; a API retornou permissão administrativa sobre `lnpott/PROMPT_EXPERT`, e a branch `main` remota apontava para `d0dec6e`. O clone local inicialmente não tinha remoto configurado, portanto isso foi corrigido antes do envio desta atualização. |
 | Supabase | Positivo | Consultas HTTPS autenticadas com a chave pública retornaram HTTP 200, um perfil Grok ativo e cinco regras ativas. O teste confirmou acesso real de leitura sem usar `service_role`. |
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
-| Vercel | Negativo | A CLI respondeu `Logged out`; os dois deployments de produção disponíveis no GitHub estavam com estado `failure`. A URL do deployment mais recente redirecionou requisições GET para o login da Vercel, e o POST para `/api/generate` retornou HTTP 401 `Protected deployment`. Assim, respostas HTTP 200 após seguir o redirecionamento eram da página de login, não da aplicação nem de `/api/health`. |
+| Vercel | Parcial | O erro de build foi corrigido: o Preview `CPS8dVxvmyzNBzNt4ynRGE1E7r3D` terminou com `Deployment has completed`. A causa removida era o diretório `node_modules` versionado com binários de outra plataforma. O acesso público continua bloqueado: `/` e `/api/health` retornam HTTP 302 para o login da Vercel, e `/api/generate` retorna HTTP 401 `Protected deployment`. |
 
-A negativa da Vercel tem duas causas verificadas: este ambiente não possui uma sessão/token da Vercel para consultar os logs, e o deployment está protegido por autenticação. É necessário autenticar a CLI ou fornecer `VERCEL_TOKEN`, consultar o deployment `dpl_H5jfe8ufBUb4uQDTebhwmzj72bcF`, corrigir a falha e então repetir os testes públicos de `/`, `/api/health` e `/api/generate`.
+O deploy de Preview agora está saudável, mas a validação funcional externa ainda é negativa porque o deployment exige autenticação da Vercel. É necessário desativar a proteção para o ambiente que deve ser público ou fornecer uma credencial de bypass; depois, repetir os testes de `/`, `/api/health` e `/api/generate`. A CLI deste ambiente permanece sem sessão/token da Vercel, embora o estado do deploy possa ser confirmado pela integração do GitHub.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
