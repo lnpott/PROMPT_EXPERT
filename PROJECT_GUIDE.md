@@ -80,6 +80,23 @@ Antes de conectar uma API de IA, consolidar a base do produto:
 3. Definir como o conteúdo do notebook será revisado e inserido na base.
 4. Adicionar o plano operacional de dez passos e atualizar este guia a cada marco.
 
+## Plano operacional em dez passos
+
+| Etapa | Entrega | Estado |
+| --- | --- | --- |
+| 1 | Definir o produto, público e fluxo principal. | Concluída |
+| 2 | Criar e validar o MVP local de geração para Grok. | Concluída |
+| 3 | Versionar guia vivo, configuração Vercel e estrutura Supabase. | Concluída |
+| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Aguardando vínculo na Vercel |
+| 5 | Cadastrar as variáveis públicas do Supabase na Vercel. | Aguardando vínculo na Vercel |
+| 6 | Conectar a interface aos perfis e regras públicos do Supabase. | Pendente |
+| 7 | Revisar e importar a base do notebook como conteúdo auditado. | Pendente |
+| 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
+| 9 | Escolher a API de IA e implementar a geração segura no backend. | Pendente |
+| 10 | Executar validação de qualidade, segurança e publicação de produção. | Pendente |
+
+Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
+
 ## Marco posterior: geração inteligente
 
 Após validar a plataforma de teste:
