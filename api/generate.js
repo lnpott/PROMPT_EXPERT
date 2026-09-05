@@ -1,7 +1,7 @@
 import { getGrokKnowledge } from './knowledge-base.js';
 
 const MAX_BRIEF_LENGTH = 6000;
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
 
 function sendJson(response, status, body) {
   response.status(status).json(body);
@@ -27,6 +27,14 @@ ${profile.output_contract}
 Não responda com código. Entregue somente o prompt final, estruturado em Markdown, sem prefácio nem comentário sobre o seu processo.`;
 }
 
+async function requestGemini(url, options) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const response = await fetch(url, options);
+    if (response.ok || ![429, 503].includes(response.status) || attempt === 2) return response;
+    await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
+  }
+}
+
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
@@ -47,7 +55,7 @@ export default async function handler(request, response) {
   try {
     const { profile, rules } = await getGrokKnowledge();
     const geminiModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-    const geminiResponse = await fetch(
+    const geminiResponse = await requestGemini(
       `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
       {
         method: 'POST',

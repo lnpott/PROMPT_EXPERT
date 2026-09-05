@@ -37,6 +37,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Verificação de segurança do Supabase concluída sem alertas para a estrutura inicial.
 - Perfil Grok e cinco regras iniciais carregados e consultados com sucesso pela função de backend.
 - Fluxo local testado após a integração: o modo-base continua disponível enquanto a chave Gemini não existe.
+- Geração completa validada com Gemini Flash 3.8, perfil Grok e regras armazenadas no Supabase.
 
 ### Ainda não implementado
 
@@ -116,7 +117,7 @@ Após validar a plataforma de teste:
 
 ## Variáveis de ambiente
 
-O repositório contém `.env.example` com as variáveis da função de backend. Para a primeira versão, basta cadastrar `GEMINI_API_KEY` na Vercel nos ambientes Preview e Production. `GEMINI_MODEL` é opcional. A função usa apenas a chave pública de leitura do Supabase, protegida pelas políticas de RLS; `service_role` nunca entra no GitHub, no front-end ou neste guia.
+O repositório contém `.env.example` com as variáveis da função de backend. Para a primeira versão, basta cadastrar `GEMINI_API_KEY` na Vercel nos ambientes Preview e Production. `GEMINI_MODEL` é opcional; o padrão atual é `gemini-3.8-flash`. A função usa apenas a chave pública de leitura do Supabase, protegida pelas políticas de RLS; `service_role` nunca entra no GitHub, no front-end ou neste guia.
 
 ## Regra de atualização
 
