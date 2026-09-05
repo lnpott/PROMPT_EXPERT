@@ -1,0 +1,109 @@
+# PROMPT_EXPERT — Guia vivo do projeto
+
+## Propósito
+
+O PROMPT_EXPERT transforma uma descrição comum de um produto ou funcionalidade em um prompt de programação claro, completo e adaptado ao modelo de destino. O primeiro modelo suportado é o Grok.
+
+O produto não é um arquivo de prompt estático. A pessoa descreve o que quer construir em linguagem natural; o sistema aplica um perfil de modelo e regras de qualidade para produzir um prompt pronto para copiar.
+
+## Princípios do produto
+
+- Começar pequeno, validar o fluxo e ampliar em etapas.
+- Não exigir API, conta ou banco de dados para provar a experiência principal.
+- Tratar os perfis de modelo, regras e exemplos como conteúdo versionado e auditável.
+- Nunca expor chaves privadas no front-end, no repositório ou em documentos.
+- Registrar decisões, implementação e validação neste arquivo.
+
+## Estado atual
+
+### Implementado
+
+- Página local responsiva do Prompt Expert.
+- Campo para a pessoa descrever o que quer construir.
+- Seletor de modelo com Grok como primeiro perfil.
+- Geração local de um prompt estruturado para desenvolvimento front-end.
+- Botão para copiar o prompt gerado.
+- Projeto Vite pronto para desenvolvimento e build de produção.
+- Projeto Supabase exclusivo criado na região de São Paulo.
+- Estrutura versionada de banco para perfis de modelo, regras e exemplos.
+- Leitura pública limitada a registros ativos; escrita bloqueada para visitantes.
+- Configuração de build da Vercel e modelo de variáveis públicas versionados.
+
+### Validado
+
+- Build de produção executado com sucesso.
+- Fluxo principal testado no navegador: informar uma ideia, gerar o prompt e habilitar a cópia.
+- Repositório local sincronizado com a branch principal do GitHub após o push confirmado.
+- Verificação de segurança do Supabase concluída sem alertas para a estrutura inicial.
+
+### Ainda não implementado
+
+- Geração dinâmica por API de IA.
+- Integração do front-end com Supabase e carga do conteúdo do notebook.
+- Persistência de perfis de modelos, regras, exemplos ou histórico.
+- Área administrativa para alimentar a base a partir do notebook.
+- Autenticação de usuários.
+- Publicação na Vercel.
+
+## Arquitetura planejada
+
+```text
+Pessoa usuária
+    ↓ descreve a necessidade
+Interface web na Vercel
+    ↓ consulta perfil e regras
+Supabase
+    ↓ quando habilitado
+Servidor seguro / função de backend
+    ↓ usa chave privada
+API de IA escolhida
+    ↓
+Prompt estruturado para o modelo de destino
+```
+
+### Responsabilidades
+
+| Camada | Responsabilidade |
+| --- | --- |
+| Interface | Coletar o briefing, escolher o modelo e exibir/copiar o prompt. |
+| Supabase | Guardar perfis de modelos, regras, exemplos e futuramente histórico. |
+| Backend | Proteger chaves e chamar a API de IA. |
+| Vercel | Publicar a aplicação e executar o backend quando necessário. |
+| GitHub | Versionar o código, documentação e mudanças auditáveis. |
+
+## Próximo marco: plataforma de teste
+
+Antes de conectar uma API de IA, consolidar a base do produto:
+
+1. Conectar o front-end a dados públicos controlados, sem chaves privadas no navegador.
+2. Publicar uma versão de teste na Vercel.
+3. Definir como o conteúdo do notebook será revisado e inserido na base.
+4. Adicionar o plano operacional de dez passos e atualizar este guia a cada marco.
+
+## Marco posterior: geração inteligente
+
+Após validar a plataforma de teste:
+
+1. Escolher a API de IA geradora: Grok/xAI ou OpenAI.
+2. Criar uma função de backend protegida para chamar essa API.
+3. Passar o briefing, o perfil de modelo e as regras ao gerador.
+4. Avaliar respostas com exemplos reais e registrar melhorias.
+
+## Decisões pendentes
+
+- Qual API gerará os prompts: Grok/xAI ou OpenAI?
+- Onde está o notebook/base atual e em qual formato seu conteúdo será entregue?
+- O primeiro lançamento será aberto ao público ou restrito ao administrador?
+
+## Variáveis de ambiente
+
+O repositório contém `.env.example` com os únicos valores públicos que o front-end precisará quando a leitura do Supabase for ativada:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+Essas variáveis devem ser cadastradas na Vercel para os ambientes de preview e produção. Chaves privadas de IA ou `service_role` do Supabase nunca entram em variáveis `VITE_`, no GitHub ou neste guia.
+
+## Regra de atualização
+
+Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ainda não implementado** e **Próximo marco**. Nenhuma etapa deve ser marcada como validada sem evidência de teste.
