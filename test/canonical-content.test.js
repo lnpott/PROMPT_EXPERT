@@ -5,6 +5,8 @@ import { test } from 'node:test';
 
 const sourcePath = new URL('../base-canonica-regras.md', import.meta.url);
 const migrationPath = new URL('../supabase/migrations/20260906020000_import_canonical_prompt_rules.sql', import.meta.url);
+const auditPath = new URL('../notebook-auditoria-fontes.md', import.meta.url);
+const guidePath = new URL('../PROJECT_GUIDE.md', import.meta.url);
 
 test('canonical source is traceable and its import keeps supplied rules inactive', () => {
   const source = readFileSync(sourcePath);
@@ -40,4 +42,37 @@ test('canonical migration registers every auditable rule category', () => {
   for (const ruleKey of expectedRuleKeys) {
     assert.match(migration, new RegExp(`'${ruleKey}'`));
   }
+});
+
+test('notebook audit preserves source inventory and editorial safeguards', () => {
+  const audit = readFileSync(auditPath, 'utf8');
+  const sourceRows = audit.match(/^\| \d+ \|/gm) || [];
+
+  assert.equal(sourceRows.length, 19);
+  assert.match(audit, /learn\.microsoft\.com/);
+  assert.match(audit, /code\.claude\.com/);
+  assert.match(audit, /api-docs\.deepseek\.com/);
+  assert.match(audit, /docs\.x\.ai/);
+  assert.match(audit, /ai\.google\.dev/);
+  assert.match(audit, /Model Spec/i);
+  assert.match(audit, /supplied_unverified/);
+  assert.match(audit, /is_active = false/);
+  assert.match(audit, /duas cópias consecutivas/);
+});
+
+test('project guide defines ten auditable next steps', () => {
+  const guide = readFileSync(guidePath, 'utf8');
+  const roadmap = guide.match(/## Próximos dez passos([\s\S]*?)### Protocolo obrigatório por passo/)?.[1] || '';
+  const roadmapRows = roadmap.match(/^\| \d+ \|/gm) || [];
+  const execution = guide.match(/### Registro de execução dos próximos passos([\s\S]*?)### Modelo de auditoria/)?.[1] || '';
+  const executionRows = execution.match(/^\| \d+ \|/gm) || [];
+
+  assert.equal(roadmapRows.length, 10);
+  assert.equal(executionRows.length, 10);
+  assert.match(guide, /Auditoria obrigatória/);
+  assert.match(guide, /Commit sugerido/);
+  assert.match(guide, /PR sugerido/);
+  assert.match(guide, /#### Auditoria do passo N/);
+  assert.match(guide, /Segurança, segredos e dados pessoais/);
+  assert.match(guide, /Rollback:/);
 });
