@@ -36,6 +36,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Produção pública na Vercel, com as funções `/api/health` e `/api/generate` ativas.
 - Base canônica de regras recebida como `base-canonica-regras.md`, versionada com checksum e normalizada em uma migration de corpus auditável.
 - Auditoria completa do notebook normalizada em `notebook-auditoria-fontes.md`, com inventário das 19 fontes, achados críticos e lacunas de pesquisa, sem duplicar o bloco repetido na exportação recebida.
+- Migration do corpus canônico aplicada no Supabase remoto, com uma fonte e 12 regras editoriais preservadas como não verificadas e inativas.
 
 ### Validado
 
@@ -52,10 +53,10 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Produção validada em 6 de setembro de 2026 em `https://prompt-expert-blush.vercel.app`: `/api/health` retornou `status: ok`, perfil `Grok` e Gemini configurado; `/api/generate` retornou um prompt por Gemini com sucesso.
 - Testes de integridade confirmam o checksum da base canônica e que suas 12 regras importadas permanecem inativas até validação primária por fornecedor.
 - Exportação textual do notebook recebida diretamente em 6 de setembro de 2026; a proveniência do conteúdo foi confirmada, mas as referências numéricas ainda não possuem URLs correspondentes e não autorizam ativação automática das regras.
+- Corpus remoto auditado com acesso administrativo e público: uma fonte e 12 regras existem, todas as regras estão `supplied_unverified` e inativas, a leitura anônima retorna zero registros e a escrita anônima é rejeitada.
 
 ### Ainda não implementado
 
-- Aplicação da migration do corpus canônico no projeto Supabase remoto; requer acesso administrativo ao banco.
 - Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
@@ -107,7 +108,7 @@ Os próximos passos transformam o MVP publicado em um produto auditável, proteg
 
 | Passo | Entrega | Critérios de aceite | Auditoria obrigatória | Commit sugerido | PR sugerido | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Aplicar o corpus canônico no Supabase. | Criar `knowledge_sources` e `canonical_prompt_rules`; importar uma fonte e 12 regras; manter `supplied_unverified` e `is_active = false`; impedir leitura pública desses registros. | Conferir contagens com acesso administrativo, testar RLS com chave pública, revisar grants, registrar rollback e executar a suíte local. | `feat(database): apply canonical knowledge corpus` | `Aplica corpus canônico inativo no Supabase` | Pendente |
+| 1 | Aplicar o corpus canônico no Supabase. | Criar `knowledge_sources` e `canonical_prompt_rules`; importar uma fonte e 12 regras; manter `supplied_unverified` e `is_active = false`; impedir leitura pública desses registros. | Conferir contagens com acesso administrativo, testar RLS com chave pública, revisar grants, registrar rollback e executar a suíte local. | `feat(database): apply canonical knowledge corpus` | `Aplica corpus canônico inativo no Supabase` | Em revisão |
 | 2 | Validar as fontes primárias. | Registrar URL direta, fornecedor, título, data de consulta, escopo e regras relacionadas; classificar cada afirmação como confirmada, refutada, obsoleta ou incerta. | Verificar domínio oficial e suporte direto de cada fonte; priorizar Codestral FIM, OpenAI Model Spec, cache do Claude no Vertex AI e tool calling do Qwen3-Coder. | `docs(knowledge): validate primary prompt sources` | `Valida fontes primárias da base de conhecimento` | Pendente |
 | 3 | Modelar proveniência e revisão editorial. | Criar migration para fontes, versões, revisões, responsáveis e relação fonte-regra; preservar histórico; bloquear escrita pública. | Revisar constraints, integridade referencial, RLS, grants, aplicação e rollback; adicionar testes estáticos da migration. | `feat(knowledge): add source verification model` | `Adiciona proveniência verificável às regras` | Pendente |
 | 4 | Ativar somente regras verificadas e aplicáveis ao Grok. | Promover apenas regras sustentadas por fontes oficiais e explicitamente compatíveis com Grok; registrar justificativa por ativação. | Comparar prompts antes e depois, verificar contradições, custo e aderência e confirmar que regras de outros fornecedores não foram aplicadas indevidamente. | `feat(knowledge): activate verified grok rules` | `Ativa regras verificadas do perfil Grok` | Pendente |
@@ -137,8 +138,8 @@ Para cada um dos dez passos:
 
 | Passo | Estado | Auditoria | Commit | Pull request | Preview/Produção | Próxima ação |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Pendente | — | — | — | — | Aplicar a migration canônica com as regras inativas. |
-| 2 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 1. |
+| 1 | Em revisão | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Aguardar merge; depois iniciar o passo 2. |
+| 2 | Pendente | — | — | — | — | Validar as fontes primárias após o merge do passo 1. |
 | 3 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 2. |
 | 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
 | 5 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 4. |
@@ -169,6 +170,23 @@ Para cada um dos dez passos:
 - Estado final:
 ```
 
+#### Auditoria do passo 1 — 2026-09-06
+
+- Branch: `step-1-canonical-corpus`.
+- Commit: `e79a1fa` (`feat(database): apply canonical knowledge corpus`).
+- Pull request: [#3 — Aplica corpus canônico inativo no Supabase](https://github.com/lnpott/PROMPT_EXPERT/pull/3).
+- Escopo revisado: aplicação de `20260906020000_import_canonical_prompt_rules.sql` e registro da versão `20260906020000` em `supabase_migrations.schema_migrations`.
+- Testes executados: consultas SQL administrativas, leituras REST com chave pública e `service_role`, tentativa anônima de escrita, `npm test`, `npm run build` e `git diff --check`.
+- Resultado dos testes: uma fonte, 12 regras e 12 regras simultaneamente inativas e não verificadas; histórico da migration com uma entrada; suíte e build aprovados.
+- Segurança, segredos e dados pessoais: nenhuma credencial foi gravada; as verificações só registraram contagens, status e metadados não sensíveis; escrita anônima rejeitada com HTTP 401.
+- Banco e RLS: as duas tabelas têm RLS ativo; as políticas liberam apenas registros verificados e ativos; leituras anônimas retornaram HTTP 200 com zero registros.
+- Custos e limites: mudança apenas de conteúdo e esquema; nenhuma regra passou a afetar chamadas da Gemini.
+- Preview ou produção: banco Supabase de produção `pqprtkdvzyhqlidlcpxg`; aplicação Vercel não alterada por este passo.
+- Evidências: consulta administrativa retornou `sources = 1`, `rules = 12` e `inactive_unverified = 12`; `knowledge_sources` e `canonical_prompt_rules` retornaram zero linhas para a chave pública; a chave administrativa retornou 1 e 12 linhas, respectivamente.
+- Riscos remanescentes: as referências numéricas ainda não possuem URLs diretas verificadas; nenhuma regra canônica deve ser ativada antes do passo 2.
+- Rollback: desativar qualquer regra eventualmente promovida, remover primeiro `canonical_prompt_rules` e depois `knowledge_sources`, e excluir a versão `20260906020000` do histórico somente se for necessário reaplicar a migration; executar rollback apenas com revisão administrativa.
+- Estado final: implementação concluída e em revisão; o passo só será marcado como concluído após o merge do PR, mantendo o passo 2 bloqueado até lá.
+
 ## Evidências de verificação
 
 - `npm test`: valida seis cenários de acesso de `/api/generate` e `/api/health`, incluindo respostas 200, 400, 405, 503 e o fluxo integrado simulado.
@@ -183,7 +201,7 @@ Para cada um dos dez passos:
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
 | Vercel | Positivo | A falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O deploy de produção `dpl_9i1NPXiYT1a4gftuea3ojDhcPWbR` terminou `Ready` em 6 de setembro, com build e as três funções concluídos. A proteção SSO foi desativada para o lançamento público. A URL `https://prompt-expert-blush.vercel.app` respondeu `/api/health` com `status: ok`, `knowledgeBase: Grok` e `geminiConfigured: true`; o `POST /api/generate` retornou `source: gemini` e um prompt de 3.155 caracteres. Não houve logs de erro no deployment. |
 
-O deploy de produção está saudável, acessível publicamente e sincronizado com a `main` do GitHub. A próxima alteração de conteúdo deve começar pela aplicação administrativa da migration do corpus canônico no Supabase; até isso acontecer, as regras importadas permanecem inativas e não alteram a saída do Grok.
+O deploy de produção está saudável e acessível publicamente. A migration do corpus canônico já foi aplicada no Supabase sem ativar suas regras; a próxima alteração de conteúdo deve validar as referências em fontes primárias antes de promover qualquer regra para produção.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
