@@ -160,7 +160,7 @@ Para cada um dos dez passos:
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Passo 2 iniciado após o merge. |
 | 2 | Em revisão | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Aguardar revisão e merge; depois modelar a proveniência. |
-| 3 | Em revisão | Aprovada em 06/09/2026 | `8fbc6d1` | [PR #7](https://github.com/lnpott/PROMPT_EXPERT/pull/7) | Supabase remoto aplicado | Validar endpoint no Preview e concluir revisão. |
+| 3 | Em revisão | Aprovada em 06/09/2026 | `8fbc6d1` | [PR #7](https://github.com/lnpott/PROMPT_EXPERT/pull/7) | Supabase e Preview validados | Aguardar revisão e merge. |
 | 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
 | 5 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 4. |
 | 6 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 5. |
@@ -235,7 +235,7 @@ Para cada um dos dez passos:
 - Segurança, segredos e dados pessoais: nenhuma credencial ou dado pessoal persistido; fontes e snapshots confirmados/parciais têm leitura pública, enquanto vínculos e eventos administrativos não possuem grants públicos.
 - Banco e RLS: RLS habilitado nas quatro tabelas; leitura pública limitada por status; escrita anônima bloqueada; trigger rejeitou ativação sem status verificado e evidência confirmada.
 - Custos e limites: conteúdo textual e links públicos; sem chamadas adicionais ao gerador Gemini.
-- Preview ou produção: migration aplicada no Supabase `pqprtkdvzyhqlidlcpxg`; endpoint será publicado pela Vercel neste PR.
+- Preview ou produção: migration aplicada no Supabase `pqprtkdvzyhqlidlcpxg`; `/api/provenance` respondeu HTTP 200 no Preview com 22 fontes públicas, sendo 18 confirmadas e quatro parciais.
 - Evidências: 18 fontes confirmadas, quatro parciais, uma secundária e uma não localizada; acesso anônimo retornou 22 fontes/snapshots e HTTP 401 para `rule_evidence` e `rule_review_events`.
 - Riscos remanescentes: snapshots web não possuem hash porque as páginas são mutáveis; promoções continuam exigindo revisão individual e migration explícita.
 - Rollback: remover trigger e função, depois `rule_review_events`, `rule_evidence`, `source_snapshots` e `evidence_sources`; remover a versão da migration apenas em reaplicação controlada.

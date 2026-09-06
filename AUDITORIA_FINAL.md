@@ -73,4 +73,4 @@ A API da Vercel confirmou que `GEMINI_API_KEY` e `GEMINI_MODEL` existem em Previ
 - 12 eventos iniciais de revisão, um para cada regra canônica.
 - Zero regras canônicas ativas.
 - Trigger de banco impede ativação sem `evidence_status = 'verified'` e ao menos uma evidência de suporte confirmada.
-- A URL pública será `/api/provenance` no mesmo domínio Vercel; tabelas administrativas permanecem inacessíveis a visitantes.
+- A URL pública `/api/provenance` respondeu HTTP 200 no Preview Vercel com as 22 fontes confirmadas ou parciais; tabelas administrativas permanecem inacessíveis a visitantes.
