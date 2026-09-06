@@ -161,10 +161,10 @@ Para cada um dos dez passos:
 | 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Encerrado. |
 | 2 | Concluído | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Encerrado. |
 | 3 | Concluído | Aprovada em 06/09/2026 | `8fbc6d1` | [PR #7](https://github.com/lnpott/PROMPT_EXPERT/pull/7) | Supabase e produção validados | Encerrado. |
-| 4 | Concluído sem promoção | Aprovada em 06/09/2026 | PR atual | PR atual | Zero regras canônicas ativas | Reavaliar somente com evidência oficial específica do Grok. |
-| 5 | Concluído | Aprovada em 06/09/2026 | PR atual | PR atual | Testes de limite, fallback e retry | Migrar limite para storage distribuído se o tráfego exigir. |
-| 6 | Concluído | Aprovada em 06/09/2026 | PR atual | PR atual | Telemetria sanitizada testada | Definir retenção de logs na operação Vercel. |
-| 7 | Concluído | Aprovada em 06/09/2026 | PR atual | PR atual | 54 casos reproduzíveis | Ampliar fixtures quando os perfis mudarem. |
+| 4 | Concluído sem promoção | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Zero regras canônicas ativas | Reavaliar somente com evidência oficial específica do Grok. |
+| 5 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Testes de limite, fallback e retry | Migrar limite para storage distribuído se o tráfego exigir. |
+| 6 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Telemetria sanitizada testada | Definir retenção de logs na operação Vercel. |
+| 7 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | 54 casos reproduzíveis | Ampliar fixtures quando os perfis mudarem. |
 | 8 | Adiado por desenho | Aprovada em 06/09/2026 | — | — | Sem contas ou histórico | Implementar apenas após política de retenção aprovada. |
 | 9 | Adiado por desenho | Aprovada em 06/09/2026 | — | — | Administração via migration e PR | Criar UI somente quando houver operadores autenticados. |
 | 10 | Concluído | Aprovada em 06/09/2026 | `4fe3030` + PR atual | [PR #5](https://github.com/lnpott/PROMPT_EXPERT/pull/5) + PR atual | Nove perfis em produção | Manter contratos e avaliação sincronizados. |
@@ -286,6 +286,8 @@ Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ai
 #### Auditoria de encerramento dos passos 4–7 e 10 — 2026-09-06
 
 - Branch: `complete-core`.
+- Commit: `32de2b7` (`test(quality): complete core prompt evaluation`).
+- Pull request: [#8 — Conclui núcleo com avaliação reproduzível e telemetria segura](https://github.com/lnpott/PROMPT_EXPERT/pull/8).
 - Escopo revisado: aplicabilidade das regras ao Grok, proteção do endpoint, telemetria sanitizada, avaliação reproduzível e contratos multi-modelo.
 - Decisão editorial do passo 4: nenhuma das 12 regras importadas é simultaneamente verificada por evidência confirmada **e** específica do Grok; por isso, zero regras foram promovidas. Não ativar conteúdo inadequado é o resultado seguro e esperado.
 - Proteção e observabilidade: tipos de tarefa passam por allowlist; o limite retorna `Retry-After`; cada resultado registra somente identificador, modelo, origem, status, duração, tentativas e classe de erro.
@@ -293,4 +295,5 @@ Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ai
 - Segurança e dados pessoais: briefing, prompt e credenciais não aparecem na telemetria; o produto não cria contas nem persiste gerações.
 - Passos 8 e 9: adiados deliberadamente. Autenticação sem funcionalidade dependente e administração web sem operadores definidos ampliariam superfície de ataque e coleta de dados sem benefício ao fluxo público.
 - Rollback: reverter o commit desta entrega; não há mudança de banco nesta etapa e as regras canônicas continuam inativas.
+- Preview: deployment Vercel `READY`; health, nove perfis e proveniência responderam HTTP 200. Em três gerações reais, a primeira e a segunda usaram o fallback local seguro por indisponibilidade/timeout transitório e a terceira respondeu pela Gemini, comprovando os dois caminhos sem interromper o produto.
 - Estado final: núcleo funcional concluído; expansões futuras dependem de requisito de negócio, evidência nova ou escala operacional.
