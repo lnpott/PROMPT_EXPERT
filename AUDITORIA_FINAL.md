@@ -53,6 +53,14 @@ A experiência principal está funcional sem credenciais: escolher um dos nove d
 - `/api/health`: HTTP 200, base `Grok` e gerador `gemini`.
 - Observação: a primeira chamada de geração durante a propagação do deployment recebeu HTTP 502; a repetição imediata após o deployment ficar `Ready` respondeu HTTP 200. Não houve recorrência no teste final.
 
+## Validação de produção
+
+- Commit publicado: `4fe3030de63a910300fe7c7275803a15dcf57d3f` na `main`.
+- Deployment: `dpl_HDbabx1hprV7TRZrKssf676Mwq5i`, estado `READY`.
+- `/api/profiles`: nove perfis retornados.
+- `/api/health`: HTTP 200, base `Grok` e gerador `gemini`.
+- `/api/generate`: “Tarefas citadas” gerou um prompt com 2.831 caracteres, `source: "gemini"`, `requestId` e nenhuma classificação de complexidade.
+
 ## Verificação das credenciais configuradas
 
 A API da Vercel confirmou que `GEMINI_API_KEY` e `GEMINI_MODEL` existem em Preview e Production; somente nomes, escopos e tipo foram consultados. A chave está classificada como `sensitive` e seu valor não foi lido. A geração real no Preview confirmou que a Gemini está acessível. As instruções operacionais estão em `CONFIGURACAO_APIS.md`.
