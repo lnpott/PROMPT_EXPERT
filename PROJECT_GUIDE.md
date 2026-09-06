@@ -138,7 +138,7 @@ Para cada um dos dez passos:
 
 | Passo | Estado | Auditoria | Commit | Pull request | Preview/Produção | Próxima ação |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Concluído | Aprovada em 06/09/2026 | A registrar | A registrar | Supabase remoto validado | Aguardar revisão e merge; depois iniciar o passo 2. |
+| 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Aguardar revisão e merge; depois iniciar o passo 2. |
 | 2 | Pendente | — | — | — | — | Validar as fontes primárias após o merge do passo 1. |
 | 3 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 2. |
 | 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
@@ -173,8 +173,8 @@ Para cada um dos dez passos:
 #### Auditoria do passo 1 — 2026-09-06
 
 - Branch: `step-1-canonical-corpus`.
-- Commit: a registrar após a criação do commit auditado.
-- Pull request: a registrar após a abertura do PR.
+- Commit: `e79a1fa` (`feat(database): apply canonical knowledge corpus`).
+- Pull request: [#3 — Aplica corpus canônico inativo no Supabase](https://github.com/lnpott/PROMPT_EXPERT/pull/3).
 - Escopo revisado: aplicação de `20260906020000_import_canonical_prompt_rules.sql` e registro da versão `20260906020000` em `supabase_migrations.schema_migrations`.
 - Testes executados: consultas SQL administrativas, leituras REST com chave pública e `service_role`, tentativa anônima de escrita, `npm test`, `npm run build` e `git diff --check`.
 - Resultado dos testes: uma fonte, 12 regras e 12 regras simultaneamente inativas e não verificadas; histórico da migration com uma entrada; suíte e build aprovados.
