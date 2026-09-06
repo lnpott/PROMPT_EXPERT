@@ -2,13 +2,16 @@ import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
 import generate from '../api/generate.js';
+import compilers from '../api/compilers.js';
 import health from '../api/health.js';
 import profiles from '../api/profiles.js';
 import provenance from '../api/provenance.js';
 import { compilePrompt, findProfile, modelProfiles } from '../api/model-profiles.js';
+import { DEFAULT_COMPILER_MODEL, findCompilerModel, publicCompilerModels } from '../api/compiler-models.js';
 
 const originalFetch = globalThis.fetch;
 const originalApiKey = process.env.GEMINI_API_KEY;
+const originalGeminiModel = process.env.GEMINI_MODEL;
 
 function createResponse() {
   return {
@@ -37,6 +40,8 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   if (originalApiKey === undefined) delete process.env.GEMINI_API_KEY;
   else process.env.GEMINI_API_KEY = originalApiKey;
+  if (originalGeminiModel === undefined) delete process.env.GEMINI_MODEL;
+  else process.env.GEMINI_MODEL = originalGeminiModel;
 });
 
 test('GET /api/generate is denied and advertises the allowed method', async () => {
@@ -65,6 +70,14 @@ test('POST /api/generate rejects task types outside the public contract', async 
   const response = createResponse();
 
   await generate({ method: 'POST', body: { brief: 'Crie uma página.', model: 'grok', taskType: 'complex' } }, response);
+
+  assert.equal(response.statusCode, 400);
+});
+
+test('POST /api/generate rejects compiler models outside the public allowlist', async () => {
+  const response = createResponse();
+
+  await generate({ method: 'POST', body: { brief: 'Crie uma página.', model: 'grok', compilerModel: 'arbitrary-model' } }, response);
 
   assert.equal(response.statusCode, 400);
 });
@@ -103,7 +116,25 @@ test('POST /api/generate accesses the knowledge base and Gemini with a valid req
   assert.match(response.body.requestId, /^[a-f0-9-]+$/);
   assert.equal(calls.length, 3);
   assert.equal(calls[2].options.headers['x-goog-api-key'], 'test-only-key');
+  assert.match(calls[2].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
   assert.match(JSON.parse(calls[2].options.body).contents[0].parts[0].text, /Inclua critérios de aceite/);
+});
+
+test('POST /api/generate uses the compiler model selected by the user', async () => {
+  process.env.GEMINI_API_KEY = 'test-only-key';
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(url);
+    if (url.includes('model_profiles') || url.includes('prompt_rules')) return jsonResponse([]);
+    return jsonResponse({ candidates: [{ content: { parts: [{ text: '# Prompt por modelo selecionado' }] } }] });
+  };
+  const response = createResponse();
+
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'selected-compiler' }, body: { brief: 'Crie uma página acessível', model: 'grok', compilerModel: 'gemini-3.8-flash' } }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.compilerModel, 'gemini-3.8-flash');
+  assert.match(calls.at(-1), /models\/gemini-3\.8-flash:generateContent$/);
 });
 
 test('POST /api/generate falls back locally when Gemini rejects the request', async () => {
@@ -209,6 +240,19 @@ test('GET /api/profiles exposes nine safe public profiles', () => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.profiles.length, 9);
   assert.equal(response.body.profiles.some((profile) => 'rules' in profile), false);
+});
+
+test('GET /api/compilers exposes selectable models and their required key name', () => {
+  const response = createResponse();
+  compilers({ method: 'GET' }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.compilers.length, 5);
+  assert.equal(response.body.compilers.filter((model) => model.isDefault).length, 1);
+  assert.equal(response.body.compilers[0].slug, DEFAULT_COMPILER_MODEL);
+  assert.equal(response.body.compilers.every((model) => model.apiKeyEnvironmentVariable === 'GEMINI_API_KEY'), true);
+  assert.equal(findCompilerModel('gemini-3.8'), undefined);
+  assert.equal(publicCompilerModels().some((model) => model.slug === 'gemini-3.1-flash'), false);
 });
 
 test('GET /api/provenance exposes reviewed sources and summary', async () => {

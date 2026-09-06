@@ -41,6 +41,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Compilador local determinístico para nove perfis, disponível sem chave de API, conta ou banco.
 - Seleção opcional do tipo de tarefa, iniciando sempre em “Tarefas citadas”, com instruções especializadas por fornecedor e sem classificação de complexidade.
 - Endpoint `/api/profiles` para descoberta segura dos perfis públicos.
+- Seletor independente de motor de compilação, com catálogo público em `/api/compilers`, cinco modelos Gemini verificados e allowlist no backend.
 - Geração aprimorada opcional pela Gemini, com fallback automático para o compilador local.
 - Proteções iniciais de produção: limite por cliente, timeout, retry com `Retry-After`, identificador de requisição e logs sanitizados.
 - Modelo de proveniência aplicado no Supabase com 24 fontes, 23 snapshots, 19 vínculos regra-evidência e 12 eventos iniciais de revisão.
@@ -54,7 +55,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Verificação de segurança do Supabase concluída sem alertas para a estrutura inicial.
 - Perfil Grok e cinco regras iniciais carregados e consultados com sucesso pela função de backend.
 - Fluxo local testado após a integração: o modo-base continua disponível fora da Vercel ou enquanto a chave Gemini não existe.
-- Geração completa validada com Gemini Flash 3.8, perfil Grok e regras armazenadas no Supabase.
+- Geração completa validada com Gemini 3.5 Flash-Lite como motor geral, perfil Grok e regras armazenadas no Supabase.
 - Testes de acesso da API executados localmente com serviços externos simulados, sem usar credenciais reais.
 - Acesso externo ao GitHub, Supabase e Gemini verificado em 5 de setembro de 2026; as limitações encontradas na Vercel estão registradas nas evidências abaixo.
 - Build de Preview da Vercel corrigido e concluído com sucesso após remover `node_modules` do versionamento.
@@ -78,6 +79,8 @@ Esses itens permanecem como evolução administrativa. A experiência principal 
 ## Estado funcional consolidado
 
 A aplicação está pronta para uso local sem configuração externa. Na Vercel, a única chave privada necessária para habilitar o aprimoramento por IA é `GEMINI_API_KEY`; sem ela, `/api/generate` responde pelo compilador local. As variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são opcionais para trocar a base pública de perfis. A auditoria consolidada de código e interface foi registrada e deverá ser confirmada no Preview antes do merge.
+
+“Modelo de destino” e “motor de compilação” são conceitos independentes: o primeiro define para qual modelo o prompt final será adaptado; o segundo define qual IA produz o refinamento. O catálogo inicial contém `gemini-3.5-flash-lite` (padrão), `gemini-3.5-flash`, `gemini-3.8-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite`. Todos compartilham `GEMINI_API_KEY`; modelos de outros fornecedores exigirão adaptador, allowlist e variável secreta próprios antes de aparecerem na interface.
 
 O parecer e os riscos aceitos desta entrega estão em `AUDITORIA_FINAL.md`. O Preview confirmou os nove perfis, a geração aprimorada e o health check. Autenticação, histórico e administração permanecem fora do fluxo público até existir uma política de retenção; não bloqueiam a compilação e a cópia de prompts.
 
@@ -119,7 +122,7 @@ Prompt estruturado para o modelo de destino
 | 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
 | 7 | Revisar e importar a base do notebook como conteúdo auditado. | Concluída: exportação deduplicada, corpus aplicado, fontes validadas e proveniência modelada |
 | 8 | Criar uma área administrativa protegida para atualizar a base. | Adiada até haver operadores autenticados e política de retenção |
-| 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída e validada em produção com Gemini Flash 3.8 |
+| 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída com Gemini 3.5 Flash-Lite como motor geral |
 | 10 | Executar validação de qualidade, segurança e publicação de produção. | Concluída para o deployment de produção atual |
 
 ## Próximos dez passos
@@ -275,7 +278,7 @@ Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Valid
 
 ## Variáveis de ambiente
 
-O repositório contém `.env.example` com as variáveis da função de backend. Para a primeira versão, basta cadastrar `GEMINI_API_KEY` na Vercel nos ambientes Preview e Production. `GEMINI_MODEL` é opcional; o padrão atual é `gemini-3.8-flash`. A função usa apenas a chave pública de leitura do Supabase, protegida pelas políticas de RLS; `service_role` nunca entra no GitHub, no front-end ou neste guia.
+O repositório contém `.env.example` com as variáveis da função de backend. Para a primeira versão, basta cadastrar `GEMINI_API_KEY` na Vercel nos ambientes Preview e Production. `GEMINI_MODEL` é opcional; o padrão atual e motor geral é `gemini-3.5-flash-lite`. A função usa apenas a chave pública de leitura do Supabase, protegida pelas políticas de RLS; `service_role` nunca entra no GitHub, no front-end ou neste guia.
 
 ## Regra de atualização
 

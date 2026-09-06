@@ -12,10 +12,26 @@ O compilador continua funcional sem qualquer chave. Sem Gemini, ele responde de 
 2. Abra o projeto `prompt-expert` na Vercel.
 3. Acesse **Settings → Environment Variables**.
 4. Cadastre `GEMINI_API_KEY` como variável **Sensitive** nos ambientes **Production** e **Preview**.
-5. Opcionalmente, cadastre `GEMINI_MODEL` para substituir `gemini-3.8-flash`.
+5. Opcionalmente, cadastre `GEMINI_MODEL` para substituir `gemini-3.5-flash-lite`.
 6. Salve e faça um novo deployment, pois mudanças em variáveis não alteram deployments já concluídos. Consulte também a [documentação de variáveis da Vercel](https://vercel.com/docs/environment-variables/managing-environment-variables).
 
 Não coloque o valor real em `.env.example`, no GitHub, em documentação, no frontend ou em variáveis prefixadas com `VITE_`.
+
+## Motores selecionáveis
+
+Uma única `GEMINI_API_KEY` atende aos cinco motores Google disponíveis no seletor:
+
+| Motor | Uso recomendado |
+| --- | --- |
+| `gemini-3.5-flash-lite` | Padrão econômico para a maior parte dos briefings. |
+| `gemini-3.5-flash` | Equilíbrio entre qualidade e velocidade. |
+| `gemini-3.8-flash` | Briefings mais difíceis, priorizando qualidade. |
+| `gemini-3.7-flash` | Comparação e alternativa ao modelo mais novo. |
+| `gemini-3.1-flash-lite` | Compatibilidade e comparação com a geração anterior. |
+
+Esses cinco identificadores foram confirmados em 6 de setembro de 2026 na listagem autenticada `GET /v1beta/models`, todos com suporte a `generateContent`. Os nomes genéricos `gemini-3.8` e `gemini-3.1-flash` citados na análise preliminar **não** apareceram nessa listagem e, por segurança, não foram adicionados. Gratuidade, limites e disponibilidade dependem da conta e da região no Google AI Studio; o sistema não promete cota gratuita.
+
+Para cadastrar futuramente outro fornecedor, adicione seu adaptador e seu modelo à allowlist do backend, associe uma variável de ambiente própria e cadastre a chave somente na Vercel. Apenas colocar um nome no HTML não habilita um provedor e não deve ser feito.
 
 ## Ambiente local
 
@@ -23,7 +39,7 @@ O comando `npm run dev` usa o compilador local e não precisa de chave. Para tes
 
 ```dotenv
 GEMINI_API_KEY=sua_chave_real
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 O padrão `.env.*` já está ignorado pelo Git. Nunca copie a chave real para `.env.example`.

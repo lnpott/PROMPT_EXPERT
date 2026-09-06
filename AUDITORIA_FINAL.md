@@ -65,6 +65,10 @@ A experiência principal está funcional sem credenciais: escolher um dos nove d
 
 A API da Vercel confirmou que `GEMINI_API_KEY` e `GEMINI_MODEL` existem em Preview e Production; somente nomes, escopos e tipo foram consultados. A chave está classificada como `sensitive` e seu valor não foi lido. A geração real no Preview confirmou que a Gemini está acessível. As instruções operacionais estão em `CONFIGURACAO_APIS.md`.
 
+O motor geral vigente é `gemini-3.5-flash-lite`. O identificador foi confirmado na listagem autenticada da Gemini como compatível com `generateContent`; a configuração da Vercel deve usar o mesmo valor para não sobrescrever o padrão da aplicação.
+
+O usuário pode substituir o motor geral por um dos outros quatro modelos Gemini permitidos sem alterar o modelo de destino. A API rejeita identificadores fora da allowlist, o catálogo público revela somente nomes e a variável necessária, e nenhuma chave é enviada ao navegador. `gemini-3.8` e `gemini-3.1-flash` não foram cadastrados porque não constavam na listagem autenticada consultada; somente `gemini-3.8-flash` e `gemini-3.1-flash-lite` foram confirmados.
+
 ## Proveniência aplicada
 
 - 24 fontes modeladas: as 19 entradas recebidas e cinco referências complementares usadas para resolver lacunas.
