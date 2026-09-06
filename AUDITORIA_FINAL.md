@@ -23,7 +23,7 @@ Data: 6 de setembro de 2026.
 | Observabilidade | Aprovado com limitação | `X-Request-Id` e evento sanitizado de fallback; o briefing e o prompt não são registrados. |
 | Conteúdo canônico | Aprovado | As 12 regras importadas permanecem não verificadas e inativas. |
 | Dependências | Aprovado | `npm audit --omit=dev` não encontrou vulnerabilidades conhecidas. |
-| Testes e build | Aprovado | 17 testes e build Vite concluídos. |
+| Testes e build | Aprovado | 18 testes e build Vite concluídos. |
 
 ## Riscos aceitos antes da configuração externa
 
