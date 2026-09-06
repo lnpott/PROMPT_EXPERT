@@ -41,6 +41,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Compilador local determinístico para nove perfis, disponível sem chave de API, conta ou banco.
 - Seleção opcional do tipo de tarefa, iniciando sempre em “Tarefas citadas”, com instruções especializadas por fornecedor e sem classificação de complexidade.
 - Endpoint `/api/profiles` para descoberta segura dos perfis públicos.
+- Seletor independente de motor de compilação, com catálogo público em `/api/compilers`, cinco modelos Gemini verificados e allowlist no backend.
 - Geração aprimorada opcional pela Gemini, com fallback automático para o compilador local.
 - Proteções iniciais de produção: limite por cliente, timeout, retry com `Retry-After`, identificador de requisição e logs sanitizados.
 - Modelo de proveniência aplicado no Supabase com 24 fontes, 23 snapshots, 19 vínculos regra-evidência e 12 eventos iniciais de revisão.
@@ -78,6 +79,8 @@ Esses itens permanecem como evolução administrativa. A experiência principal 
 ## Estado funcional consolidado
 
 A aplicação está pronta para uso local sem configuração externa. Na Vercel, a única chave privada necessária para habilitar o aprimoramento por IA é `GEMINI_API_KEY`; sem ela, `/api/generate` responde pelo compilador local. As variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são opcionais para trocar a base pública de perfis. A auditoria consolidada de código e interface foi registrada e deverá ser confirmada no Preview antes do merge.
+
+“Modelo de destino” e “motor de compilação” são conceitos independentes: o primeiro define para qual modelo o prompt final será adaptado; o segundo define qual IA produz o refinamento. O catálogo inicial contém `gemini-3.5-flash-lite` (padrão), `gemini-3.5-flash`, `gemini-3.8-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite`. Todos compartilham `GEMINI_API_KEY`; modelos de outros fornecedores exigirão adaptador, allowlist e variável secreta próprios antes de aparecerem na interface.
 
 O parecer e os riscos aceitos desta entrega estão em `AUDITORIA_FINAL.md`. O Preview confirmou os nove perfis, a geração aprimorada e o health check. Autenticação, histórico e administração permanecem fora do fluxo público até existir uma política de retenção; não bloqueiam a compilação e a cópia de prompts.
 

@@ -1,9 +1,12 @@
 import './style.css';
 import { compilePrompt, findProfile, publicProfiles } from '../api/model-profiles.js';
+import { publicCompilerModels } from '../api/compiler-models.js';
 
 const brief = document.querySelector('#brief');
 const model = document.querySelector('#model');
 const taskType = document.querySelector('#task-type');
+const compilerModel = document.querySelector('#compiler-model');
+const compilerDescription = document.querySelector('#compiler-description');
 const modelDescription = document.querySelector('#model-description');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
@@ -11,10 +14,16 @@ const output = document.querySelector('#output');
 const copy = document.querySelector('#copy');
 const source = document.querySelector('#source');
 let profiles = publicProfiles();
+let compilers = publicCompilerModels();
 
 function updateProfileDescription() {
   const profile = profiles.find((item) => item.slug === model.value);
   modelDescription.textContent = profile ? `${profile.provider} · ${profile.guidance}` : 'Perfil especializado selecionado.';
+}
+
+function updateCompilerDescription() {
+  const compiler = compilers.find((item) => item.slug === compilerModel.value);
+  compilerDescription.textContent = compiler ? `${compiler.tier} · ${compiler.recommendation}` : 'Motor de compilação selecionado.';
 }
 
 async function loadProfiles() {
@@ -39,8 +48,31 @@ async function loadProfiles() {
   }
 }
 
+async function loadCompilers() {
+  const renderCompilers = () => {
+    compilerModel.replaceChildren(...compilers.map((compiler) => {
+      const option = document.createElement('option');
+      option.value = compiler.slug;
+      option.textContent = `${compiler.displayName}${compiler.isDefault ? ' · padrão' : ''}`;
+      return option;
+    }));
+    updateCompilerDescription();
+  };
+  renderCompilers();
+  try {
+    const response = await fetch('/api/compilers');
+    if (!response.ok) throw new Error();
+    ({ compilers } = await response.json());
+    renderCompilers();
+  } catch {
+    compilerDescription.textContent = 'Catálogo local · a geração continua disponível por fallback';
+  }
+}
+
 model.addEventListener('change', updateProfileDescription);
+compilerModel.addEventListener('change', updateCompilerDescription);
 loadProfiles();
+loadCompilers();
 
 generate.addEventListener('click', async () => {
   const request = brief.value.trim();
@@ -60,7 +92,7 @@ generate.addEventListener('click', async () => {
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value }),
+      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value, compilerModel: compilerModel.value }),
     });
     const payload = await response.json().catch(() => ({}));
 
@@ -72,7 +104,7 @@ generate.addEventListener('click', async () => {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
     } else {
       output.textContent = payload.prompt;
-      source.textContent = payload.source === 'gemini' ? 'Aprimorado por Gemini' : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
+      source.textContent = payload.source === 'gemini' ? `Compilado por ${payload.compilerModel || compilerModel.value}` : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
     }
 
     result.classList.remove('is-empty');

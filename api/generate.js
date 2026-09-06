@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import { getModelKnowledge } from './knowledge-base.js';
+import { compilerApiKey, DEFAULT_COMPILER_MODEL, findCompilerModel } from './compiler-models.js';
 import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
 
 const MAX_BRIEF_LENGTH = 6000;
-const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const PROVIDER_TIMEOUT_MS = 9000;
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
@@ -45,9 +45,9 @@ async function requestGemini(url, options) {
   }
 }
 
-function logRequest({ requestId, model, source, status, startedAt, attempts = 0, error }) {
+function logRequest({ requestId, model, compilerModel, source, status, startedAt, attempts = 0, error }) {
   console.info(JSON.stringify({
-    event: 'generation_complete', requestId, model, source, status,
+    event: 'generation_complete', requestId, model, compilerModel, source, status,
     durationMs: Date.now() - startedAt, attempts, ...(error ? { error } : {}),
   }));
 }
@@ -83,21 +83,26 @@ export default async function handler(request, response) {
   const model = typeof request.body?.model === 'string' ? request.body.model : '';
   const profile = findProfile(model);
   const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'cited';
+  const requestedCompiler = typeof request.body?.compilerModel === 'string'
+    ? request.body.compilerModel
+    : (process.env.GEMINI_MODEL || DEFAULT_COMPILER_MODEL);
+  const compiler = findCompilerModel(requestedCompiler);
 
-  if (!profile || !Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
+  if (!profile || !compiler || !Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
     return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.' });
   }
 
   if (clientIsLimited(request)) {
     response.setHeader('Retry-After', '60');
-    logRequest({ requestId, model, source: 'rejected', status: 429, startedAt });
+    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'rejected', status: 429, startedAt });
     return sendJson(response, 429, { error: 'Limite temporário atingido. Aguarde um minuto.' });
   }
 
   const localPrompt = compilePrompt({ brief, profile, taskType });
-  if (!process.env.GEMINI_API_KEY) {
-    logRequest({ requestId, model, source: 'local', status: 200, startedAt });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local', requestId });
+  const apiKey = compilerApiKey(compiler);
+  if (!apiKey) {
+    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local', status: 200, startedAt });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', compilerModel: compiler.slug, requestId });
   }
 
   try {
@@ -112,14 +117,13 @@ export default async function handler(request, response) {
       output_contract: profile.format,
     };
     const rules = remoteKnowledge?.rules || profile.rules.map((rule, priority) => ({ rule_text: rule, priority }));
-    const geminiModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
     const { response: geminiResponse, attempts } = await requestGemini(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${compiler.slug}:generateContent`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY,
+          'x-goog-api-key': apiKey,
         },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: buildInstruction(localPrompt, generationProfile, rules) }] }],
@@ -129,21 +133,21 @@ export default async function handler(request, response) {
     );
 
     if (!geminiResponse.ok) {
-      logRequest({ requestId, model, source: 'local-fallback', status: 200, startedAt, attempts, error: `ProviderHTTP${geminiResponse.status}` });
-      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
+      logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local-fallback', status: 200, startedAt, attempts, error: `ProviderHTTP${geminiResponse.status}` });
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', compilerModel: compiler.slug, requestId });
     }
 
     const payload = await geminiResponse.json();
     const prompt = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim();
 
     if (!prompt) {
-      logRequest({ requestId, model, source: 'local-fallback', status: 200, startedAt, attempts, error: 'EmptyProviderResponse' });
-      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
+      logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local-fallback', status: 200, startedAt, attempts, error: 'EmptyProviderResponse' });
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', compilerModel: compiler.slug, requestId });
     }
-    logRequest({ requestId, model, source: 'gemini', status: 200, startedAt, attempts });
-    return sendJson(response, 200, { prompt, source: 'gemini', requestId });
+    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'gemini', status: 200, startedAt, attempts });
+    return sendJson(response, 200, { prompt, source: 'gemini', compilerModel: compiler.slug, requestId });
   } catch (error) {
-    logRequest({ requestId, model, source: 'local-fallback', status: 200, startedAt, error: error?.name || 'Error' });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
+    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local-fallback', status: 200, startedAt, error: error?.name || 'Error' });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', compilerModel: compiler.slug, requestId });
   }
 }
