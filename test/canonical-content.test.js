@@ -8,6 +8,7 @@ const migrationPath = new URL('../supabase/migrations/20260906020000_import_cano
 const auditPath = new URL('../notebook-auditoria-fontes.md', import.meta.url);
 const guidePath = new URL('../PROJECT_GUIDE.md', import.meta.url);
 const validatedSourcesPath = new URL('../fontes-primarias-validadas.md', import.meta.url);
+const apiConfigurationPath = new URL('../CONFIGURACAO_APIS.md', import.meta.url);
 
 test('canonical source is traceable and its import keeps supplied rules inactive', () => {
   const source = readFileSync(sourcePath);
@@ -90,4 +91,16 @@ test('primary source validation records all sources and unresolved claims', () =
   assert.match(validation, /Nenhuma das 12 regras do corpus foi ativada/);
   assert.match(validation, /cache do Kimi continua não confirmado/);
   assert.match(validation, /x-grok-conv-id.*não confirmados/);
+});
+
+test('API configuration identifies the only required private integration', () => {
+  const configuration = readFileSync(apiConfigurationPath, 'utf8');
+
+  assert.match(configuration, /Settings → Environment Variables/);
+  assert.match(configuration, /GEMINI_API_KEY/);
+  assert.match(configuration, /Production.*Preview/);
+  assert.match(configuration, /não são necessárias/i);
+  assert.match(configuration, /source: "gemini"/);
+  assert.match(configuration, /Não use `service_role`/);
+  assert.doesNotMatch(configuration, /AIza[0-9A-Za-z_-]{20,}/);
 });
