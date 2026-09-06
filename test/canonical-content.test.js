@@ -7,6 +7,7 @@ const sourcePath = new URL('../base-canonica-regras.md', import.meta.url);
 const migrationPath = new URL('../supabase/migrations/20260906020000_import_canonical_prompt_rules.sql', import.meta.url);
 const auditPath = new URL('../notebook-auditoria-fontes.md', import.meta.url);
 const guidePath = new URL('../PROJECT_GUIDE.md', import.meta.url);
+const validatedSourcesPath = new URL('../fontes-primarias-validadas.md', import.meta.url);
 
 test('canonical source is traceable and its import keeps supplied rules inactive', () => {
   const source = readFileSync(sourcePath);
@@ -75,4 +76,18 @@ test('project guide defines ten auditable next steps', () => {
   assert.match(guide, /#### Auditoria do passo N/);
   assert.match(guide, /Segurança, segredos e dados pessoais/);
   assert.match(guide, /Rollback:/);
+});
+
+test('primary source validation records all sources and unresolved claims', () => {
+  const validation = readFileSync(validatedSourcesPath, 'utf8');
+  const sourceRows = validation.match(/^\| \d+ \|/gm) || [];
+
+  assert.equal(sourceRows.length, 19);
+  assert.match(validation, /docs\.mistral\.ai\/api\/endpoint\/fim/);
+  assert.match(validation, /model-spec\.openai\.com\/2026-08-18\.html/);
+  assert.match(validation, /claude-on-vertex-ai/);
+  assert.match(validation, /tool-call-parser hermes/);
+  assert.match(validation, /Nenhuma das 12 regras do corpus foi ativada/);
+  assert.match(validation, /cache do Kimi continua não confirmado/);
+  assert.match(validation, /x-grok-conv-id.*não confirmados/);
 });
