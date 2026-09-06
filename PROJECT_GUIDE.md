@@ -160,7 +160,7 @@ Para cada um dos dez passos:
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Passo 2 iniciado após o merge. |
 | 2 | Em revisão | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Aguardar revisão e merge; depois modelar a proveniência. |
-| 3 | Em revisão | Aprovada em 06/09/2026 | A registrar | A registrar | Supabase remoto aplicado | Validar endpoint no Preview e concluir revisão. |
+| 3 | Em revisão | Aprovada em 06/09/2026 | `8fbc6d1` | [PR #7](https://github.com/lnpott/PROMPT_EXPERT/pull/7) | Supabase remoto aplicado | Validar endpoint no Preview e concluir revisão. |
 | 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
 | 5 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 4. |
 | 6 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 5. |
@@ -227,8 +227,8 @@ Para cada um dos dez passos:
 #### Auditoria do passo 3 — 2026-09-06
 
 - Branch: `provenance-model`.
-- Commit: a registrar após o commit auditado.
-- Pull request: a registrar após a abertura do PR.
+- Commit: `8fbc6d1` (`feat(knowledge): add source verification model`).
+- Pull request: [#7 — Adiciona proveniência verificável à base de regras](https://github.com/lnpott/PROMPT_EXPERT/pull/7).
 - Escopo revisado: migration de fontes, snapshots, vínculos de evidência, eventos de revisão, políticas RLS, bloqueio de ativação e endpoint Vercel `/api/provenance`.
 - Testes executados: consultas SQL administrativas, leitura REST anônima, tentativa administrativa de ativar regra não verificada, testes automatizados, build e verificação de diff.
 - Resultado dos testes: 24 fontes, 23 snapshots externos, 19 vínculos de evidência, 12 eventos de revisão e zero regras canônicas ativas.
