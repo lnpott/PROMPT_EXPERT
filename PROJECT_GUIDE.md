@@ -34,6 +34,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Testes automatizados de acesso aos endpoints, cobrindo método permitido, validação de entrada, configuração, dependências disponíveis e modo degradado.
 - Dependências instaladas removidas do versionamento para que a Vercel instale os binários corretos para Linux durante o build.
 - Produção pública na Vercel, com as funções `/api/health` e `/api/generate` ativas.
+- Base canônica de regras recebida como `base-canonica-regras.md`, versionada com checksum e normalizada em uma migration de corpus auditável.
 
 ### Validado
 
@@ -48,10 +49,11 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Acesso externo ao GitHub, Supabase e Gemini verificado em 5 de setembro de 2026; as limitações encontradas na Vercel estão registradas nas evidências abaixo.
 - Build de Preview da Vercel corrigido e concluído com sucesso após remover `node_modules` do versionamento.
 - Produção validada em 6 de setembro de 2026 em `https://prompt-expert-blush.vercel.app`: `/api/health` retornou `status: ok`, perfil `Grok` e Gemini configurado; `/api/generate` retornou um prompt por Gemini com sucesso.
+- Testes de integridade confirmam o checksum da base canônica e que suas 12 regras importadas permanecem inativas até validação primária por fornecedor.
 
 ### Ainda não implementado
 
-- Carga do conteúdo do notebook.
+- Aplicação da migration do corpus canônico no projeto Supabase remoto; requer acesso administrativo ao banco.
 - Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
@@ -88,7 +90,7 @@ Prompt estruturado para o modelo de destino
 O primeiro deploy integrado está funcional e público. O próximo marco é preservar a rastreabilidade do código e evoluir o conteúdo:
 
 1. Renovar a credencial de escrita do GitHub e enviar o `main` local já validado.
-2. Revisar e importar a base do notebook como conteúdo auditado.
+2. Aplicar a migration do corpus canônico no Supabase e validar suas políticas de leitura.
 3. Definir a política para histórico de gerações e a autenticação administrativa.
 
 ## Plano operacional em dez passos
@@ -101,7 +103,7 @@ O primeiro deploy integrado está funcional e público. O próximo marco é pres
 | 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Produção publicada e validada; `main` remoto ainda precisa ser sincronizado |
 | 5 | Cadastrar a chave Gemini secreta na Vercel. | Concluída em Preview e Production |
 | 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
-| 7 | Revisar e importar a base do notebook como conteúdo auditado. | Pendente |
+| 7 | Revisar e importar a base do notebook como conteúdo auditado. | Base recebida e versionada; migration preparada, pendente de aplicação administrativa e validação por fontes primárias |
 | 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
 | 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída e validada em produção com Gemini Flash 3.8 |
 | 10 | Executar validação de qualidade, segurança e publicação de produção. | Concluída para o deployment de produção atual |
@@ -126,8 +128,15 @@ Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Valid
 
 ## Decisões pendentes
 
-- Onde está o notebook/base atual e em qual formato seu conteúdo será entregue?
 - Qual regra de retenção será usada para o futuro histórico de gerações?
+
+## Corpus canônico importado
+
+- Artefato: `base-canonica-regras.md`.
+- Referência fornecida: `https://notebook.google.com/notebook/5a5161c7-5d60-48e7-ac86-f2887f86d07c`.
+- Integridade: SHA-256 `7b7e52a038a86e67248b4d98c02931a1fe1cccf5805eed1cb2d80a34ddbff509`.
+- Destino: migration `20260906020000_import_canonical_prompt_rules.sql`, com 12 regras e lacunas normalizadas.
+- Segurança editorial: o notebook não estava acessível pela ferramenta de consulta e o arquivo não contém URLs correspondentes às citações numéricas. Por isso, as regras entram como `supplied_unverified` e `is_active = false`; não alteram o perfil Grok nem a saída de produção até validação por fonte primária.
 
 ## Variáveis de ambiente
 
