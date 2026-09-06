@@ -85,3 +85,6 @@ A revisão editorial não promoveu nenhuma regra canônica para Grok: as regras 
 
 
 O Preview do PR #8 ficou `READY`. Os endpoints de saúde, perfis e proveniência responderam com sucesso. O smoke test de geração observou fallback local transitório e, na repetição, geração Gemini bem-sucedida; esse resultado confirma que a degradação do fornecedor não interrompe o fluxo público.
+
+
+Após o merge do PR #8, a produção foi validada no commit `3a5c97a`: health e perfis responderam HTTP 200, a proveniência retornou 22 fontes públicas e uma geração real respondeu `source: "gemini"`, com `X-Request-Id` e sem classificação de complexidade.
