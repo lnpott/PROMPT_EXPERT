@@ -9,7 +9,7 @@ Data: 6 de setembro de 2026.
 - Consulta opcional de perfis ativos no Supabase e fallback local quando a base está indisponível.
 - Validação de método, modelo permitido e briefing de 3 a 6.000 caracteres.
 - Rate limit por instância, timeout de fornecedor, retry limitado e identificador de requisição.
-- Interface responsiva, estados de carregamento, cópia com fallback e identificação da origem do prompt.
+- Interface responsiva, seleção opcional do tipo de tarefa, estados de carregamento, cópia com fallback e identificação da origem do prompt.
 
 ## Resultado
 
@@ -43,7 +43,7 @@ Data: 6 de setembro de 2026.
 
 ## Parecer
 
-A experiência principal está funcional sem credenciais: escolher um dos nove destinos, informar tipo e complexidade, compilar, revisar e copiar o prompt. A aplicação pode ser publicada como está; adicionar `GEMINI_API_KEY` habilita o aprimoramento por IA sem mudar o frontend.
+A experiência principal está funcional sem credenciais: escolher um dos nove destinos, manter “Tarefas citadas” ou selecionar um tipo específico, compilar, revisar e copiar o prompt. A aplicação pode ser publicada como está; adicionar `GEMINI_API_KEY` habilita o aprimoramento por IA sem mudar o frontend.
 
 ## Validação do Preview
 

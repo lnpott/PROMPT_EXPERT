@@ -58,7 +58,7 @@ Geração de teste:
 ```bash
 curl -X POST https://SEU_DOMINIO/api/generate \
   -H 'Content-Type: application/json' \
-  --data '{"brief":"Crie uma API REST segura com testes.","model":"openai","taskType":"application","complexity":"high"}'
+  --data '{"brief":"Crie uma API REST segura com testes.","model":"openai","taskType":"cited"}'
 ```
 
 Confirme que a resposta tem `source: "gemini"`, um `requestId` e um `prompt` não vazio. Se `source` for `local` ou `local-fallback`, a experiência continua operacional, mas a chamada generativa não foi usada.

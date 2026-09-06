@@ -74,8 +74,7 @@ export default async function handler(request, response) {
   const brief = typeof request.body?.brief === 'string' ? request.body.brief.trim() : '';
   const model = typeof request.body?.model === 'string' ? request.body.model : '';
   const profile = findProfile(model);
-  const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'application';
-  const complexity = typeof request.body?.complexity === 'string' ? request.body.complexity : 'medium';
+  const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'cited';
 
   if (!profile || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
     return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.' });
@@ -83,7 +82,7 @@ export default async function handler(request, response) {
 
   if (clientIsLimited(request)) return sendJson(response, 429, { error: 'Limite temporário atingido. Aguarde um minuto.' });
 
-  const localPrompt = compilePrompt({ brief, profile, taskType, complexity });
+  const localPrompt = compilePrompt({ brief, profile, taskType });
   if (!process.env.GEMINI_API_KEY) return sendJson(response, 200, { prompt: localPrompt, source: 'local', requestId });
 
   try {

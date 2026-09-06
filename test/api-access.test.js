@@ -63,12 +63,12 @@ test('POST /api/generate works locally without API keys', async () => {
   delete process.env.GEMINI_API_KEY;
   const response = createResponse();
 
-  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'local-mode' }, body: { brief: 'Crie uma página acessível', model: 'claude', taskType: 'application', complexity: 'high' } }, response);
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'local-mode' }, body: { brief: 'Crie uma página acessível', model: 'claude' } }, response);
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.source, 'local');
   assert.match(response.body.prompt, /Prompt para Claude/);
-  assert.match(response.body.prompt, /Complexidade: alta/);
+  assert.match(response.body.prompt, /Executar exatamente as tarefas citadas/);
   assert.equal(JSON.stringify(response.body).includes('API_KEY'), false);
 });
 
@@ -163,12 +163,11 @@ test('local compiler adapts instructions to task and provider', () => {
     brief: 'Complete a função entre prefixo e sufixo.',
     profile: findProfile('codestral'),
     taskType: 'fim',
-    complexity: 'low',
   });
 
   assert.match(prompt, /Prompt para Codestral/);
   assert.match(prompt, /Fill-in-the-Middle/);
-  assert.match(prompt, /Complexidade: baixa/);
+  assert.doesNotMatch(prompt, /Complexidade:/);
   assert.doesNotMatch(prompt, /pense passo a passo/i);
 });
 
@@ -179,4 +178,11 @@ test('every supported profile compiles a complete prompt without API access', ()
     assert.match(prompt, /Critérios de aceite/i);
     assert.match(prompt, /segurança/i);
   }
+});
+
+test('local compiler defaults to cited tasks and never adds complexity', () => {
+  const prompt = compilePrompt({ brief: 'Implemente os itens descritos.', profile: findProfile('grok') });
+
+  assert.match(prompt, /Executar exatamente as tarefas citadas no briefing/);
+  assert.doesNotMatch(prompt, /complexidade/i);
 });

@@ -39,7 +39,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Migration do corpus canônico aplicada no Supabase remoto, com uma fonte e 12 regras editoriais preservadas como não verificadas e inativas.
 - Registro de validação das 19 fontes criado em `fontes-primarias-validadas.md`, com URLs oficiais, resultados por fonte e decisões editoriais.
 - Compilador local determinístico para nove perfis, disponível sem chave de API, conta ou banco.
-- Seleção de tipo de tarefa e complexidade, com instruções especializadas por fornecedor.
+- Seleção opcional do tipo de tarefa, iniciando sempre em “Tarefas citadas”, com instruções especializadas por fornecedor e sem classificação de complexidade.
 - Endpoint `/api/profiles` para descoberta segura dos perfis públicos.
 - Geração aprimorada opcional pela Gemini, com fallback automático para o compilador local.
 - Proteções iniciais de produção: limite por cliente, timeout, retry com `Retry-After`, identificador de requisição e logs sanitizados.

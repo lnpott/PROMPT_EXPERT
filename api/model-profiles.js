@@ -26,29 +26,27 @@ export function publicProfiles() {
   return modelProfiles.map(({ rules, ...profile }) => profile);
 }
 
-export function compilePrompt({ brief, profile, taskType = 'application', complexity = 'medium' }) {
+export function compilePrompt({ brief, profile, taskType = 'cited' }) {
   const rules = profile.rules.map((rule) => `- ${rule}`).join('\n');
   const taskLabels = {
+    cited: 'Executar exatamente as tarefas citadas no briefing',
     application: 'Aplicação ou funcionalidade completa',
     refactor: 'Refatoração de código existente',
     debug: 'Diagnóstico e correção de problema',
     agent: 'Tarefa para agente autônomo de programação',
     fim: 'Completude de código Fill-in-the-Middle',
   };
-  const complexityLabels = { low: 'baixa', medium: 'média', high: 'alta' };
-
   return `# Prompt para ${profile.displayName}
 
 ## Papel
-Atue como especialista sênior em engenharia de software. Entregue uma solução verificável e proporcional à complexidade informada.
+Atue como especialista sênior em engenharia de software. Entregue uma solução verificável e proporcional ao pedido.
 
 ## Objetivo
 ${brief}
 
 ## Contexto de execução
 - Modelo de destino: ${profile.displayName} (${profile.provider})
-- Tipo de tarefa: ${taskLabels[taskType] || taskLabels.application}
-- Complexidade: ${complexityLabels[complexity] || complexityLabels.medium}
+- Tipo de tarefa: ${taskLabels[taskType] || taskLabels.cited}
 - Formato preferencial: ${profile.format}
 - Orientação específica: ${profile.guidance}
 

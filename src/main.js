@@ -4,7 +4,6 @@ import { compilePrompt, findProfile, publicProfiles } from '../api/model-profile
 const brief = document.querySelector('#brief');
 const model = document.querySelector('#model');
 const taskType = document.querySelector('#task-type');
-const complexity = document.querySelector('#complexity');
 const modelDescription = document.querySelector('#model-description');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
@@ -61,13 +60,13 @@ generate.addEventListener('click', async () => {
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value, complexity: complexity.value }),
+      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value }),
     });
     const payload = await response.json().catch(() => ({}));
 
     if (response.status === 404) {
       const profile = findProfile(model.value);
-      output.textContent = compilePrompt({ brief: request, profile, taskType: taskType.value, complexity: complexity.value });
+      output.textContent = compilePrompt({ brief: request, profile, taskType: taskType.value });
       source.textContent = 'Compilador local · sem chave necessária';
     } else if (!response.ok) {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
