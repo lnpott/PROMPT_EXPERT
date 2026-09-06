@@ -103,6 +103,7 @@ test('POST /api/generate accesses the knowledge base and Gemini with a valid req
   assert.match(response.body.requestId, /^[a-f0-9-]+$/);
   assert.equal(calls.length, 3);
   assert.equal(calls[2].options.headers['x-goog-api-key'], 'test-only-key');
+  assert.match(calls[2].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
   assert.match(JSON.parse(calls[2].options.body).contents[0].parts[0].text, /Inclua critérios de aceite/);
 });
 

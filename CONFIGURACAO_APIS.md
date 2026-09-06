@@ -12,7 +12,7 @@ O compilador continua funcional sem qualquer chave. Sem Gemini, ele responde de 
 2. Abra o projeto `prompt-expert` na Vercel.
 3. Acesse **Settings → Environment Variables**.
 4. Cadastre `GEMINI_API_KEY` como variável **Sensitive** nos ambientes **Production** e **Preview**.
-5. Opcionalmente, cadastre `GEMINI_MODEL` para substituir `gemini-3.8-flash`.
+5. Opcionalmente, cadastre `GEMINI_MODEL` para substituir `gemini-3.5-flash-lite`.
 6. Salve e faça um novo deployment, pois mudanças em variáveis não alteram deployments já concluídos. Consulte também a [documentação de variáveis da Vercel](https://vercel.com/docs/environment-variables/managing-environment-variables).
 
 Não coloque o valor real em `.env.example`, no GitHub, em documentação, no frontend ou em variáveis prefixadas com `VITE_`.
@@ -23,7 +23,7 @@ O comando `npm run dev` usa o compilador local e não precisa de chave. Para tes
 
 ```dotenv
 GEMINI_API_KEY=sua_chave_real
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 O padrão `.env.*` já está ignorado pelo Git. Nunca copie a chave real para `.env.example`.

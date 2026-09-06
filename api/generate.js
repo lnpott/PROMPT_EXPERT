@@ -4,7 +4,7 @@ import { getModelKnowledge } from './knowledge-base.js';
 import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
 
 const MAX_BRIEF_LENGTH = 6000;
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const PROVIDER_TIMEOUT_MS = 9000;
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
