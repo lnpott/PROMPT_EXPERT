@@ -75,7 +75,7 @@ Esses itens permanecem como evolução administrativa. A experiência principal 
 
 A aplicação está pronta para uso local sem configuração externa. Na Vercel, a única chave privada necessária para habilitar o aprimoramento por IA é `GEMINI_API_KEY`; sem ela, `/api/generate` responde pelo compilador local. As variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são opcionais para trocar a base pública de perfis. A auditoria consolidada de código e interface foi registrada e deverá ser confirmada no Preview antes do merge.
 
-O parecer e os riscos aceitos desta entrega estão em `AUDITORIA_FINAL.md`. Autenticação, histórico e administração permanecem fora do fluxo público até existir uma política de retenção; não bloqueiam a compilação e a cópia de prompts.
+O parecer e os riscos aceitos desta entrega estão em `AUDITORIA_FINAL.md`. O Preview confirmou os nove perfis, a geração aprimorada e o health check. Autenticação, histórico e administração permanecem fora do fluxo público até existir uma política de retenção; não bloqueiam a compilação e a cópia de prompts.
 
 ## Arquitetura planejada
 

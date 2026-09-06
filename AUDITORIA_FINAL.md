@@ -44,3 +44,11 @@ Data: 6 de setembro de 2026.
 ## Parecer
 
 A experiência principal está funcional sem credenciais: escolher um dos nove destinos, informar tipo e complexidade, compilar, revisar e copiar o prompt. A aplicação pode ser publicada como está; adicionar `GEMINI_API_KEY` habilita o aprimoramento por IA sem mudar o frontend.
+
+## Validação do Preview
+
+- Preview: `https://prompt-expert-git-functional-multimodel-lnpotts-projects.vercel.app`.
+- `/api/profiles`: nove perfis retornados.
+- `/api/generate`: prompt para GPT/Codex gerado pela Gemini, com `requestId` e 4.235 bytes de resposta.
+- `/api/health`: HTTP 200, base `Grok` e gerador `gemini`.
+- Observação: a primeira chamada de geração durante a propagação do deployment recebeu HTTP 502; a repetição imediata após o deployment ficar `Ready` respondeu HTTP 200. Não houve recorrência no teste final.
