@@ -62,6 +62,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Corpus remoto auditado com acesso administrativo e público: uma fonte e 12 regras existem, todas as regras estão `supplied_unverified` e inativas, a leitura anônima retorna zero registros e a escrita anônima é rejeitada.
 - Quatro lacunas prioritárias pesquisadas em documentação oficial: Codestral FIM e Qwen Hermes foram confirmados; a hierarquia do OpenAI Model Spec foi confirmada como conceitual; cache regional do Claude e cache do Kimi permanecem parcialmente ou não confirmados.
 - Fluxo sem credenciais validado por testes: os nove perfis compilam prompts completos localmente e a indisponibilidade do Supabase ou da Gemini não interrompe o produto.
+- Versão multi-modelo publicada na `main` e validada em produção: nove perfis, “Tarefas citadas” como padrão, ausência de complexidade e geração real pela Gemini.
 
 ### Não bloqueia a versão funcional
 
@@ -234,7 +235,7 @@ Para cada um dos dez passos:
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
 | Vercel | Positivo | A falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O deploy de produção `dpl_9i1NPXiYT1a4gftuea3ojDhcPWbR` terminou `Ready` em 6 de setembro, com build e as três funções concluídos. A proteção SSO foi desativada para o lançamento público. A URL `https://prompt-expert-blush.vercel.app` respondeu `/api/health` com `status: ok`, `knowledgeBase: Grok` e `geminiConfigured: true`; o `POST /api/generate` retornou `source: gemini` e um prompt de 3.155 caracteres. Não houve logs de erro no deployment. |
 
-O deploy de produção está saudável e acessível publicamente. A migration do corpus canônico já foi aplicada e as fontes receberam uma primeira validação documental sem ativação de regras; o próximo marco deve modelar no banco a proveniência e o histórico de revisão antes de qualquer promoção para produção.
+O deploy de produção `dpl_HDbabx1hprV7TRZrKssf676Mwq5i` está saudável, acessível publicamente e sincronizado com o commit `4fe3030` da `main`. A migration do corpus canônico já foi aplicada e as fontes receberam uma primeira validação documental sem ativação de regras; o próximo marco deve modelar no banco a proveniência e o histórico de revisão antes de qualquer promoção para produção.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
