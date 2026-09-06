@@ -118,7 +118,7 @@ Prompt estruturado para o modelo de destino
 | 5 | Cadastrar a chave Gemini secreta na Vercel. | Concluída em Preview e Production |
 | 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
 | 7 | Revisar e importar a base do notebook como conteúdo auditado. | Concluída: exportação deduplicada, corpus aplicado, fontes validadas e proveniência modelada |
-| 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
+| 8 | Criar uma área administrativa protegida para atualizar a base. | Adiada até haver operadores autenticados e política de retenção |
 | 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída e validada em produção com Gemini Flash 3.8 |
 | 10 | Executar validação de qualidade, segurança e publicação de produção. | Concluída para o deployment de produção atual |
 
@@ -167,7 +167,7 @@ Para cada um dos dez passos:
 | 7 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | 54 casos reproduzíveis | Ampliar fixtures quando os perfis mudarem. |
 | 8 | Adiado por desenho | Aprovada em 06/09/2026 | — | — | Sem contas ou histórico | Implementar apenas após política de retenção aprovada. |
 | 9 | Adiado por desenho | Aprovada em 06/09/2026 | — | — | Administração via migration e PR | Criar UI somente quando houver operadores autenticados. |
-| 10 | Concluído | Aprovada em 06/09/2026 | `4fe3030` + PR atual | [PR #5](https://github.com/lnpott/PROMPT_EXPERT/pull/5) + PR atual | Nove perfis em produção | Manter contratos e avaliação sincronizados. |
+| 10 | Concluído | Aprovada em 06/09/2026 | `4fe3030` + `32de2b7` | [PR #5](https://github.com/lnpott/PROMPT_EXPERT/pull/5) + [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Nove perfis em produção | Manter contratos e avaliação sincronizados. |
 
 ### Modelo de auditoria de cada passo
 
@@ -222,7 +222,7 @@ Para cada um dos dez passos:
 - Evidências: `fontes-primarias-validadas.md` registra URL, resultado e conclusão para cada fonte e separa confirmações de inferências ainda incertas.
 - Riscos remanescentes: faltam evidência específica estável para o cache do Kimi, detalhes exclusivos atribuídos ao Kimi K3 e ao Claude Opus 5, roteamento físico de cache no Vertex AI e cache do Grok.
 - Rollback: reverter o commit documental; nenhuma reversão remota é necessária porque banco e produção não foram modificados.
-- Estado final: implementação concluída e em revisão; o passo 3 permanece bloqueado até o merge.
+- Estado final: concluído após o merge do PR #4; o passo 3 foi liberado.
 
 #### Auditoria do passo 3 — 2026-09-06
 
@@ -255,7 +255,7 @@ Para cada um dos dez passos:
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
 | Vercel | Positivo | A falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O deploy de produção `dpl_9i1NPXiYT1a4gftuea3ojDhcPWbR` terminou `Ready` em 6 de setembro, com build e as três funções concluídos. A proteção SSO foi desativada para o lançamento público. A URL `https://prompt-expert-blush.vercel.app` respondeu `/api/health` com `status: ok`, `knowledgeBase: Grok` e `geminiConfigured: true`; o `POST /api/generate` retornou `source: gemini` e um prompt de 3.155 caracteres. Não houve logs de erro no deployment. |
 
-O deploy de produção `dpl_HDbabx1hprV7TRZrKssf676Mwq5i` está saudável, acessível publicamente e sincronizado com o commit `4fe3030` da `main`. A migration do corpus canônico já foi aplicada e as fontes receberam uma primeira validação documental sem ativação de regras; o próximo marco deve modelar no banco a proveniência e o histórico de revisão antes de qualquer promoção para produção.
+O deployment de produção atual está saudável, acessível publicamente e sincronizado com o commit `3a5c97a` da `main`. A migration do corpus canônico já foi aplicada e as fontes receberam uma primeira validação documental sem ativação de regras; o próximo marco deve modelar no banco a proveniência e o histórico de revisão antes de qualquer promoção para produção.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
