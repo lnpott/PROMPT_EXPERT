@@ -57,7 +57,6 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
-- Sincronização do `main` remoto no GitHub: a credencial HTTPS atual foi recusada com HTTP 403, embora a produção esteja publicada diretamente pela Vercel.
 
 ## Arquitetura planejada
 
@@ -89,9 +88,8 @@ Prompt estruturado para o modelo de destino
 
 O primeiro deploy integrado está funcional e público. O próximo marco é preservar a rastreabilidade do código e evoluir o conteúdo:
 
-1. Renovar a credencial de escrita do GitHub e enviar o `main` local já validado.
-2. Aplicar a migration do corpus canônico no Supabase e validar suas políticas de leitura.
-3. Definir a política para histórico de gerações e a autenticação administrativa.
+1. Aplicar a migration do corpus canônico no Supabase e validar suas políticas de leitura.
+2. Definir a política para histórico de gerações e a autenticação administrativa.
 
 ## Plano operacional em dez passos
 
@@ -100,7 +98,7 @@ O primeiro deploy integrado está funcional e público. O próximo marco é pres
 | 1 | Definir o produto, público e fluxo principal. | Concluída |
 | 2 | Criar e validar o MVP local de geração para Grok. | Concluída |
 | 3 | Versionar guia vivo, configuração Vercel e estrutura Supabase. | Concluída |
-| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Produção publicada e validada; `main` remoto ainda precisa ser sincronizado |
+| 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Concluída: `main` sincronizado e deployment de produção validado |
 | 5 | Cadastrar a chave Gemini secreta na Vercel. | Concluída em Preview e Production |
 | 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
 | 7 | Revisar e importar a base do notebook como conteúdo auditado. | Base recebida e versionada; migration preparada, pendente de aplicação administrativa e validação por fontes primárias |
@@ -117,12 +115,12 @@ O primeiro deploy integrado está funcional e público. O próximo marco é pres
 
 | Serviço | Resultado | Evidência e diagnóstico |
 | --- | --- | --- |
-| GitHub | Parcial | `gh auth status` confirma a sessão como `lnpott` e a leitura da API informa permissão administrativa sobre `lnpott/PROMPT_EXPERT`, mas o `git push origin main` e a atualização de referência pela API retornaram HTTP 403. A `main` remota permanece em `d0dec6e`, enquanto a cópia local validada está à frente. |
+| GitHub | Positivo | A credencial foi renovada via GitHub CLI, e `git push origin main` avançou a branch de `d0dec6e` para `e9f963e`. A Vercel clonou esse commit da `main` e concluiu o deployment de produção como `Ready`. |
 | Supabase | Positivo | Consultas HTTPS autenticadas com a chave pública retornaram HTTP 200, um perfil Grok ativo e cinco regras ativas. O teste confirmou acesso real de leitura sem usar `service_role`. |
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
 | Vercel | Positivo | A falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O deploy de produção `dpl_9i1NPXiYT1a4gftuea3ojDhcPWbR` terminou `Ready` em 6 de setembro, com build e as três funções concluídos. A proteção SSO foi desativada para o lançamento público. A URL `https://prompt-expert-blush.vercel.app` respondeu `/api/health` com `status: ok`, `knowledgeBase: Grok` e `geminiConfigured: true`; o `POST /api/generate` retornou `source: gemini` e um prompt de 3.155 caracteres. Não houve logs de erro no deployment. |
 
-O deploy de produção está saudável e acessível publicamente. A única divergência operacional é o GitHub: o `main` local contém a correção e o registro atualizados, mas o envio foi recusado por HTTP 403 tanto pelo Git HTTPS quanto pela API GitHub. Renovar a credencial de escrita antes de qualquer novo deploy disparado pelo Git evita que a integração volte a apontar para o commit antigo.
+O deploy de produção está saudável, acessível publicamente e sincronizado com a `main` do GitHub. A próxima alteração de conteúdo deve começar pela aplicação administrativa da migration do corpus canônico no Supabase; até isso acontecer, as regras importadas permanecem inativas e não alteram a saída do Grok.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
