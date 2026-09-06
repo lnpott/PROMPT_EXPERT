@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Transforme uma ideia em um prompt de programação pronto para usar." />
     <title>Prompt Expert</title>
-    <script type="module" crossorigin src="/assets/index-C1sJ8m54.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DrRRIlsh.css">
+    <script type="module" crossorigin src="/assets/index-ChB4BMdO.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DDeCq9cR.css">
   </head>
   <body>
     <main class="shell">
       <header class="topbar">
         <a class="brand" href="#top" aria-label="Prompt Expert, início">Prompt <span>Expert</span></a>
-        <p class="status"><i></i> gerador local</p>
+        <p class="status"><i></i> pronto para gerar</p>
       </header>
 
       <section class="intro" id="top" aria-labelledby="page-title">
         <p class="eyebrow">Do briefing ao código</p>
-        <h1 id="page-title">Descreva a ideia.<br /><em>Leve um prompt pronto.</em></h1>
-        <p class="lede">Transforme uma solicitação comum em uma instrução clara para o seu modelo de programação.</p>
+        <h1 id="page-title">Um briefing.<br /><em>Nove modelos prontos.</em></h1>
+        <p class="lede">Compile sua ideia em uma instrução clara, segura e adaptada ao modelo de programação escolhido.</p>
       </section>
 
       <section class="workspace" aria-label="Gerador de prompts">
@@ -27,22 +27,24 @@
           <span>Escreva como você falaria com alguém</span>
         </div>
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
-        <div class="controls">
+        <div class="controls controls-grid">
           <label class="model-picker" for="model">
             <span>Modelo de destino</span>
-            <select id="model">
-              <option value="Grok">Grok</option>
-            </select>
+            <select id="model" aria-describedby="model-description"><option value="grok">Grok</option></select>
           </label>
+          <label class="model-picker" for="task-type"><span>Tipo de tarefa</span><select id="task-type"><option value="application">Aplicação completa</option><option value="refactor">Refatoração</option><option value="debug">Correção de bug</option><option value="agent">Agente autônomo</option><option value="fim">Fill-in-the-Middle</option></select></label>
+          <label class="model-picker" for="complexity"><span>Complexidade</span><select id="complexity"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option></select></label>
           <button id="generate" type="button">Gerar prompt <span aria-hidden="true">↗</span></button>
         </div>
+        <p class="model-description" id="model-description">Carregando perfis especializados…</p>
       </section>
 
       <section class="result is-empty" id="result" aria-live="polite" aria-labelledby="result-title">
         <div class="result-head">
           <div>
             <p class="eyebrow">Prompt estruturado</p>
-            <h2 id="result-title">Pronto para o Grok</h2>
+            <h2 id="result-title">Prompt pronto</h2>
+            <p class="source" id="source"></p>
           </div>
           <button id="copy" class="copy" type="button" disabled>Copiar</button>
         </div>

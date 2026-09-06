@@ -2,7 +2,7 @@
 
 ## Propósito
 
-O PROMPT_EXPERT transforma uma descrição comum de um produto ou funcionalidade em um prompt de programação claro, completo e adaptado ao modelo de destino. O primeiro modelo suportado é o Grok.
+O PROMPT_EXPERT transforma uma descrição comum de um produto ou funcionalidade em um prompt de programação claro, completo e adaptado ao modelo de destino. A versão funcional suporta nove perfis: Grok, GPT/Codex, Claude, Gemini, DeepSeek, Qwen3-Coder, Codestral, Kimi e Llama.
 
 O produto não é um arquivo de prompt estático. A pessoa descreve o que quer construir em linguagem natural; o sistema aplica um perfil de modelo e regras de qualidade para produzir um prompt pronto para copiar.
 
@@ -38,6 +38,11 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Auditoria completa do notebook normalizada em `notebook-auditoria-fontes.md`, com inventário das 19 fontes, achados críticos e lacunas de pesquisa, sem duplicar o bloco repetido na exportação recebida.
 - Migration do corpus canônico aplicada no Supabase remoto, com uma fonte e 12 regras editoriais preservadas como não verificadas e inativas.
 - Registro de validação das 19 fontes criado em `fontes-primarias-validadas.md`, com URLs oficiais, resultados por fonte e decisões editoriais.
+- Compilador local determinístico para nove perfis, disponível sem chave de API, conta ou banco.
+- Seleção de tipo de tarefa e complexidade, com instruções especializadas por fornecedor.
+- Endpoint `/api/profiles` para descoberta segura dos perfis públicos.
+- Geração aprimorada opcional pela Gemini, com fallback automático para o compilador local.
+- Proteções iniciais de produção: limite por cliente, timeout, retry com `Retry-After`, identificador de requisição e logs sanitizados.
 
 ### Validado
 
@@ -56,12 +61,21 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Exportação textual do notebook recebida diretamente em 6 de setembro de 2026; a proveniência do conteúdo foi confirmada, mas as referências numéricas ainda não possuem URLs correspondentes e não autorizam ativação automática das regras.
 - Corpus remoto auditado com acesso administrativo e público: uma fonte e 12 regras existem, todas as regras estão `supplied_unverified` e inativas, a leitura anônima retorna zero registros e a escrita anônima é rejeitada.
 - Quatro lacunas prioritárias pesquisadas em documentação oficial: Codestral FIM e Qwen Hermes foram confirmados; a hierarquia do OpenAI Model Spec foi confirmada como conceitual; cache regional do Claude e cache do Kimi permanecem parcialmente ou não confirmados.
+- Fluxo sem credenciais validado por testes: os nove perfis compilam prompts completos localmente e a indisponibilidade do Supabase ou da Gemini não interrompe o produto.
 
-### Ainda não implementado
+### Não bloqueia a versão funcional
 
 - Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
+
+Esses itens permanecem como evolução administrativa. A experiência principal de compilar e copiar prompts não depende deles nem de chaves externas.
+
+## Estado funcional consolidado
+
+A aplicação está pronta para uso local sem configuração externa. Na Vercel, a única chave privada necessária para habilitar o aprimoramento por IA é `GEMINI_API_KEY`; sem ela, `/api/generate` responde pelo compilador local. As variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são opcionais para trocar a base pública de perfis. A auditoria consolidada de código e interface foi registrada e deverá ser confirmada no Preview antes do merge.
+
+O parecer e os riscos aceitos desta entrega estão em `AUDITORIA_FINAL.md`. Autenticação, histórico e administração permanecem fora do fluxo público até existir uma política de retenção; não bloqueiam a compilação e a cópia de prompts.
 
 ## Arquitetura planejada
 

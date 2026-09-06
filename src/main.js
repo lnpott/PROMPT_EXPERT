@@ -1,15 +1,47 @@
 import './style.css';
+import { compilePrompt, findProfile, publicProfiles } from '../api/model-profiles.js';
 
 const brief = document.querySelector('#brief');
 const model = document.querySelector('#model');
+const taskType = document.querySelector('#task-type');
+const complexity = document.querySelector('#complexity');
+const modelDescription = document.querySelector('#model-description');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
 const output = document.querySelector('#output');
 const copy = document.querySelector('#copy');
+const source = document.querySelector('#source');
+let profiles = publicProfiles();
 
-function createLocalPrompt(request, targetModel) {
-  return `Atue como um desenvolvedor front-end sênior. Crie uma solução completa para o pedido abaixo.\n\nPEDIDO DO USUÁRIO\n${request}\n\nCONTEXTO DE IMPLEMENTAÇÃO\n- Modelo de destino: ${targetModel}\n- Use React com componentes pequenos e bem nomeados.\n- Entregue código executável, responsivo e acessível.\n- Evite dependências desnecessárias.\n- Preserve uma hierarquia visual clara e estados de foco visíveis.\n\nFORMATO DA RESPOSTA\n1. Resuma a proposta em até 3 linhas.\n2. Mostre a estrutura de arquivos necessária.\n3. Entregue o código completo de cada arquivo, em blocos separados.\n4. Explique como executar localmente.\n5. Inclua uma pequena lista de critérios para validar se o resultado atende ao pedido.\n\nNão invente requisitos que contradigam o pedido. Se faltar uma informação realmente essencial, declare a melhor suposição antes do código.`;
+function updateProfileDescription() {
+  const profile = profiles.find((item) => item.slug === model.value);
+  modelDescription.textContent = profile ? `${profile.provider} · ${profile.guidance}` : 'Perfil especializado selecionado.';
 }
+
+async function loadProfiles() {
+  const renderProfiles = () => {
+    model.replaceChildren(...profiles.map((profile) => {
+      const option = document.createElement('option');
+      option.value = profile.slug;
+      option.textContent = profile.displayName;
+      return option;
+    }));
+    updateProfileDescription();
+  };
+
+  renderProfiles();
+  try {
+    const response = await fetch('/api/profiles');
+    if (!response.ok) throw new Error();
+    ({ profiles } = await response.json());
+    renderProfiles();
+  } catch {
+    modelDescription.textContent = `${profiles.find((item) => item.slug === model.value)?.provider || 'Local'} · compilador local disponível`;
+  }
+}
+
+model.addEventListener('change', updateProfileDescription);
+loadProfiles();
 
 generate.addEventListener('click', async () => {
   const request = brief.value.trim();
@@ -29,16 +61,19 @@ generate.addEventListener('click', async () => {
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brief: request, model: model.value }),
+      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value, complexity: complexity.value }),
     });
     const payload = await response.json().catch(() => ({}));
 
-    if (response.ok) {
-      output.textContent = payload.prompt;
-    } else if (payload.code === 'GEMINI_NOT_CONFIGURED' || response.status === 404) {
-      output.textContent = createLocalPrompt(request, model.value);
-    } else {
+    if (response.status === 404) {
+      const profile = findProfile(model.value);
+      output.textContent = compilePrompt({ brief: request, profile, taskType: taskType.value, complexity: complexity.value });
+      source.textContent = 'Compilador local · sem chave necessária';
+    } else if (!response.ok) {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
+    } else {
+      output.textContent = payload.prompt;
+      source.textContent = payload.source === 'gemini' ? 'Aprimorado por Gemini' : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
     }
 
     result.classList.remove('is-empty');
@@ -57,7 +92,12 @@ generate.addEventListener('click', async () => {
 });
 
 copy.addEventListener('click', async () => {
-  await navigator.clipboard.writeText(output.textContent);
-  copy.textContent = 'Copiado';
-  window.setTimeout(() => { copy.textContent = 'Copiar'; }, 1800);
+  try {
+    await navigator.clipboard.writeText(output.textContent);
+    copy.textContent = 'Copiado';
+    window.setTimeout(() => { copy.textContent = 'Copiar'; }, 1800);
+  } catch {
+    copy.textContent = 'Selecione e copie';
+    window.getSelection()?.selectAllChildren(output);
+  }
 });
