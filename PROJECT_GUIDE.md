@@ -39,7 +39,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 
 - Build de produção executado com sucesso.
 - Fluxo principal testado no navegador: informar uma ideia, gerar o prompt e habilitar a cópia.
-- Repositório local sincronizado com a branch principal do GitHub após o push confirmado.
+- Sincronização inicial do repositório com a branch principal do GitHub concluída em marco anterior; a divergência atual de escrita está registrada abaixo.
 - Verificação de segurança do Supabase concluída sem alertas para a estrutura inicial.
 - Perfil Grok e cinco regras iniciais carregados e consultados com sucesso pela função de backend.
 - Fluxo local testado após a integração: o modo-base continua disponível fora da Vercel ou enquanto a chave Gemini não existe.
@@ -115,7 +115,7 @@ O primeiro deploy integrado está funcional e público. O próximo marco é pres
 
 | Serviço | Resultado | Evidência e diagnóstico |
 | --- | --- | --- |
-| GitHub | Positivo | `gh auth status` confirmou autenticação como `lnpott`; a API retornou permissão administrativa sobre `lnpott/PROMPT_EXPERT`, e a branch `main` remota apontava para `d0dec6e`. O clone local inicialmente não tinha remoto configurado, portanto isso foi corrigido antes do envio desta atualização. |
+| GitHub | Parcial | `gh auth status` confirma a sessão como `lnpott` e a leitura da API informa permissão administrativa sobre `lnpott/PROMPT_EXPERT`, mas o `git push origin main` e a atualização de referência pela API retornaram HTTP 403. A `main` remota permanece em `d0dec6e`, enquanto a cópia local validada está à frente. |
 | Supabase | Positivo | Consultas HTTPS autenticadas com a chave pública retornaram HTTP 200, um perfil Grok ativo e cinco regras ativas. O teste confirmou acesso real de leitura sem usar `service_role`. |
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
 | Vercel | Positivo | A falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O deploy de produção `dpl_9i1NPXiYT1a4gftuea3ojDhcPWbR` terminou `Ready` em 6 de setembro, com build e as três funções concluídos. A proteção SSO foi desativada para o lançamento público. A URL `https://prompt-expert-blush.vercel.app` respondeu `/api/health` com `status: ok`, `knowledgeBase: Grok` e `geminiConfigured: true`; o `POST /api/generate` retornou `source: gemini` e um prompt de 3.155 caracteres. Não houve logs de erro no deployment. |
