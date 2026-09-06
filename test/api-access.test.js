@@ -4,6 +4,7 @@ import { afterEach, test } from 'node:test';
 import generate from '../api/generate.js';
 import health from '../api/health.js';
 import profiles from '../api/profiles.js';
+import provenance from '../api/provenance.js';
 import { compilePrompt, findProfile, modelProfiles } from '../api/model-profiles.js';
 
 const originalFetch = globalThis.fetch;
@@ -156,6 +157,31 @@ test('GET /api/profiles exposes nine safe public profiles', () => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.profiles.length, 9);
   assert.equal(response.body.profiles.some((profile) => 'rules' in profile), false);
+});
+
+test('GET /api/provenance exposes reviewed sources and summary', async () => {
+  globalThis.fetch = async () => jsonResponse([
+    { slug: 'source-a', validation_status: 'confirmed' },
+    { slug: 'source-b', validation_status: 'partial' },
+    { slug: 'source-c', validation_status: 'confirmed' },
+  ]);
+  const response = createResponse();
+
+  await provenance({ method: 'GET' }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.count, 3);
+  assert.deepEqual(response.body.summary, { confirmed: 2, partial: 1 });
+});
+
+test('GET /api/provenance fails closed when the base is unavailable', async () => {
+  globalThis.fetch = async () => jsonResponse({}, { ok: false, status: 503 });
+  const response = createResponse();
+
+  await provenance({ method: 'GET' }, response);
+
+  assert.equal(response.statusCode, 503);
+  assert.deepEqual(response.body, { status: 'unavailable', error: 'A proveniência não está disponível agora.' });
 });
 
 test('local compiler adapts instructions to task and provider', () => {

@@ -43,6 +43,8 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Endpoint `/api/profiles` para descoberta segura dos perfis públicos.
 - Geração aprimorada opcional pela Gemini, com fallback automático para o compilador local.
 - Proteções iniciais de produção: limite por cliente, timeout, retry com `Retry-After`, identificador de requisição e logs sanitizados.
+- Modelo de proveniência aplicado no Supabase com 24 fontes, 23 snapshots, 19 vínculos regra-evidência e 12 eventos iniciais de revisão.
+- Endpoint público `/api/provenance` no domínio Vercel para consultar fontes confirmadas ou parciais sem expor a trilha administrativa.
 
 ### Validado
 
@@ -63,6 +65,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Quatro lacunas prioritárias pesquisadas em documentação oficial: Codestral FIM e Qwen Hermes foram confirmados; a hierarquia do OpenAI Model Spec foi confirmada como conceitual; cache regional do Claude e cache do Kimi permanecem parcialmente ou não confirmados.
 - Fluxo sem credenciais validado por testes: os nove perfis compilam prompts completos localmente e a indisponibilidade do Supabase ou da Gemini não interrompe o produto.
 - Versão multi-modelo publicada na `main` e validada em produção: nove perfis, “Tarefas citadas” como padrão, ausência de complexidade e geração real pela Gemini.
+- Proteção editorial validada no Supabase: tentativa de ativar regra não verificada foi rejeitada, escrita pública segue bloqueada e tabelas administrativas de evidência e revisão não são expostas.
 
 ### Não bloqueia a versão funcional
 
@@ -127,7 +130,7 @@ Os próximos passos transformam o MVP publicado em um produto auditável, proteg
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Aplicar o corpus canônico no Supabase. | Criar `knowledge_sources` e `canonical_prompt_rules`; importar uma fonte e 12 regras; manter `supplied_unverified` e `is_active = false`; impedir leitura pública desses registros. | Conferir contagens com acesso administrativo, testar RLS com chave pública, revisar grants, registrar rollback e executar a suíte local. | `feat(database): apply canonical knowledge corpus` | `Aplica corpus canônico inativo no Supabase` | Concluído |
 | 2 | Validar as fontes primárias. | Registrar URL direta, fornecedor, título, data de consulta, escopo e regras relacionadas; classificar cada afirmação como confirmada, refutada, obsoleta ou incerta. | Verificar domínio oficial e suporte direto de cada fonte; priorizar Codestral FIM, OpenAI Model Spec, cache do Claude no Vertex AI e tool calling do Qwen3-Coder. | `docs(knowledge): validate primary prompt sources` | `Valida fontes primárias da base de conhecimento` | Em revisão |
-| 3 | Modelar proveniência e revisão editorial. | Criar migration para fontes, versões, revisões, responsáveis e relação fonte-regra; preservar histórico; bloquear escrita pública. | Revisar constraints, integridade referencial, RLS, grants, aplicação e rollback; adicionar testes estáticos da migration. | `feat(knowledge): add source verification model` | `Adiciona proveniência verificável às regras` | Pendente |
+| 3 | Modelar proveniência e revisão editorial. | Criar migration para fontes, versões, revisões, responsáveis e relação fonte-regra; preservar histórico; bloquear escrita pública. | Revisar constraints, integridade referencial, RLS, grants, aplicação e rollback; adicionar testes estáticos da migration. | `feat(knowledge): add source verification model` | `Adiciona proveniência verificável às regras` | Em revisão |
 | 4 | Ativar somente regras verificadas e aplicáveis ao Grok. | Promover apenas regras sustentadas por fontes oficiais e explicitamente compatíveis com Grok; registrar justificativa por ativação. | Comparar prompts antes e depois, verificar contradições, custo e aderência e confirmar que regras de outros fornecedores não foram aplicadas indevidamente. | `feat(knowledge): activate verified grok rules` | `Ativa regras verificadas do perfil Grok` | Pendente |
 | 5 | Proteger o endpoint de geração. | Adicionar rate limit, quota, timeouts, limite de resposta, backoff com jitter e tratamento de `Retry-After`. | Testar abuso, concorrência, timeout, falha de fornecedor, proteção de custo e ausência de segredos; ampliar `test/api-access.test.js`. | `feat(api): add generation safeguards` | `Protege geração contra abuso e indisponibilidade` | Pendente |
 | 6 | Adicionar observabilidade segura. | Gerar identificador de requisição e métricas de status, duração, fornecedor, retry e fallback sem armazenar briefing, prompt ou credenciais. | Inspecionar logs reais na Vercel, testar sanitização e documentar acesso e retenção dos registros. | `feat(observability): add sanitized request telemetry` | `Adiciona telemetria segura às funções` | Pendente |
@@ -157,7 +160,7 @@ Para cada um dos dez passos:
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Passo 2 iniciado após o merge. |
 | 2 | Em revisão | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Aguardar revisão e merge; depois modelar a proveniência. |
-| 3 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 2. |
+| 3 | Em revisão | Aprovada em 06/09/2026 | A registrar | A registrar | Supabase remoto aplicado | Validar endpoint no Preview e concluir revisão. |
 | 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
 | 5 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 4. |
 | 6 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 5. |
@@ -220,6 +223,23 @@ Para cada um dos dez passos:
 - Riscos remanescentes: faltam evidência específica estável para o cache do Kimi, detalhes exclusivos atribuídos ao Kimi K3 e ao Claude Opus 5, roteamento físico de cache no Vertex AI e cache do Grok.
 - Rollback: reverter o commit documental; nenhuma reversão remota é necessária porque banco e produção não foram modificados.
 - Estado final: implementação concluída e em revisão; o passo 3 permanece bloqueado até o merge.
+
+#### Auditoria do passo 3 — 2026-09-06
+
+- Branch: `provenance-model`.
+- Commit: a registrar após o commit auditado.
+- Pull request: a registrar após a abertura do PR.
+- Escopo revisado: migration de fontes, snapshots, vínculos de evidência, eventos de revisão, políticas RLS, bloqueio de ativação e endpoint Vercel `/api/provenance`.
+- Testes executados: consultas SQL administrativas, leitura REST anônima, tentativa administrativa de ativar regra não verificada, testes automatizados, build e verificação de diff.
+- Resultado dos testes: 24 fontes, 23 snapshots externos, 19 vínculos de evidência, 12 eventos de revisão e zero regras canônicas ativas.
+- Segurança, segredos e dados pessoais: nenhuma credencial ou dado pessoal persistido; fontes e snapshots confirmados/parciais têm leitura pública, enquanto vínculos e eventos administrativos não possuem grants públicos.
+- Banco e RLS: RLS habilitado nas quatro tabelas; leitura pública limitada por status; escrita anônima bloqueada; trigger rejeitou ativação sem status verificado e evidência confirmada.
+- Custos e limites: conteúdo textual e links públicos; sem chamadas adicionais ao gerador Gemini.
+- Preview ou produção: migration aplicada no Supabase `pqprtkdvzyhqlidlcpxg`; endpoint será publicado pela Vercel neste PR.
+- Evidências: 18 fontes confirmadas, quatro parciais, uma secundária e uma não localizada; acesso anônimo retornou 22 fontes/snapshots e HTTP 401 para `rule_evidence` e `rule_review_events`.
+- Riscos remanescentes: snapshots web não possuem hash porque as páginas são mutáveis; promoções continuam exigindo revisão individual e migration explícita.
+- Rollback: remover trigger e função, depois `rule_review_events`, `rule_evidence`, `source_snapshots` e `evidence_sources`; remover a versão da migration apenas em reaplicação controlada.
+- Estado final: implementação concluída e em revisão, sem ativar regras canônicas.
 
 ## Evidências de verificação
 

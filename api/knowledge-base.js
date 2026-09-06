@@ -28,3 +28,13 @@ export async function getModelKnowledge(slug) {
 }
 
 export const getGrokKnowledge = () => getModelKnowledge('grok');
+
+export async function getReviewedEvidenceSources() {
+  const evidenceResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/evidence_sources?select=slug,title,organization,domain,authority_class,source_kind,canonical_url,repository_path,validation_status,reviewed_on,review_notes&order=organization.asc,title.asc`,
+    { headers },
+  );
+
+  if (!evidenceResponse.ok) throw new Error('Não foi possível carregar a proveniência das regras.');
+  return evidenceResponse.json();
+}
