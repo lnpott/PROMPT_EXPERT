@@ -16,3 +16,7 @@ As instruções exatas para cadastrar e testar chaves estão em [CONFIGURACAO_AP
 A proveniência pública das regras revisadas fica disponível em `GET /api/provenance` no mesmo domínio Vercel da aplicação.
 
 O estado, a arquitetura, as validações e o plano operacional do projeto estão em [PROJECT_GUIDE.md](PROJECT_GUIDE.md).
+
+## Avaliação de qualidade
+
+Execute `npm run evaluate` para validar de forma determinística os nove perfis contra os briefings versionados. O comando imprime um relatório JSON e falha se algum requisito estrutural regredir.

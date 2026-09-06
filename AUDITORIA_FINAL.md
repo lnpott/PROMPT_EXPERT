@@ -74,3 +74,14 @@ A API da Vercel confirmou que `GEMINI_API_KEY` e `GEMINI_MODEL` existem em Previ
 - Zero regras canônicas ativas.
 - Trigger de banco impede ativação sem `evidence_status = 'verified'` e ao menos uma evidência de suporte confirmada.
 - A URL pública `/api/provenance` respondeu HTTP 200 no Preview Vercel com as 22 fontes confirmadas ou parciais; tabelas administrativas permanecem inacessíveis a visitantes.
+
+## Encerramento do núcleo funcional
+
+A avaliação reproduzível cobre 54 combinações de nove perfis e seis briefings versionados, um para cada tipo de tarefa público. Cada caso exige preservação literal do briefing, tipo de tarefa correto, testes, segurança e critérios de aceite, além de rejeitar complexidade e pedidos de cadeia de pensamento. O comando `npm run evaluate` retorna código diferente de zero se qualquer contrato regredir.
+
+A telemetria de geração foi consolidada em um único evento sanitizado por requisição concluída. Ela contém somente `requestId`, modelo, origem, status, duração, número de tentativas e classe de erro; não contém briefing, prompt ou chave. O contrato de tipos de tarefa agora é uma allowlist compartilhada e requisições limitadas retornam `Retry-After: 60`.
+
+A revisão editorial não promoveu nenhuma regra canônica para Grok: as regras importadas verificadas tratam de outros fornecedores ou não têm evidência específica suficiente. As 12 regras continuam inativas. Autenticação e área administrativa seguem deliberadamente adiadas porque o produto público não possui contas nem persiste gerações; adicioná-las agora criaria coleta e superfície de ataque desnecessárias.
+
+
+O Preview do PR #8 ficou `READY`. Os endpoints de saúde, perfis e proveniência responderam com sucesso. O smoke test de geração observou fallback local transitório e, na repetição, geração Gemini bem-sucedida; esse resultado confirma que a degradação do fornecedor não interrompe o fluxo público.

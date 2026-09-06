@@ -117,7 +117,7 @@ Prompt estruturado para o modelo de destino
 | 4 | Importar `PROMPT_EXPERT` do GitHub na Vercel e validar o primeiro deploy. | Concluída: `main` sincronizado e deployment de produção validado |
 | 5 | Cadastrar a chave Gemini secreta na Vercel. | Concluída em Preview e Production |
 | 6 | Conectar a interface à função segura, aos perfis e às regras do Supabase. | Concluída e validada localmente |
-| 7 | Revisar e importar a base do notebook como conteúdo auditado. | Exportação recebida, deduplicada e versionada; migration preparada, pendente de aplicação administrativa e validação por fontes primárias |
+| 7 | Revisar e importar a base do notebook como conteúdo auditado. | Concluída: exportação deduplicada, corpus aplicado, fontes validadas e proveniência modelada |
 | 8 | Criar uma área administrativa protegida para atualizar a base. | Pendente |
 | 9 | Escolher a API de IA e implementar a geração segura no backend. | Concluída e validada em produção com Gemini Flash 3.8 |
 | 10 | Executar validação de qualidade, segurança e publicação de produção. | Concluída para o deployment de produção atual |
@@ -129,15 +129,15 @@ Os próximos passos transformam o MVP publicado em um produto auditável, proteg
 | Passo | Entrega | Critérios de aceite | Auditoria obrigatória | Commit sugerido | PR sugerido | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Aplicar o corpus canônico no Supabase. | Criar `knowledge_sources` e `canonical_prompt_rules`; importar uma fonte e 12 regras; manter `supplied_unverified` e `is_active = false`; impedir leitura pública desses registros. | Conferir contagens com acesso administrativo, testar RLS com chave pública, revisar grants, registrar rollback e executar a suíte local. | `feat(database): apply canonical knowledge corpus` | `Aplica corpus canônico inativo no Supabase` | Concluído |
-| 2 | Validar as fontes primárias. | Registrar URL direta, fornecedor, título, data de consulta, escopo e regras relacionadas; classificar cada afirmação como confirmada, refutada, obsoleta ou incerta. | Verificar domínio oficial e suporte direto de cada fonte; priorizar Codestral FIM, OpenAI Model Spec, cache do Claude no Vertex AI e tool calling do Qwen3-Coder. | `docs(knowledge): validate primary prompt sources` | `Valida fontes primárias da base de conhecimento` | Em revisão |
-| 3 | Modelar proveniência e revisão editorial. | Criar migration para fontes, versões, revisões, responsáveis e relação fonte-regra; preservar histórico; bloquear escrita pública. | Revisar constraints, integridade referencial, RLS, grants, aplicação e rollback; adicionar testes estáticos da migration. | `feat(knowledge): add source verification model` | `Adiciona proveniência verificável às regras` | Em revisão |
-| 4 | Ativar somente regras verificadas e aplicáveis ao Grok. | Promover apenas regras sustentadas por fontes oficiais e explicitamente compatíveis com Grok; registrar justificativa por ativação. | Comparar prompts antes e depois, verificar contradições, custo e aderência e confirmar que regras de outros fornecedores não foram aplicadas indevidamente. | `feat(knowledge): activate verified grok rules` | `Ativa regras verificadas do perfil Grok` | Pendente |
-| 5 | Proteger o endpoint de geração. | Adicionar rate limit, quota, timeouts, limite de resposta, backoff com jitter e tratamento de `Retry-After`. | Testar abuso, concorrência, timeout, falha de fornecedor, proteção de custo e ausência de segredos; ampliar `test/api-access.test.js`. | `feat(api): add generation safeguards` | `Protege geração contra abuso e indisponibilidade` | Pendente |
-| 6 | Adicionar observabilidade segura. | Gerar identificador de requisição e métricas de status, duração, fornecedor, retry e fallback sem armazenar briefing, prompt ou credenciais. | Inspecionar logs reais na Vercel, testar sanitização e documentar acesso e retenção dos registros. | `feat(observability): add sanitized request telemetry` | `Adiciona telemetria segura às funções` | Pendente |
-| 7 | Criar avaliação reproduzível da qualidade dos prompts. | Versionar briefings sem dados pessoais e medir aderência, clareza, completude, suposições, requisitos e critérios de aceite. | Comparar fallback local e geração integrada, medir regressões e custos e registrar modelo, perfil e regras utilizados. | `test(quality): add prompt evaluation suite` | `Adiciona avaliação reproduzível de prompts` | Pendente |
-| 8 | Implementar autenticação e política de retenção. | Definir retenção antes de persistir histórico; implementar Supabase Auth, papéis mínimos, exclusão e RLS por proprietário. | Testar isolamento entre usuários, expiração, privilégios, exclusão e ausência de dados pessoais indevidos. | `feat(auth): add access and retention foundations` | `Implementa autenticação e política de retenção` | Pendente |
-| 9 | Criar área administrativa auditável. | Permitir revisar, verificar, ativar, desativar e substituir regras; exigir fonte e justificativa; manter trilha de auditoria; nunca expor `service_role`. | Testar autorização positiva e negativa, CSRF, XSS, elevação de privilégio, rollback e integridade do histórico. | `feat(admin): add audited knowledge management` | `Cria administração protegida da base` | Pendente |
-| 10 | Generalizar o compilador para múltiplos modelos. | Remover o acoplamento fixo ao Grok; separar gerador, destino, provedor, endpoint e capacidades; adicionar um segundo perfil somente após validação. | Executar testes unitários, contratos, integração, qualidade e smoke test em Preview; auditar isolamento, segurança, custo e compatibilidade. | `feat(compiler): support capability-based model profiles` | `Generaliza o compilador para múltiplos modelos` | Pendente |
+| 2 | Validar as fontes primárias. | Registrar URL direta, fornecedor, título, data de consulta, escopo e regras relacionadas; classificar cada afirmação como confirmada, refutada, obsoleta ou incerta. | Verificar domínio oficial e suporte direto de cada fonte; priorizar Codestral FIM, OpenAI Model Spec, cache do Claude no Vertex AI e tool calling do Qwen3-Coder. | `docs(knowledge): validate primary prompt sources` | `Valida fontes primárias da base de conhecimento` | Concluído |
+| 3 | Modelar proveniência e revisão editorial. | Criar migration para fontes, versões, revisões, responsáveis e relação fonte-regra; preservar histórico; bloquear escrita pública. | Revisar constraints, integridade referencial, RLS, grants, aplicação e rollback; adicionar testes estáticos da migration. | `feat(knowledge): add source verification model` | `Adiciona proveniência verificável às regras` | Concluído |
+| 4 | Ativar somente regras verificadas e aplicáveis ao Grok. | Promover apenas regras sustentadas por fontes oficiais e explicitamente compatíveis com Grok; registrar justificativa por ativação. | Comparar prompts antes e depois, verificar contradições, custo e aderência e confirmar que regras de outros fornecedores não foram aplicadas indevidamente. | `feat(knowledge): activate verified grok rules` | `Ativa regras verificadas do perfil Grok` | Concluído sem promoção: nenhuma regra importada é simultaneamente verificada e específica do Grok |
+| 5 | Proteger o endpoint de geração. | Adicionar rate limit, quota, timeouts, limite de resposta, backoff com jitter e tratamento de `Retry-After`. | Testar abuso, concorrência, timeout, falha de fornecedor, proteção de custo e ausência de segredos; ampliar `test/api-access.test.js`. | `feat(api): add generation safeguards` | `Protege geração contra abuso e indisponibilidade` | Concluído |
+| 6 | Adicionar observabilidade segura. | Gerar identificador de requisição e métricas de status, duração, fornecedor, retry e fallback sem armazenar briefing, prompt ou credenciais. | Inspecionar logs reais na Vercel, testar sanitização e documentar acesso e retenção dos registros. | `feat(observability): add sanitized request telemetry` | `Adiciona telemetria segura às funções` | Concluído |
+| 7 | Criar avaliação reproduzível da qualidade dos prompts. | Versionar briefings sem dados pessoais e medir aderência, clareza, completude, suposições, requisitos e critérios de aceite. | Comparar fallback local e geração integrada, medir regressões e custos e registrar modelo, perfil e regras utilizados. | `test(quality): add prompt evaluation suite` | `Adiciona avaliação reproduzível de prompts` | Concluído |
+| 8 | Implementar autenticação e política de retenção. | Definir retenção antes de persistir histórico; implementar Supabase Auth, papéis mínimos, exclusão e RLS por proprietário. | Testar isolamento entre usuários, expiração, privilégios, exclusão e ausência de dados pessoais indevidos. | `feat(auth): add access and retention foundations` | `Implementa autenticação e política de retenção` | Adiado: não há conta nem persistência de briefings no produto público |
+| 9 | Criar área administrativa auditável. | Permitir revisar, verificar, ativar, desativar e substituir regras; exigir fonte e justificativa; manter trilha de auditoria; nunca expor `service_role`. | Testar autorização positiva e negativa, CSRF, XSS, elevação de privilégio, rollback e integridade do histórico. | `feat(admin): add audited knowledge management` | `Cria administração protegida da base` | Adiado: revisão permanece por migrations administrativas auditáveis |
+| 10 | Generalizar o compilador para múltiplos modelos. | Remover o acoplamento fixo ao Grok; separar gerador, destino, provedor, endpoint e capacidades; adicionar um segundo perfil somente após validação. | Executar testes unitários, contratos, integração, qualidade e smoke test em Preview; auditar isolamento, segurança, custo e compatibilidade. | `feat(compiler): support capability-based model profiles` | `Generaliza o compilador para múltiplos modelos` | Concluído |
 
 ### Protocolo obrigatório por passo
 
@@ -158,16 +158,16 @@ Para cada um dos dez passos:
 
 | Passo | Estado | Auditoria | Commit | Pull request | Preview/Produção | Próxima ação |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Passo 2 iniciado após o merge. |
-| 2 | Em revisão | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Aguardar revisão e merge; depois modelar a proveniência. |
-| 3 | Em revisão | Aprovada em 06/09/2026 | `8fbc6d1` | [PR #7](https://github.com/lnpott/PROMPT_EXPERT/pull/7) | Supabase e Preview validados | Aguardar revisão e merge. |
-| 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
-| 5 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 4. |
-| 6 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 5. |
-| 7 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 6. |
-| 8 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 7. |
-| 9 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 8. |
-| 10 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 9. |
+| 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Encerrado. |
+| 2 | Concluído | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Encerrado. |
+| 3 | Concluído | Aprovada em 06/09/2026 | `8fbc6d1` | [PR #7](https://github.com/lnpott/PROMPT_EXPERT/pull/7) | Supabase e produção validados | Encerrado. |
+| 4 | Concluído sem promoção | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Zero regras canônicas ativas | Reavaliar somente com evidência oficial específica do Grok. |
+| 5 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Testes de limite, fallback e retry | Migrar limite para storage distribuído se o tráfego exigir. |
+| 6 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | Telemetria sanitizada testada | Definir retenção de logs na operação Vercel. |
+| 7 | Concluído | Aprovada em 06/09/2026 | `32de2b7` | [PR #8](https://github.com/lnpott/PROMPT_EXPERT/pull/8) | 54 casos reproduzíveis | Ampliar fixtures quando os perfis mudarem. |
+| 8 | Adiado por desenho | Aprovada em 06/09/2026 | — | — | Sem contas ou histórico | Implementar apenas após política de retenção aprovada. |
+| 9 | Adiado por desenho | Aprovada em 06/09/2026 | — | — | Administração via migration e PR | Criar UI somente quando houver operadores autenticados. |
+| 10 | Concluído | Aprovada em 06/09/2026 | `4fe3030` + PR atual | [PR #5](https://github.com/lnpott/PROMPT_EXPERT/pull/5) + PR atual | Nove perfis em produção | Manter contratos e avaliação sincronizados. |
 
 ### Modelo de auditoria de cada passo
 
@@ -239,7 +239,7 @@ Para cada um dos dez passos:
 - Evidências: 18 fontes confirmadas, quatro parciais, uma secundária e uma não localizada; acesso anônimo retornou 22 fontes/snapshots e HTTP 401 para `rule_evidence` e `rule_review_events`.
 - Riscos remanescentes: snapshots web não possuem hash porque as páginas são mutáveis; promoções continuam exigindo revisão individual e migration explícita.
 - Rollback: remover trigger e função, depois `rule_review_events`, `rule_evidence`, `source_snapshots` e `evidence_sources`; remover a versão da migration apenas em reaplicação controlada.
-- Estado final: implementação concluída e em revisão, sem ativar regras canônicas.
+- Estado final: concluído após o merge do PR #7, sem ativar regras canônicas.
 
 ## Evidências de verificação
 
@@ -281,3 +281,19 @@ O repositório contém `.env.example` com as variáveis da função de backend. 
 
 Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ainda não implementado** e **Próximo marco**. Nenhuma etapa deve ser marcada como validada sem evidência de teste.
 
+
+
+#### Auditoria de encerramento dos passos 4–7 e 10 — 2026-09-06
+
+- Branch: `complete-core`.
+- Commit: `32de2b7` (`test(quality): complete core prompt evaluation`).
+- Pull request: [#8 — Conclui núcleo com avaliação reproduzível e telemetria segura](https://github.com/lnpott/PROMPT_EXPERT/pull/8).
+- Escopo revisado: aplicabilidade das regras ao Grok, proteção do endpoint, telemetria sanitizada, avaliação reproduzível e contratos multi-modelo.
+- Decisão editorial do passo 4: nenhuma das 12 regras importadas é simultaneamente verificada por evidência confirmada **e** específica do Grok; por isso, zero regras foram promovidas. Não ativar conteúdo inadequado é o resultado seguro e esperado.
+- Proteção e observabilidade: tipos de tarefa passam por allowlist; o limite retorna `Retry-After`; cada resultado registra somente identificador, modelo, origem, status, duração, tentativas e classe de erro.
+- Avaliação: `npm run evaluate` executa 54 combinações (nove perfis × seis tipos de tarefa) e falha o processo em qualquer regressão de contrato.
+- Segurança e dados pessoais: briefing, prompt e credenciais não aparecem na telemetria; o produto não cria contas nem persiste gerações.
+- Passos 8 e 9: adiados deliberadamente. Autenticação sem funcionalidade dependente e administração web sem operadores definidos ampliariam superfície de ataque e coleta de dados sem benefício ao fluxo público.
+- Rollback: reverter o commit desta entrega; não há mudança de banco nesta etapa e as regras canônicas continuam inativas.
+- Preview: deployment Vercel `READY`; health, nove perfis e proveniência responderam HTTP 200. Em três gerações reais, a primeira e a segunda usaram o fallback local seguro por indisponibilidade/timeout transitório e a terceira respondeu pela Gemini, comprovando os dois caminhos sem interromper o produto.
+- Estado final: núcleo funcional concluído; expansões futuras dependem de requisito de negócio, evidência nova ou escala operacional.
