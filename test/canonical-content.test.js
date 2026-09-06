@@ -9,6 +9,7 @@ const auditPath = new URL('../notebook-auditoria-fontes.md', import.meta.url);
 const guidePath = new URL('../PROJECT_GUIDE.md', import.meta.url);
 const validatedSourcesPath = new URL('../fontes-primarias-validadas.md', import.meta.url);
 const apiConfigurationPath = new URL('../CONFIGURACAO_APIS.md', import.meta.url);
+const provenanceMigrationPath = new URL('../supabase/migrations/20260906210000_model_rule_provenance.sql', import.meta.url);
 
 test('canonical source is traceable and its import keeps supplied rules inactive', () => {
   const source = readFileSync(sourcePath);
@@ -103,4 +104,20 @@ test('API configuration identifies the only required private integration', () =>
   assert.match(configuration, /source: "gemini"/);
   assert.match(configuration, /Não use `service_role`/);
   assert.doesNotMatch(configuration, /AIza[0-9A-Za-z_-]{20,}/);
+});
+
+test('provenance migration models sources, evidence, reviews and activation guard', () => {
+  const migration = readFileSync(provenanceMigrationPath, 'utf8');
+  const sourceRows = migration.match(/^  \('[a-z0-9-]+',/gm) || [];
+
+  assert.equal(sourceRows.length, 24);
+  assert.match(migration, /create table public\.evidence_sources/);
+  assert.match(migration, /create table public\.source_snapshots/);
+  assert.match(migration, /create table public\.rule_evidence/);
+  assert.match(migration, /create table public\.rule_review_events/);
+  assert.match(migration, /enable row level security/g);
+  assert.match(migration, /enforce_verified_rule_activation/);
+  assert.match(migration, /Canonical rules require verified status and confirmed supporting evidence/);
+  assert.match(migration, /grant select on table public\.evidence_sources, public\.source_snapshots/);
+  assert.doesNotMatch(migration, /grant (insert|update|delete).*anon/i);
 });
