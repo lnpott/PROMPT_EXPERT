@@ -141,7 +141,7 @@ Para cada um dos dez passos:
 | Passo | Estado | Auditoria | Commit | Pull request | Preview/Produção | Próxima ação |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Concluído | Aprovada em 06/09/2026 | `e79a1fa` | [PR #3](https://github.com/lnpott/PROMPT_EXPERT/pull/3) | Supabase remoto validado | Passo 2 iniciado após o merge. |
-| 2 | Em revisão | Aprovada em 06/09/2026 | A registrar | A registrar | Documentação oficial consultada | Aguardar revisão e merge; depois modelar a proveniência. |
+| 2 | Em revisão | Aprovada em 06/09/2026 | `d6e2701` | [PR #4](https://github.com/lnpott/PROMPT_EXPERT/pull/4) | Documentação oficial consultada | Aguardar revisão e merge; depois modelar a proveniência. |
 | 3 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 2. |
 | 4 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 3. |
 | 5 | Pendente | — | — | — | — | Iniciar após a auditoria e o PR do passo 4. |
@@ -192,8 +192,8 @@ Para cada um dos dez passos:
 #### Auditoria do passo 2 — 2026-09-06
 
 - Branch: `step-2-primary-sources`.
-- Commit: a registrar após a criação do commit auditado.
-- Pull request: a registrar após a abertura do PR.
+- Commit: `d6e2701` (`docs(knowledge): validate primary prompt sources`).
+- Pull request: [#4 — Valida fontes primárias da base de conhecimento](https://github.com/lnpott/PROMPT_EXPERT/pull/4).
 - Escopo revisado: inventário das 19 fontes e pesquisa das quatro lacunas prioritárias somente em domínios oficiais de fabricantes ou plataformas institucionais.
 - Testes executados: consulta HTTP das URLs, inspeção do conteúdo aplicável, `npm test`, `npm run build` e `git diff --check`.
 - Resultado dos testes: 13 fontes confirmadas, quatro parciais, uma secundária e uma página específica não localizada; Codestral FIM, Model Spec e Hermes obtiveram evidência oficial direta.
