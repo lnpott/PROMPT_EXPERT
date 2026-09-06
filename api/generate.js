@@ -9,6 +9,7 @@ const PROVIDER_TIMEOUT_MS = 9000;
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
 const requestsByClient = new Map();
+let rateLimitOperations = 0;
 
 function sendJson(response, status, body) {
   return response.status(status).json(body);
@@ -47,6 +48,14 @@ async function requestGemini(url, options) {
 function clientIsLimited(request) {
   const client = String(request.headers?.['x-forwarded-for'] || request.socket?.remoteAddress || 'local').split(',')[0].trim();
   const now = Date.now();
+  rateLimitOperations += 1;
+  if (rateLimitOperations % 100 === 0) {
+    for (const [knownClient, timestamps] of requestsByClient) {
+      const active = timestamps.filter((timestamp) => now - timestamp < RATE_WINDOW_MS);
+      if (active.length) requestsByClient.set(knownClient, active);
+      else requestsByClient.delete(knownClient);
+    }
+  }
   const recent = (requestsByClient.get(client) || []).filter((timestamp) => now - timestamp < RATE_WINDOW_MS);
   recent.push(now);
   requestsByClient.set(client, recent);
@@ -106,13 +115,17 @@ export default async function handler(request, response) {
     );
 
     if (!geminiResponse.ok) {
-      return sendJson(response, 502, { error: 'O provedor de IA não conseguiu gerar o prompt. Tente novamente.' });
+      console.error(JSON.stringify({ event: 'generation_fallback', requestId, model, providerStatus: geminiResponse.status }));
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
     }
 
     const payload = await geminiResponse.json();
     const prompt = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim();
 
-    if (!prompt) return sendJson(response, 502, { error: 'O provedor de IA retornou uma resposta vazia.' });
+    if (!prompt) {
+      console.error(JSON.stringify({ event: 'generation_fallback', requestId, model, error: 'EmptyProviderResponse' }));
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
+    }
     return sendJson(response, 200, { prompt, source: 'gemini', requestId });
   } catch (error) {
     console.error(JSON.stringify({ event: 'generation_fallback', requestId, model, error: error?.name || 'Error' }));

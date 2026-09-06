@@ -96,6 +96,35 @@ test('POST /api/generate accesses the knowledge base and Gemini with a valid req
   assert.match(JSON.parse(calls[2].options.body).contents[0].parts[0].text, /Inclua critérios de aceite/);
 });
 
+test('POST /api/generate falls back locally when Gemini rejects the request', async () => {
+  process.env.GEMINI_API_KEY = 'invalid-test-key';
+  globalThis.fetch = async (url) => url.includes('model_profiles')
+    ? jsonResponse([])
+    : jsonResponse({ error: 'invalid key' }, { ok: false, status: 400 });
+  const response = createResponse();
+
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'provider-rejection' }, body: { brief: 'Crie um formulário seguro.', model: 'gemini' } }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.source, 'local-fallback');
+  assert.match(response.body.prompt, /Prompt para Gemini/);
+  assert.equal(JSON.stringify(response.body).includes('invalid-test-key'), false);
+});
+
+test('POST /api/generate falls back locally on an empty Gemini response', async () => {
+  process.env.GEMINI_API_KEY = 'test-only-key';
+  globalThis.fetch = async (url) => url.includes('model_profiles')
+    ? jsonResponse([])
+    : jsonResponse({ candidates: [] });
+  const response = createResponse();
+
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'empty-provider' }, body: { brief: 'Refatore o módulo.', model: 'openai', taskType: 'refactor' } }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.source, 'local-fallback');
+  assert.match(response.body.prompt, /Refatoração de código existente/);
+});
+
 test('GET /api/health confirms access to the knowledge base', async () => {
   delete process.env.GEMINI_API_KEY;
   globalThis.fetch = async (url) => url.includes('model_profiles')

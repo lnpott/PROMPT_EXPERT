@@ -23,7 +23,7 @@ Data: 6 de setembro de 2026.
 | Observabilidade | Aprovado com limitação | `X-Request-Id` e evento sanitizado de fallback; o briefing e o prompt não são registrados. |
 | Conteúdo canônico | Aprovado | As 12 regras importadas permanecem não verificadas e inativas. |
 | Dependências | Aprovado | `npm audit --omit=dev` não encontrou vulnerabilidades conhecidas. |
-| Testes e build | Aprovado | 14 testes e build Vite concluídos. |
+| Testes e build | Aprovado | 17 testes e build Vite concluídos. |
 
 ## Riscos aceitos antes da configuração externa
 
@@ -52,3 +52,7 @@ A experiência principal está funcional sem credenciais: escolher um dos nove d
 - `/api/generate`: prompt para GPT/Codex gerado pela Gemini, com `requestId` e 4.235 bytes de resposta.
 - `/api/health`: HTTP 200, base `Grok` e gerador `gemini`.
 - Observação: a primeira chamada de geração durante a propagação do deployment recebeu HTTP 502; a repetição imediata após o deployment ficar `Ready` respondeu HTTP 200. Não houve recorrência no teste final.
+
+## Verificação das credenciais configuradas
+
+A API da Vercel confirmou que `GEMINI_API_KEY` e `GEMINI_MODEL` existem em Preview e Production; somente nomes, escopos e tipo foram consultados. A chave está classificada como `sensitive` e seu valor não foi lido. A geração real no Preview confirmou que a Gemini está acessível. As instruções operacionais estão em `CONFIGURACAO_APIS.md`.

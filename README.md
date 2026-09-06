@@ -11,4 +11,6 @@ npm run dev
 
 O compilador local funciona sem conta, banco ou chave de API. Em uma publicação Vercel, configure `GEMINI_API_KEY` para aprimorar os prompts com IA. `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são opcionais e permitem usar outra base de perfis ativos.
 
+As instruções exatas para cadastrar e testar chaves estão em [CONFIGURACAO_APIS.md](CONFIGURACAO_APIS.md). Não são necessárias chaves dos nove modelos de destino; somente a Gemini é chamada pelo backend atual.
+
 O estado, a arquitetura, as validações e o plano operacional do projeto estão em [PROJECT_GUIDE.md](PROJECT_GUIDE.md).
