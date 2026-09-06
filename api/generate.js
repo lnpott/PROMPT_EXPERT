@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { getModelKnowledge } from './knowledge-base.js';
-import { compilePrompt, findProfile } from './model-profiles.js';
+import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
 
 const MAX_BRIEF_LENGTH = 6000;
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
@@ -38,11 +38,18 @@ Não responda com código. Entregue somente o prompt final, estruturado em Markd
 async function requestGemini(url, options) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const response = await fetch(url, { ...options, signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS) });
-    if (response.ok || ![429, 503].includes(response.status) || attempt === 2) return response;
+    if (response.ok || ![429, 503].includes(response.status) || attempt === 2) return { response, attempts: attempt + 1 };
     const retryAfter = Number(response.headers?.get?.('retry-after')) * 1000;
     const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 300 * (attempt + 1) + Math.floor(Math.random() * 150);
     await new Promise((resolve) => setTimeout(resolve, Math.min(delay, 2000)));
   }
+}
+
+function logRequest({ requestId, model, source, status, startedAt, attempts = 0, error }) {
+  console.info(JSON.stringify({
+    event: 'generation_complete', requestId, model, source, status,
+    durationMs: Date.now() - startedAt, attempts, ...(error ? { error } : {}),
+  }));
 }
 
 function clientIsLimited(request) {
@@ -63,6 +70,7 @@ function clientIsLimited(request) {
 }
 
 export default async function handler(request, response) {
+  const startedAt = Date.now();
   const requestId = randomUUID();
   response.setHeader('X-Request-Id', requestId);
 
@@ -76,14 +84,21 @@ export default async function handler(request, response) {
   const profile = findProfile(model);
   const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'cited';
 
-  if (!profile || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
+  if (!profile || !Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
     return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.' });
   }
 
-  if (clientIsLimited(request)) return sendJson(response, 429, { error: 'Limite temporário atingido. Aguarde um minuto.' });
+  if (clientIsLimited(request)) {
+    response.setHeader('Retry-After', '60');
+    logRequest({ requestId, model, source: 'rejected', status: 429, startedAt });
+    return sendJson(response, 429, { error: 'Limite temporário atingido. Aguarde um minuto.' });
+  }
 
   const localPrompt = compilePrompt({ brief, profile, taskType });
-  if (!process.env.GEMINI_API_KEY) return sendJson(response, 200, { prompt: localPrompt, source: 'local', requestId });
+  if (!process.env.GEMINI_API_KEY) {
+    logRequest({ requestId, model, source: 'local', status: 200, startedAt });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', requestId });
+  }
 
   try {
     const remoteKnowledge = await getModelKnowledge(profile.slug);
@@ -98,7 +113,7 @@ export default async function handler(request, response) {
     };
     const rules = remoteKnowledge?.rules || profile.rules.map((rule, priority) => ({ rule_text: rule, priority }));
     const geminiModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-    const geminiResponse = await requestGemini(
+    const { response: geminiResponse, attempts } = await requestGemini(
       `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
       {
         method: 'POST',
@@ -114,7 +129,7 @@ export default async function handler(request, response) {
     );
 
     if (!geminiResponse.ok) {
-      console.error(JSON.stringify({ event: 'generation_fallback', requestId, model, providerStatus: geminiResponse.status }));
+      logRequest({ requestId, model, source: 'local-fallback', status: 200, startedAt, attempts, error: `ProviderHTTP${geminiResponse.status}` });
       return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
     }
 
@@ -122,12 +137,13 @@ export default async function handler(request, response) {
     const prompt = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim();
 
     if (!prompt) {
-      console.error(JSON.stringify({ event: 'generation_fallback', requestId, model, error: 'EmptyProviderResponse' }));
+      logRequest({ requestId, model, source: 'local-fallback', status: 200, startedAt, attempts, error: 'EmptyProviderResponse' });
       return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
     }
+    logRequest({ requestId, model, source: 'gemini', status: 200, startedAt, attempts });
     return sendJson(response, 200, { prompt, source: 'gemini', requestId });
   } catch (error) {
-    console.error(JSON.stringify({ event: 'generation_fallback', requestId, model, error: error?.name || 'Error' }));
+    logRequest({ requestId, model, source: 'local-fallback', status: 200, startedAt, error: error?.name || 'Error' });
     return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', requestId });
   }
 }

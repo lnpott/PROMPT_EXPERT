@@ -18,6 +18,15 @@ export const modelProfiles = [
   { slug: 'llama', displayName: 'Llama', provider: 'Meta', guidance: 'Use os papéis e o template oficiais do runtime escolhido, sem copiar tokens de outra versão do modelo.', format: 'Markdown estruturado', rules: commonRules },
 ];
 
+export const taskTypes = Object.freeze({
+  cited: 'Executar exatamente as tarefas citadas no briefing',
+  application: 'Aplicação ou funcionalidade completa',
+  refactor: 'Refatoração de código existente',
+  debug: 'Diagnóstico e correção de problema',
+  agent: 'Tarefa para agente autônomo de programação',
+  fim: 'Completude de código Fill-in-the-Middle',
+});
+
 export function findProfile(slug) {
   return modelProfiles.find((profile) => profile.slug === slug);
 }
@@ -28,14 +37,6 @@ export function publicProfiles() {
 
 export function compilePrompt({ brief, profile, taskType = 'cited' }) {
   const rules = profile.rules.map((rule) => `- ${rule}`).join('\n');
-  const taskLabels = {
-    cited: 'Executar exatamente as tarefas citadas no briefing',
-    application: 'Aplicação ou funcionalidade completa',
-    refactor: 'Refatoração de código existente',
-    debug: 'Diagnóstico e correção de problema',
-    agent: 'Tarefa para agente autônomo de programação',
-    fim: 'Completude de código Fill-in-the-Middle',
-  };
   return `# Prompt para ${profile.displayName}
 
 ## Papel
@@ -46,7 +47,7 @@ ${brief}
 
 ## Contexto de execução
 - Modelo de destino: ${profile.displayName} (${profile.provider})
-- Tipo de tarefa: ${taskLabels[taskType] || taskLabels.cited}
+- Tipo de tarefa: ${taskTypes[taskType] || taskTypes.cited}
 - Formato preferencial: ${profile.format}
 - Orientação específica: ${profile.guidance}
 

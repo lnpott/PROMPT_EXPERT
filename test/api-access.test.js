@@ -60,6 +60,15 @@ test('POST /api/generate rejects invalid input before accessing services', async
   assert.match(response.body.error, /6\.000 caracteres/);
 });
 
+test('POST /api/generate rejects task types outside the public contract', async () => {
+  delete process.env.GEMINI_API_KEY;
+  const response = createResponse();
+
+  await generate({ method: 'POST', body: { brief: 'Crie uma página.', model: 'grok', taskType: 'complex' } }, response);
+
+  assert.equal(response.statusCode, 400);
+});
+
 test('POST /api/generate works locally without API keys', async () => {
   delete process.env.GEMINI_API_KEY;
   const response = createResponse();
@@ -110,6 +119,49 @@ test('POST /api/generate falls back locally when Gemini rejects the request', as
   assert.equal(response.body.source, 'local-fallback');
   assert.match(response.body.prompt, /Prompt para Gemini/);
   assert.equal(JSON.stringify(response.body).includes('invalid-test-key'), false);
+});
+
+test('generation telemetry is sanitized and request identifiers match the response header', async () => {
+  process.env.GEMINI_API_KEY = 'test-only-key';
+  const privateBrief = 'brief-que-nao-pode-ir-aos-logs';
+  globalThis.fetch = async (url) => url.includes('model_profiles')
+    ? jsonResponse([])
+    : jsonResponse({}, { ok: false, status: 400 });
+  const entries = [];
+  const originalInfo = console.info;
+  console.info = (entry) => entries.push(entry);
+  const response = createResponse();
+
+  try {
+    await generate({ method: 'POST', headers: { 'x-forwarded-for': 'telemetry-test' }, body: { brief: privateBrief, model: 'grok' } }, response);
+  } finally {
+    console.info = originalInfo;
+  }
+
+  assert.equal(response.headers['X-Request-Id'], response.body.requestId);
+  assert.equal(entries.length, 1);
+  assert.doesNotMatch(entries[0], new RegExp(privateBrief));
+  assert.doesNotMatch(entries[0], /test-only-key/);
+  assert.match(entries[0], /"durationMs":\d+/);
+  assert.match(entries[0], /"attempts":1/);
+});
+
+test('POST /api/generate rate limits a client and provides Retry-After', async () => {
+  delete process.env.GEMINI_API_KEY;
+  const originalInfo = console.info;
+  console.info = () => {};
+  let response;
+  try {
+    for (let requestNumber = 0; requestNumber < 21; requestNumber += 1) {
+      response = createResponse();
+      await generate({ method: 'POST', headers: { 'x-forwarded-for': 'rate-limit-test' }, body: { brief: 'Crie uma página.', model: 'grok' } }, response);
+    }
+  } finally {
+    console.info = originalInfo;
+  }
+
+  assert.equal(response.statusCode, 429);
+  assert.equal(response.headers['Retry-After'], '60');
 });
 
 test('POST /api/generate falls back locally on an empty Gemini response', async () => {
