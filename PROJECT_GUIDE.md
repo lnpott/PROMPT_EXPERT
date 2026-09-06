@@ -201,7 +201,7 @@ Para cada um dos dez passos:
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
 | Vercel | Positivo | A falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O deploy de produção `dpl_9i1NPXiYT1a4gftuea3ojDhcPWbR` terminou `Ready` em 6 de setembro, com build e as três funções concluídos. A proteção SSO foi desativada para o lançamento público. A URL `https://prompt-expert-blush.vercel.app` respondeu `/api/health` com `status: ok`, `knowledgeBase: Grok` e `geminiConfigured: true`; o `POST /api/generate` retornou `source: gemini` e um prompt de 3.155 caracteres. Não houve logs de erro no deployment. |
 
-O deploy de produção está saudável, acessível publicamente e sincronizado com a `main` do GitHub. A próxima alteração de conteúdo deve começar pela aplicação administrativa da migration do corpus canônico no Supabase; até isso acontecer, as regras importadas permanecem inativas e não alteram a saída do Grok.
+O deploy de produção está saudável e acessível publicamente. A migration do corpus canônico já foi aplicada no Supabase sem ativar suas regras; a próxima alteração de conteúdo deve validar as referências em fontes primárias antes de promover qualquer regra para produção.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
