@@ -53,7 +53,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Histórico de gerações e avaliação de qualidade dos prompts.
 - Área administrativa para alimentar a base a partir do notebook.
 - Autenticação de usuários.
-- Deploy da branch principal, autenticação da CLI e liberação controlada do acesso à aplicação publicada na Vercel.
+- Deploy da branch principal e definição da política de acesso da aplicação publicada na Vercel.
 
 ## Arquitetura planejada
 
@@ -117,9 +117,9 @@ O código e a base foram preparados. O próximo marco é fazer a integração en
 | GitHub | Positivo | `gh auth status` confirmou autenticação como `lnpott`; a API retornou permissão administrativa sobre `lnpott/PROMPT_EXPERT`, e a branch `main` remota apontava para `d0dec6e`. O clone local inicialmente não tinha remoto configurado, portanto isso foi corrigido antes do envio desta atualização. |
 | Supabase | Positivo | Consultas HTTPS autenticadas com a chave pública retornaram HTTP 200, um perfil Grok ativo e cinco regras ativas. O teste confirmou acesso real de leitura sem usar `service_role`. |
 | Gemini | Positivo | A consulta autenticada a `models/gemini-3.8-flash` retornou HTTP 200 e confirmou suporte a `generateContent`. Nenhuma chave foi exibida ou persistida. |
-| Vercel | Parcial | O erro de build foi corrigido: o Preview `CPS8dVxvmyzNBzNt4ynRGE1E7r3D` terminou com `Deployment has completed`. A causa removida era o diretório `node_modules` versionado com binários de outra plataforma. O acesso público continua bloqueado: `/` e `/api/health` retornam HTTP 302 para o login da Vercel, e `/api/generate` retorna HTTP 401 `Protected deployment`. |
+| Vercel | Parcial | A auditoria de 6 de setembro confirmou, pelos logs, que a falha de produção em `d0dec6e` era `vite: Permission denied` (saída 126), causada por `node_modules` versionado com binários de outra plataforma. O Preview corrigido em `673c854` terminou como `Ready` e o build concluiu. A CLI está autenticada como `lnpott`; `GEMINI_API_KEY` e `GEMINI_MODEL` existem como variáveis protegidas em Preview e Production. A API do projeto confirma `ssoProtection: all_except_custom_domains`; como não há domínio personalizado, toda URL `*.vercel.app` exige login. Por isso, `/` e `/api/health` retornam HTTP 302 para o login da Vercel, e `/api/generate` retorna HTTP 401 `Protected deployment`. |
 
-O deploy de Preview agora está saudável, mas a validação funcional externa ainda é negativa porque o deployment exige autenticação da Vercel. É necessário desativar a proteção para o ambiente que deve ser público ou fornecer uma credencial de bypass; depois, repetir os testes de `/`, `/api/health` e `/api/generate`. A CLI deste ambiente permanece sem sessão/token da Vercel, embora o estado do deploy possa ser confirmado pela integração do GitHub.
+O deploy de Preview agora está saudável, mas a validação funcional externa ainda é negativa porque o deployment exige autenticação da Vercel. Se o lançamento for público, será necessário desativar a proteção do ambiente de produção; se for restrito, será necessário definir um método de acesso de validação para pessoas autorizadas. Depois, repetir os testes de `/`, `/api/health` e `/api/generate` na produção publicada. A promoção depende de enviar o `main` corrigido ao GitHub.
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
