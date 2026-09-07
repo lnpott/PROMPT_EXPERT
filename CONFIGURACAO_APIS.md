@@ -55,6 +55,25 @@ SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
 
 Não use `service_role` na Vercel para o fluxo público de geração. A aplicação precisa apenas de leitura sujeita às políticas RLS.
 
+### Supabase Auth no frontend
+
+A interface de conta usa o cliente oficial `@supabase/supabase-js` e requer duas variáveis públicas no build Vite:
+
+```dotenv
+VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
+```
+
+Esses valores identificam o projeto e são apropriados para o navegador; autorização real continua dependendo do Supabase Auth, de grants mínimos e de RLS. Configure-os nos ambientes desejados da Vercel sem copiar valores reais para o repositório. As variáveis backend `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` continuam separadas porque as funções em `/api` não recebem automaticamente valores `VITE_*` em runtime.
+
+Nunca use prefixo `VITE_` em `GEMINI_API_KEY`, `service_role`, futura chave-mestra ou qualquer outro segredo: variáveis `VITE_*` são incorporadas ao bundle público. A aplicação não cria armazenamento próprio para senha ou token; persistência e renovação da sessão ficam a cargo do mecanismo padrão do SDK Supabase.
+
+Sem as duas variáveis públicas, os formulários de conta informam que Auth não está configurado, mas o compilador local e o restante do modo visitante continuam disponíveis.
+
+### Recuperação de conta nesta etapa
+
+“Esqueci minha senha” solicita ao Supabase Auth o envio do link e usa uma URL de retorno identificável. O listener preserva o evento `PASSWORD_RECOVERY` como estado distinto de login normal. Ainda não há cofre nem credenciais para apagar: a barreira server-side e o reset destrutivo obrigatório serão implementados somente no Passo 16. Não trate uma sessão de recovery como alteração voluntária de senha ao evoluir esse fluxo.
+
 ## Como confirmar a Gemini
 
 Health check:

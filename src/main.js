@@ -1,6 +1,9 @@
 import './style.css';
 import { compilePrompt, findProfile, publicProfiles } from '../api/model-profiles.js';
 import { publicCompilerModels } from '../api/compiler-models.js';
+import { createAuthController } from './auth/session.js';
+import { initializeAuthUI } from './auth/ui.js';
+import { createSupabaseBrowserClient } from './lib/supabase.js';
 
 const brief = document.querySelector('#brief');
 const model = document.querySelector('#model');
@@ -15,6 +18,23 @@ const copy = document.querySelector('#copy');
 const source = document.querySelector('#source');
 let profiles = publicProfiles();
 let compilers = publicCompilerModels();
+
+initializeAuthUI(createAuthController(createSupabaseBrowserClient()), {
+  accountStatus: document.querySelector('#account-status'),
+  signedOut: document.querySelector('#signed-out'),
+  signedIn: document.querySelector('#signed-in'),
+  userEmail: document.querySelector('#user-email'),
+  providersLocked: document.querySelector('#providers-locked'),
+  providersPlaceholder: document.querySelector('#providers-placeholder'),
+  feedback: document.querySelector('#auth-feedback'),
+  authForm: document.querySelector('#auth-form'),
+  email: document.querySelector('#auth-email'),
+  password: document.querySelector('#auth-password'),
+  signUp: document.querySelector('#sign-up'),
+  signOut: document.querySelector('#sign-out'),
+  recovery: document.querySelector('#recover-account'),
+  actionButtons: document.querySelectorAll('#auth-form button'),
+});
 
 function updateProfileDescription() {
   const profile = profiles.find((item) => item.slug === model.value);
