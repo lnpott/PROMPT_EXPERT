@@ -52,6 +52,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Proteções iniciais de produção: limite por cliente, timeout, retry com `Retry-After`, identificador de requisição e logs sanitizados.
 - Modelo de proveniência aplicado no Supabase com 24 fontes, 23 snapshots, 19 vínculos regra-evidência e 12 eventos iniciais de revisão.
 - Endpoint público `/api/provenance` no domínio Vercel para consultar fontes confirmadas ou parciais sem expor a trilha administrativa.
+- Fundação de conta com Supabase Auth por email e senha, restauração/observação de sessão e área protegida apenas visual para “APIs e provedores”, sem cofre ou credenciais BYOK.
 
 ### Validado
 
@@ -73,6 +74,7 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Fluxo sem credenciais validado por testes: os nove perfis compilam prompts completos localmente e a indisponibilidade do Supabase ou da Gemini não interrompe o produto.
 - Versão multi-modelo publicada na `main` e validada em produção: nove perfis, “Tarefas citadas” como padrão, ausência de complexidade e geração real pela Gemini.
 - Proteção editorial validada no Supabase: tentativa de ativar regra não verificada foi rejeitada, escrita pública segue bloqueada e tabelas administrativas de evidência e revisão não são expostas.
+- Estados anônimo e autenticado da fundação de Auth validados com cliente Supabase simulado; o modo visitante e o compilador local permanecem disponíveis sem configuração Auth.
 
 ### Não bloqueia a versão funcional atual
 
@@ -498,7 +500,7 @@ Cada passo segue o protocolo obrigatório já estabelecido: branch exclusiva, im
 | Passo | Entrega | Critérios de aceite | Commit sugerido | Estado |
 | --- | --- | --- | --- | --- |
 | 11 | Auditoria pré-BYOK e contrato de segurança. | Mapear código atual, endpoints, dependências, RLS, variáveis e riscos; documentar desenho antes de alterar produção. | `docs(security): define byok vault architecture` | Concluído: contrato documentado, sem alteração remota |
-| 12 | Fundação de Supabase Auth. | Cadastro, confirmação de e-mail, login, logout, sessão e rotas protegidas; modo local sem conta preservado. | `feat(auth): add user account foundation` | Planejado |
+| 12 | Fundação de Supabase Auth. | Cadastro, confirmação de e-mail, login, logout, sessão e rotas protegidas; modo local sem conta preservado. | `feat(auth): add user account foundation` | Concluído: sessão e UI de conta; BYOK permanece ausente |
 | 13 | Schema do catálogo e cofre com RLS. | Criar `api_providers` e `user_api_credentials`; migrations reversíveis; isolamento por usuário provado com testes. | `feat(database): add byok credential vault schema` | Planejado |
 | 14 | Criptografia de aplicação. | Implementar AES-256-GCM + HKDF, versionamento, testes de round-trip/tamper e zero plaintext em persistência/logs. | `feat(security): encrypt user api credentials` | Planejado |
 | 15 | Gestão de credenciais na interface. | Tela APIs/provedores, links oficiais, salvar/substituir/testar/excluir e exibição mascarada. | `feat(settings): add provider credential manager` | Planejado |
@@ -609,6 +611,19 @@ Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperaç
 - **Testes:** `npm test` aprovou 28/28 testes; `npm run evaluate` aprovou 54/54 casos; `npm run build` concluiu com seis módulos transformados; `git diff --check` não encontrou erros. A busca por padrões de possíveis segredos no repositório e no diff não encontrou padrão de segredo real; referências textuais a `service_role` são proibições/documentação/teste, não credenciais.
 - **Rollback:** reverter o commit documental deste passo; não há schema, configuração remota ou deployment a desfazer.
 - **Próxima ação:** Passo 12 em branch própria, alterando somente a fundação de Supabase Auth e preservando o modo local; os passos 13–20 permanecem planejados e não implementados.
+
+#### Auditoria do passo 12 — 2026-09-07
+
+- **Branch:** `step-12-auth-foundation`, criada a partir da `main` atualizada no merge `ac655d1` do PR #11, depois de confirmar o documento e o registro do Passo 11.
+- **Arquivos alterados:** `package.json`, `package-lock.json`, `.env.example`, `CONFIGURACAO_APIS.md`, `index.html`, `src/main.js`, `src/style.css` e `PROJECT_GUIDE.md`; criados `src/lib/supabase.js`, `src/auth/session.js`, `src/auth/ui.js` e `test/auth-foundation.test.js`.
+- **Arquitetura criada:** cliente oficial `@supabase/supabase-js` configurado somente por variáveis públicas Vite; controller independente para signup, login, logout, restauração, eventos de sessão e solicitação de recovery; renderização/ações de conta isoladas do fluxo principal. Email e feedback usam `textContent`; nenhuma senha ou sessão é persistida ou registrada por código próprio.
+- **Guest mode:** abrir a aplicação, selecionar destino/tipo/motor, escrever briefing e usar o compilador determinístico continua possível sem login e mesmo sem configuração pública do Supabase. Apenas o placeholder “APIs e provedores” muda visualmente conforme a sessão.
+- **Variáveis públicas:** adicionadas apenas `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` vazias ao exemplo. As variáveis backend existentes continuam separadas; nenhum segredo server-side recebeu prefixo `VITE_`.
+- **Recuperação:** o pedido de email usa a API oficial e URL de retorno identificável; `PASSWORD_RECOVERY` é preservado como evento distinto. Não há troca de senha, cofre ou delete nesta etapa. O Passo 16 ainda deverá bloquear o cofre server-side e executar reset destrutivo antes de reabilitar BYOK.
+- **Testes:** `npm test` aprovou 35/35 testes, inclusive sete cenários novos de Auth; `npm run evaluate` aprovou 54/54 casos; `npm run build` concluiu; `git diff --check` foi aprovado. A busca segura no diff não encontrou padrão de segredo real.
+- **Limitações e riscos:** signup/login reais dependem de configurar as duas variáveis públicas e as opções de email/redirect do projeto Supabase; esta entrega usa proteção visual, não autorização de dados. Persistência padrão do SDK permanece exposta ao risco de XSS do navegador; CSP/hardening seguem para o Passo 19. Recovery destrutivo server-side permanece obrigatório no Passo 16.
+- **Rollback:** reverter o commit do Passo 12 e remover as duas variáveis públicas do ambiente de build, se tiverem sido configuradas. Não há migration, tabela, credencial BYOK nem alteração de `/api/generate` a desfazer.
+- **Próxima ação:** Passo 13 em branch própria para schema do catálogo/cofre e RLS com testes de isolamento. Os Passos 14–20 permanecem não implementados.
 
 
 

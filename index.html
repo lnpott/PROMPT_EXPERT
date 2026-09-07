@@ -10,7 +10,11 @@
     <main class="shell">
       <header class="topbar">
         <a class="brand" href="#top" aria-label="Prompt Expert, início">Prompt <span>Expert</span></a>
-        <p class="status"><i></i> pronto para gerar</p>
+        <nav class="account-nav" aria-label="Conta">
+          <a href="#account">Conta</a>
+          <a href="#providers">APIs e provedores</a>
+          <p class="status"><i></i> <span id="account-status">desconectado</span></p>
+        </nav>
       </header>
 
       <section class="intro" id="top" aria-labelledby="page-title">
@@ -36,6 +40,43 @@
         </div>
         <p class="model-description" id="model-description">Carregando perfis especializados…</p>
         <p class="model-description" id="compiler-description">Carregando motores de compilação…</p>
+      </section>
+
+      <section class="account-panel" id="account" aria-labelledby="account-title">
+        <div>
+          <p class="eyebrow">Conta</p>
+          <h2 id="account-title">Sua sessão</h2>
+          <p class="account-copy">Entrar é opcional. O compilador local continua disponível sem conta.</p>
+        </div>
+
+        <form class="auth-form" id="auth-form" novalidate>
+          <div id="signed-out">
+            <label for="auth-email">Email</label>
+            <input id="auth-email" name="email" type="email" autocomplete="email" required />
+            <label for="auth-password">Senha</label>
+            <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+            <div class="auth-actions">
+              <button id="sign-in" type="submit">Entrar</button>
+              <button id="sign-up" class="secondary" type="button">Criar conta</button>
+              <button id="recover-account" class="text-button" type="button">Esqueci minha senha</button>
+            </div>
+          </div>
+          <div id="signed-in" hidden>
+            <p>Autenticado como <strong id="user-email"></strong></p>
+            <button id="sign-out" class="secondary" type="button">Sair</button>
+          </div>
+          <p class="auth-feedback" id="auth-feedback" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="providers-panel" id="providers" aria-labelledby="providers-title">
+        <p class="eyebrow">Área pessoal</p>
+        <h2 id="providers-title">APIs e provedores</h2>
+        <p id="providers-locked">Entre em sua conta para acessar este recurso protegido.</p>
+        <div id="providers-placeholder" hidden>
+          <p>A fundação da conta está pronta. O cadastro de credenciais será implementado em uma etapa futura.</p>
+          <p class="security-note">Nenhuma chave de API pode ser cadastrada nesta versão.</p>
+        </div>
       </section>
 
       <section class="result is-empty" id="result" aria-live="polite" aria-labelledby="result-title">
