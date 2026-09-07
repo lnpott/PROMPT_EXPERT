@@ -1,5 +1,7 @@
 # PROMPT_EXPERT — Guia vivo do projeto
 
+> Atualização de planejamento: 7 de setembro de 2026 — ciclo de contas, cofre BYOK e múltiplos provedores.
+
 ## Propósito
 
 O PROMPT_EXPERT transforma uma descrição comum de um produto ou funcionalidade em um prompt de programação claro, completo e adaptado ao modelo de destino. A versão funcional suporta nove perfis: Grok, GPT/Codex, Claude, Gemini, DeepSeek, Qwen3-Coder, Codestral, Kimi e Llama.
@@ -13,6 +15,10 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Tratar os perfis de modelo, regras e exemplos como conteúdo versionado e auditável.
 - Nunca expor chaves privadas no front-end, no repositório ou em documentos.
 - Registrar decisões, implementação e validação neste arquivo.
+- Separar segredos da plataforma dos segredos pertencentes às pessoas usuárias.
+- Nunca persistir senha de autenticação, chave de API ou token de provedor em texto puro.
+- Manter o compilador local disponível como caminho sem credenciais; recursos BYOK exigem autenticação.
+- Qualquer recuperação de acesso deve preservar a regra de que segredos salvos não são recuperados por terceiros nem reaparecem após um reset destrutivo do cofre.
 
 ## Estado atual
 
@@ -68,47 +74,91 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Versão multi-modelo publicada na `main` e validada em produção: nove perfis, “Tarefas citadas” como padrão, ausência de complexidade e geração real pela Gemini.
 - Proteção editorial validada no Supabase: tentativa de ativar regra não verificada foi rejeitada, escrita pública segue bloqueada e tabelas administrativas de evidência e revisão não são expostas.
 
-### Não bloqueia a versão funcional
+### Não bloqueia a versão funcional atual
 
-- Histórico de gerações e avaliação de qualidade dos prompts.
-- Área administrativa para alimentar a base a partir do notebook.
-- Autenticação de usuários.
+- Histórico persistente de gerações.
+- Área administrativa web para alimentar a base a partir do notebook.
+- Uso anônimo do compilador local determinístico.
 
-Esses itens permanecem como evolução administrativa. A experiência principal de compilar e copiar prompts não depende deles nem de chaves externas.
+A autenticação deixa de ser uma evolução opcional para o novo ciclo BYOK: ela passa a ser obrigatória para salvar e usar credenciais pessoais de provedores. O modo local sem conta continua preservado como caminho degradado e de demonstração, sem acesso ao cofre.
 
 ## Estado funcional consolidado
 
-A aplicação está pronta para uso local sem configuração externa. Na Vercel, a única chave privada necessária para habilitar o aprimoramento por IA é `GEMINI_API_KEY`; sem ela, `/api/generate` responde pelo compilador local. As variáveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são opcionais para trocar a base pública de perfis. A auditoria consolidada de código e interface foi registrada e deverá ser confirmada no Preview antes do merge.
+A aplicação continua pronta para uso local sem configuração externa. O compilador local determinístico permanece o fallback obrigatório e não exige conta, banco ou chave privada.
 
-“Modelo de destino” e “motor de compilação” são conceitos independentes: o primeiro define para qual modelo o prompt final será adaptado; o segundo define qual IA produz o refinamento. O catálogo inicial contém `gemini-3.5-flash-lite` (padrão), `gemini-3.5-flash`, `gemini-3.8-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite`. Todos compartilham `GEMINI_API_KEY`; modelos de outros fornecedores exigirão adaptador, allowlist e variável secreta próprios antes de aparecerem na interface.
+Até o início do ciclo BYOK, a Vercel ainda possui `GEMINI_API_KEY` e `GEMINI_MODEL` como segredos da própria plataforma para o aprimoramento atual. Esse segredo da plataforma não deve ser confundido com as futuras chaves pessoais dos usuários. O ciclo novo introduzirá credenciais BYOK por conta e, depois da validação em Preview, o uso público da chave Gemini da plataforma deverá ficar atrás de uma flag de migração ou restrito a smoke tests administrativos.
 
-O parecer e os riscos aceitos desta entrega estão em `AUDITORIA_FINAL.md`. O Preview confirmou os nove perfis, a geração aprimorada e o health check. Autenticação, histórico e administração permanecem fora do fluxo público até existir uma política de retenção; não bloqueiam a compilação e a cópia de prompts.
+“Modelo de destino”, “motor de compilação” e “provedor de API” passam a ser três conceitos independentes:
+
+1. **Modelo de destino**: para qual modelo o prompt final será adaptado.
+2. **Motor de compilação**: qual modelo efetivamente gera/refina o prompt.
+3. **Provedor de API**: qual serviço recebe a chamada, por exemplo OpenRouter, Google, xAI, OpenAI, Anthropic, DeepSeek, Mistral, Groq, Alibaba Cloud Model Studio ou Kimi.
+
+A pessoa autenticada poderá cadastrar uma credencial por provedor, substituí-la, testá-la e removê-la. Depois de salva, a credencial nunca deverá voltar integralmente ao navegador; a interface exibirá apenas estado, rótulo e dica mascarada. O backend descriptografa a chave somente em memória para a chamada necessária e deve limpar referências assim que a requisição terminar.
+
+O parecer e os riscos aceitos da entrega anterior continuam registrados em `AUDITORIA_FINAL.md`. As seções históricas abaixo permanecem como evidência do estado anterior e não devem ser reescritas para aparentar que o novo ciclo já foi implementado.
 
 ## Arquitetura planejada
 
 ```text
 Pessoa usuária
-    ↓ descreve a necessidade
-Interface web na Vercel
-    ↓ consulta perfil e regras
-Supabase
-    ↓ quando habilitado
-Servidor seguro / função de backend
-    ↓ usa chave privada
-API de IA escolhida
-    ↓
-Prompt estruturado para o modelo de destino
+    ├─ sem conta → compilador local determinístico
+    │
+    └─ autenticada
+         ↓
+      Supabase Auth
+         ↓ JWT
+      Interface web na Vercel
+         ↓
+      Catálogo público de provedores + metadados do cofre
+         ↓
+      Backend seguro / funções Vercel
+         ├─ valida JWT do usuário
+         ├─ lê somente credencial pertencente ao usuário
+         ├─ descriptografa em memória
+         ├─ chama adaptador do provedor selecionado
+         └─ nunca registra segredo, prompt completo ou senha
+         ↓
+      OpenRouter / Gemini / xAI / OpenAI / Anthropic /
+      DeepSeek / Mistral / Groq / Qwen / Kimi
+         ↓
+      Prompt estruturado para o modelo de destino
 ```
 
 ### Responsabilidades
 
 | Camada | Responsabilidade |
 | --- | --- |
-| Interface | Coletar o briefing, escolher o modelo e exibir/copiar o prompt. |
-| Supabase | Guardar perfis de modelos, regras, exemplos e futuramente histórico. |
-| Backend | Proteger chaves e chamar a API de IA. |
-| Vercel | Publicar a aplicação e executar o backend quando necessário. |
-| GitHub | Versionar o código, documentação e mudanças auditáveis. |
+| Interface | Login, cadastro, briefing, seleção de destino/motor/provedor, gestão mascarada das credenciais e exibição/cópia do prompt. |
+| Supabase Auth | Identidade, sessão, confirmação de e-mail, alteração de senha e sessão de recuperação. A senha nunca é armazenada pela aplicação. |
+| Supabase Database | Perfis, regras, catálogo público de provedores e somente ciphertext/metadados das credenciais do usuário, com RLS por `auth.uid()`. |
+| Backend Vercel | Autenticar a requisição, criptografar/descriptografar credenciais, chamar provedores, aplicar allowlists, limites e telemetria sanitizada. |
+| Vercel Secrets | Guardar `USER_CREDENTIALS_MASTER_KEY` e, durante a migração, os segredos próprios da plataforma. |
+| Provedores | Executar a geração usando a chave BYOK escolhida pela pessoa usuária. |
+| GitHub | Versionar código, migrations, documentação, testes, decisões e auditorias. |
+
+### Decisão de segurança do cofre
+
+O Supabase armazenará apenas material criptografado e metadados não secretos. Para o primeiro desenho, não usar a extensão Supabase Vault como cofre multiusuário da interface. O backend fará criptografia de aplicação com primitivas nativas do Node.js:
+
+- `AES-256-GCM` para cada segredo;
+- IV aleatório exclusivo por gravação;
+- chave derivada por usuário com `HKDF-SHA-256` a partir de `USER_CREDENTIALS_MASTER_KEY`;
+- `user_id`, `provider_id`, versão do esquema e identificador da credencial como AAD;
+- versão de chave explícita para permitir rotação futura;
+- nenhum valor secreto em logs, respostas de erro, analytics, documentação, fixtures ou Git.
+
+A chave-mestra existe somente como segredo da Vercel em Preview e Production. A chave publicável do Supabase pode permanecer no frontend com RLS correto; `service_role` não deve ser necessário para o fluxo normal de credenciais.
+
+### Política de senha e recuperação
+
+- Login inicial: e-mail + senha pelo Supabase Auth.
+- A aplicação nunca guarda ou consegue exibir a senha original.
+- Alteração voluntária de senha, com sessão válida e confirmação da senha atual, pode preservar o cofre.
+- “Esqueci minha senha” não recupera a senha anterior. O usuário recebe o fluxo de recuperação do Supabase e o PROMPT_EXPERT executa um **reset destrutivo do cofre** antes de concluir a retomada do uso.
+- Reset destrutivo remove todas as credenciais BYOK do usuário; após criar a nova senha, as chaves precisam ser cadastradas de novo.
+- A interface deve explicar essa consequência antes de iniciar o reset.
+- O fluxo de recuperação não deve retornar, exportar ou revelar as credenciais antigas.
 
 ## Marcos concluídos
 
@@ -262,9 +312,244 @@ O deployment de produção atual está saudável, acessível publicamente e sinc
 
 Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Validado**, e registrar uma evidência de verificação.
 
+## Novo ciclo — Contas, cofre BYOK e provedores de API
+
+### Objetivo
+
+Permitir que uma pessoa crie uma conta no PROMPT_EXPERT, salve com segurança suas próprias chaves de API e escolha qual provedor/modelo usará como motor de compilação. O produto deve continuar útil sem credenciais graças ao compilador local.
+
+### Escopo aprovado
+
+1. Cadastro, login, logout e sessão com Supabase Auth.
+2. Cofre BYOK por usuário, sem plaintext no banco.
+3. Tela “APIs e provedores” com status das chaves, cadastro, substituição, teste e exclusão.
+4. Links oficiais para criar conta, gerar chave e consultar documentação.
+5. OpenRouter como primeiro gateway agregado.
+6. Adaptadores diretos incrementais para provedores prioritários.
+7. Roteamento por capacidade, sem acoplar “modelo de destino” a “provedor”.
+8. Reset destrutivo do cofre no fluxo de esquecimento de senha.
+9. Auditoria de segurança, RLS, logs, CSP, rate limits e custos antes de produção.
+10. Atualização sincronizada de `PROJECT_GUIDE.md`, `CONFIGURACAO_APIS.md`, migrations, testes e documentação operacional.
+
+### Fora do escopo inicial
+
+- Guardar histórico completo dos prompts por padrão.
+- Compartilhar chaves entre usuários ou equipes.
+- Exportar chave salva em texto puro.
+- Marketplace, cobrança própria ou revenda de créditos.
+- OAuth com provedores de IA.
+- Administração web de segredos de usuários.
+- Armazenar senhas de contas externas dos provedores.
+
+### Modelo de dados proposto
+
+#### `api_providers`
+
+Catálogo público versionado e auditável.
+
+Campos mínimos:
+
+- `id uuid primary key`
+- `slug text unique not null`
+- `display_name text not null`
+- `category text check (category in ('direct','gateway'))`
+- `signup_url text`
+- `api_key_url text`
+- `docs_url text`
+- `base_url text`
+- `auth_scheme text`
+- `key_prefix_hint text`
+- `supports_generation boolean`
+- `supports_model_listing boolean`
+- `is_active boolean`
+- `sort_order integer`
+- `created_at timestamptz`
+- `updated_at timestamptz`
+
+Leitura pública somente para registros ativos. Escrita pública proibida.
+
+#### `user_api_credentials`
+
+Armazena somente ciphertext e metadados da chave.
+
+Campos mínimos:
+
+- `id uuid primary key`
+- `user_id uuid not null references auth.users(id) on delete cascade`
+- `provider_id uuid not null references api_providers(id)`
+- `label text`
+- `ciphertext text not null`
+- `iv text not null`
+- `auth_tag text not null`
+- `key_version integer not null`
+- `secret_last4 text`
+- `validation_status text`
+- `last_validated_at timestamptz`
+- `created_at timestamptz`
+- `updated_at timestamptz`
+
+Primeiro MVP: uma credencial ativa por usuário/provedor, com `unique(user_id, provider_id)`. Se surgir necessidade real de múltiplas chaves por provedor, migrar o contrato posteriormente.
+
+RLS obrigatória:
+
+- `SELECT`: somente `auth.uid() = user_id`;
+- `INSERT`: somente `auth.uid() = user_id`;
+- `UPDATE`: somente `auth.uid() = user_id`;
+- `DELETE`: somente `auth.uid() = user_id`;
+- `anon`: nenhum acesso;
+- nunca criar policy que permita leitura cruzada.
+
+### Contrato do backend do cofre
+
+Endpoints sugeridos:
+
+| Endpoint | Função | Retorna segredo? |
+| --- | --- | --- |
+| `GET /api/providers` | Catálogo público e links oficiais. | Não |
+| `GET /api/credentials` | Lista status das credenciais do usuário autenticado. | Não |
+| `PUT /api/credentials/:provider` | Valida formato mínimo, criptografa e salva/substitui. | Não |
+| `DELETE /api/credentials/:provider` | Exclui a credencial do usuário. | Não |
+| `POST /api/credentials/:provider/test` | Testa autenticação sem persistir resposta sensível. | Não |
+| `POST /api/account/reset-vault` | Apaga todas as credenciais no fluxo destrutivo autorizado. | Não |
+| `POST /api/generate` | Busca e usa em memória a credencial selecionada para chamar o provedor. | Não |
+
+Requisitos obrigatórios:
+
+- exigir JWT válido em todos os endpoints de credenciais;
+- nunca aceitar `user_id` do body como fonte de autorização;
+- resolver o usuário exclusivamente a partir da sessão/JWT;
+- não devolver `ciphertext`, `iv`, `auth_tag` ou segredo completo ao frontend;
+- não incluir a chave em URL, query string, prompt ou logs;
+- limpar o campo de chave do estado da interface após sucesso;
+- mascarar somente com dica não sensível, por exemplo `••••••••abcd`;
+- chamadas externas somente por HTTPS;
+- timeouts e limites por provedor;
+- mensagens de erro sanitizadas.
+
+### Catálogo inicial de provedores
+
+O seed inicial deve conter apenas links oficiais verificados. URLs podem mudar e precisam ser revisadas antes do merge.
+
+| Prioridade | Provedor | Tipo | Uso inicial |
+| --- | --- | --- | --- |
+| 1 | OpenRouter | Gateway | Primeiro adaptador BYOK; centraliza muitos modelos e provedores. |
+| 2 | Google Gemini | Direto | Continuidade com o motor já conhecido pelo projeto. |
+| 3 | xAI | Direto | Grok via API oficial. |
+| 4 | OpenAI | Direto | GPT/Codex e modelos OpenAI disponíveis por API. |
+| 5 | Anthropic / Claude Platform | Direto | Claude. |
+| 6 | DeepSeek | Direto | Modelos DeepSeek e endpoint compatível. |
+| 7 | Mistral | Direto | Mistral/Codestral quando disponíveis no catálogo. |
+| 8 | GroqCloud | Gateway/infra | Modelos servidos pela Groq com chave própria. |
+| 9 | Alibaba Cloud Model Studio | Direto/Gateway | Qwen e modelos compatíveis; endpoint depende da região/workspace. |
+| 10 | Kimi API Platform | Direto | Kimi/Moonshot, após validação de contrato e modelos. |
+
+Links oficiais já verificados em 7 de setembro de 2026 para o planejamento:
+
+- OpenRouter: `https://openrouter.ai/` e gerenciamento de chaves em `https://openrouter.ai/settings/keys`.
+- Gemini: `https://aistudio.google.com/app/apikey`.
+- xAI: `https://console.x.ai/`.
+- OpenAI: `https://platform.openai.com/api-keys`.
+- Anthropic/Claude Platform: `https://platform.claude.com/settings/keys`.
+- DeepSeek: documentação oficial em `https://api-docs.deepseek.com/`; a página de chaves é acessada pela plataforma DeepSeek.
+- Mistral: documentação oficial em `https://docs.mistral.ai/` e console em `https://console.mistral.ai/`.
+- GroqCloud: `https://console.groq.com/keys`.
+- Qwen / Alibaba Cloud Model Studio: documentação de chave em `https://www.alibabacloud.com/help/en/model-studio/get-api-key`.
+- Kimi API Platform: `https://platform.kimi.ai/console/api-keys`.
+
+### Estratégia de roteamento
+
+O backend deve adotar um contrato único de adaptador, por exemplo:
+
+```ts
+interface ProviderAdapter {
+  id: string
+  validateCredential(secret: string, context: ProviderContext): Promise<CredentialValidation>
+  listModels?(secret: string, context: ProviderContext): Promise<ProviderModel[]>
+  generate(request: GenerateRequest, secret: string, context: ProviderContext): Promise<GenerateResult>
+}
+```
+
+Nenhum modelo deve aparecer como disponível apenas porque seu nome existe na interface. Para estar ativo, precisa existir:
+
+1. provedor ativo;
+2. adaptador implementado;
+3. modelo em allowlist/catálogo;
+4. credencial válida quando BYOK for exigido;
+5. teste de contrato;
+6. fallback conhecido.
+
+OpenRouter será o primeiro adaptador porque permite validar a arquitetura multi-provedor antes de multiplicar integrações diretas.
+
+### Política de fallback e custo
+
+Durante a migração:
+
+1. compilador local continua sempre disponível;
+2. usuário autenticado pode selecionar um provedor BYOK configurado;
+3. se a chave selecionada estiver ausente/inválida, não trocar silenciosamente para outro provedor pago;
+4. a antiga `GEMINI_API_KEY` da plataforma pode permanecer temporariamente sob uma flag explícita, somente enquanto a migração é validada;
+5. após o BYOK estabilizar, decidir se a chave da plataforma será apenas administrativa/smoke test ou se existirá uma cota pública patrocinada;
+6. nenhum fallback deve gerar custo inesperado para o dono do projeto ou para o usuário.
+
+### Novo plano de dez passos
+
+Cada passo segue o protocolo obrigatório já estabelecido: branch exclusiva, implementação limitada ao escopo, testes, auditoria, commit convencional, PR, Preview e atualização deste guia.
+
+| Passo | Entrega | Critérios de aceite | Commit sugerido | Estado |
+| --- | --- | --- | --- | --- |
+| 11 | Auditoria pré-BYOK e contrato de segurança. | Mapear código atual, endpoints, dependências, RLS, variáveis e riscos; documentar desenho antes de alterar produção. | `docs(security): define byok vault architecture` | Planejado |
+| 12 | Fundação de Supabase Auth. | Cadastro, confirmação de e-mail, login, logout, sessão e rotas protegidas; modo local sem conta preservado. | `feat(auth): add user account foundation` | Planejado |
+| 13 | Schema do catálogo e cofre com RLS. | Criar `api_providers` e `user_api_credentials`; migrations reversíveis; isolamento por usuário provado com testes. | `feat(database): add byok credential vault schema` | Planejado |
+| 14 | Criptografia de aplicação. | Implementar AES-256-GCM + HKDF, versionamento, testes de round-trip/tamper e zero plaintext em persistência/logs. | `feat(security): encrypt user api credentials` | Planejado |
+| 15 | Gestão de credenciais na interface. | Tela APIs/provedores, links oficiais, salvar/substituir/testar/excluir e exibição mascarada. | `feat(settings): add provider credential manager` | Planejado |
+| 16 | Recuperação destrutiva do cofre. | Esquecimento de senha exige aviso explícito e destrói credenciais antes de reativar o uso; alteração com senha atual preserva cofre. | `feat(auth): add destructive vault recovery` | Planejado |
+| 17 | Adaptador OpenRouter. | Salvar/testar chave, catálogo de modelos permitido, geração BYOK real e fallback local sem vazamento. | `feat(providers): add openrouter byok adapter` | Planejado |
+| 18 | Adaptadores diretos prioritários. | Gemini, xAI, OpenAI, Anthropic, DeepSeek, Mistral e Groq por contrato comum; Qwen/Kimi entram após validação regional/contratual. | `feat(providers): add direct provider adapters` | Planejado |
+| 19 | Hardening e QA. | CSP, XSS/CSRF, rate limit, timeouts, sanitização, testes RLS, abuso, concorrência, custos e rotação da chave-mestra. | `test(security): harden byok provider flows` | Planejado |
+| 20 | Rollout e política final de chaves da plataforma. | Preview completo, smoke tests reais, documentação atualizada, decisão sobre `GEMINI_API_KEY` pública e produção sem regressão. | `chore(release): roll out authenticated byok` | Planejado |
+
+### Critérios de aceite do ciclo BYOK
+
+O ciclo só poderá ser considerado concluído quando:
+
+- dois usuários de teste não conseguirem ler, substituir, testar ou apagar as credenciais um do outro;
+- dump da tabela `user_api_credentials` não contiver nenhuma chave utilizável em plaintext;
+- logs Vercel/Supabase não contiverem chaves, Authorization headers ou passwords;
+- uma alteração maliciosa de `provider_id`, `user_id` ou ID da credencial não permita acesso cruzado;
+- recuperação de senha destrutiva deixe o cofre vazio;
+- alteração de senha com confirmação da senha atual preserve o cofre;
+- OpenRouter BYOK gere um prompt real;
+- pelo menos um provedor direto gere um prompt real;
+- falha/ausência da API externa preserve o compilador local;
+- o build, suíte de API, avaliação de qualidade, testes de RLS e `git diff --check` passem;
+- `CONFIGURACAO_APIS.md` explique claramente a diferença entre segredos da plataforma e BYOK;
+- nenhuma chave real apareça em commits, PRs, screenshots ou fixtures.
+
+### Ameaças que devem ser testadas
+
+- XSS capturando uma chave digitada antes do envio;
+- IDOR alterando IDs de credencial ou provedor;
+- policy RLS ausente ou permissiva;
+- vazamento por stack trace, `console.log`, telemetria ou erro de fornecedor;
+- replay de requisição de salvamento;
+- ciphertext adulterado;
+- rotação da chave-mestra;
+- tentativa de usar uma credencial de outro usuário;
+- provider spoofing por `base_url` controlada pelo cliente;
+- SSRF por endpoint arbitrário;
+- chave enviada como query string;
+- abuso de endpoints de teste para gerar custo;
+- reset de senha sem destruição do cofre;
+- fallback pago silencioso.
+
+
 ## Decisões pendentes
 
 - Qual regra de retenção será usada para o futuro histórico de gerações?
+- Depois do rollout BYOK, a `GEMINI_API_KEY` da plataforma será removida do fluxo público, mantida apenas para smoke tests ou terá uma cota patrocinada explícita?
+- O MVP permitirá somente uma chave por provedor ou precisará de múltiplas chaves/ambientes depois da validação inicial?
+- Haverá MFA obrigatório ou opcional para contas que armazenam credenciais de provedores?
+- Qual política de rotação será adotada para `USER_CREDENTIALS_MASTER_KEY`?
 
 ## Corpus canônico importado
 
@@ -278,11 +563,39 @@ Cada mudança deve atualizar esta tabela, as seções **Implementado** e **Valid
 
 ## Variáveis de ambiente
 
-O repositório contém `.env.example` com as variáveis da função de backend. Para a primeira versão, basta cadastrar `GEMINI_API_KEY` na Vercel nos ambientes Preview e Production. `GEMINI_MODEL` é opcional; o padrão atual e motor geral é `gemini-3.5-flash-lite`. A função usa apenas a chave pública de leitura do Supabase, protegida pelas políticas de RLS; `service_role` nunca entra no GitHub, no front-end ou neste guia.
+O repositório contém `.env.example` com as variáveis da função de backend.
+
+### Estado atual
+
+- `GEMINI_API_KEY`: segredo da própria plataforma, cadastrado na Vercel em Preview e Production.
+- `GEMINI_MODEL`: modelo padrão da integração Gemini atual.
+- `SUPABASE_URL`: URL pública do projeto.
+- `SUPABASE_PUBLISHABLE_KEY`: chave publicável usada com RLS.
+
+### Novo ciclo BYOK
+
+Adicionar somente quando o passo de criptografia for implementado:
+
+```dotenv
+USER_CREDENTIALS_MASTER_KEY=<32-bytes-random-em-base64>
+USER_CREDENTIALS_KEY_VERSION=1
+ALLOW_PLATFORM_GEMINI_FALLBACK=false
+```
+
+Regras:
+
+- `USER_CREDENTIALS_MASTER_KEY` deve ser gerada fora do código com entropia criptográfica, armazenada somente em Vercel Secrets e nunca exibida em logs.
+- Preview e Production devem usar segredos administrados de forma controlada; rotação precisa de procedimento documentado antes de trocar a versão.
+- `.env.example` deve conter apenas nomes/placeholders.
+- `service_role` continua proibida no frontend, Git e documentação e não deve ser introduzida no fluxo normal de credenciais.
+- Chaves BYOK de usuários nunca viram variáveis de ambiente da Vercel; são dados individuais criptografados no Supabase.
+- O backend deve usar o JWT do próprio usuário para respeitar RLS ao buscar metadados/ciphertext.
 
 ## Regra de atualização
 
-Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ainda não implementado** e **Próximo marco**. Nenhuma etapa deve ser marcada como validada sem evidência de teste.
+Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ainda não implementado** e **Próximo marco**, além da linha correspondente no **Novo plano de dez passos** quando o ciclo BYOK estiver em execução. Nenhuma etapa deve ser marcada como validada sem evidência de teste.
+
+Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperação de acesso também exigem atualização de `CONFIGURACAO_APIS.md` e uma entrada de auditoria com riscos, testes negativos e rollback.
 
 
 
