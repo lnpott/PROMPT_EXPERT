@@ -497,7 +497,7 @@ Cada passo segue o protocolo obrigatório já estabelecido: branch exclusiva, im
 
 | Passo | Entrega | Critérios de aceite | Commit sugerido | Estado |
 | --- | --- | --- | --- | --- |
-| 11 | Auditoria pré-BYOK e contrato de segurança. | Mapear código atual, endpoints, dependências, RLS, variáveis e riscos; documentar desenho antes de alterar produção. | `docs(security): define byok vault architecture` | Planejado |
+| 11 | Auditoria pré-BYOK e contrato de segurança. | Mapear código atual, endpoints, dependências, RLS, variáveis e riscos; documentar desenho antes de alterar produção. | `docs(security): define byok vault architecture` | Concluído: contrato documentado, sem alteração remota |
 | 12 | Fundação de Supabase Auth. | Cadastro, confirmação de e-mail, login, logout, sessão e rotas protegidas; modo local sem conta preservado. | `feat(auth): add user account foundation` | Planejado |
 | 13 | Schema do catálogo e cofre com RLS. | Criar `api_providers` e `user_api_credentials`; migrations reversíveis; isolamento por usuário provado com testes. | `feat(database): add byok credential vault schema` | Planejado |
 | 14 | Criptografia de aplicação. | Implementar AES-256-GCM + HKDF, versionamento, testes de round-trip/tamper e zero plaintext em persistência/logs. | `feat(security): encrypt user api credentials` | Planejado |
@@ -596,6 +596,19 @@ Regras:
 Ao fim de cada marco, atualizar as seções **Implementado**, **Validado**, **Ainda não implementado** e **Próximo marco**, além da linha correspondente no **Novo plano de dez passos** quando o ciclo BYOK estiver em execução. Nenhuma etapa deve ser marcada como validada sem evidência de teste.
 
 Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperação de acesso também exigem atualização de `CONFIGURACAO_APIS.md` e uma entrada de auditoria com riscos, testes negativos e rollback.
+
+#### Auditoria do passo 11 — 2026-09-07
+
+- **Branch:** `step-11-byok-security-contract`, criada a partir da referência atualizada de `main` no commit `0007d5f`; o repositório não tinha remote configurado no ambiente, então `origin` foi restaurado para `lnpott/PROMPT_EXPERT` antes do fetch. O working tree estava limpo.
+- **Escopo:** auditoria exclusivamente documental da arquitetura existente e validação do contrato de segurança para Supabase Auth, cofre BYOK e adaptadores. Nenhuma autenticação, migration, tabela, criptografia, credencial por usuário, segredo ou alteração de produção foi implementada.
+- **Arquivos auditados:** `PROJECT_GUIDE.md`, `CONFIGURACAO_APIS.md`, `AUDITORIA_FINAL.md`, `.env.example`, `package.json`, `index.html`, `src/main.js`, `src/style.css`, todos os módulos de `api/`, as quatro migrations em `supabase/migrations/`, os três testes em `test/` e `vercel.json`.
+- **Arquitetura encontrada:** SPA Vite em HTML/CSS/JavaScript nativos, estado efêmero em DOM/módulo, compilador determinístico local, cinco funções públicas e backend Gemini opcional. O backend acessa somente conteúdo público do Supabase via REST, chave publicável, grants e RLS; não existem Auth, `auth.uid()`, `service_role`, cofre ou chave-mestra.
+- **Contrato e resultado:** `docs/BYOK_SECURITY_ARCHITECTURE.md` registra arquitetura atual/alvo, fronteiras de confiança, login, gravação/uso futuro, reset destrutivo, ameaças, RLS, AES-256-GCM/HKDF-SHA-256, rotação, rollback e mapa dos passos 12–20. A arquitetura planejada foi ratificada com controles adicionais e está aprovada apenas para iniciar o passo 12.
+- **Riscos:** XSS antes do envio, CSP ausente, CSRF conforme transporte da sessão, IDOR/RLS, vazamento de Authorization/log/stack, SSRF e spoofing de provedor, plaintext acidental, replay/abuso do teste, rate limit por instância, fallback pago, rotação e distinção segura entre recovery destrutivo e alteração voluntária de senha continuam abertos até os passos correspondentes.
+- **Segredos:** a auditoria inventariou somente nomes e locais. `GEMINI_API_KEY`, `GEMINI_MODEL`, `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são o contrato atual; `USER_CREDENTIALS_MASTER_KEY` e armazenamento de API keys de usuário não existem. Nenhum valor secreto foi incluído ou reutilizado.
+- **Testes:** `npm test` aprovou 28/28 testes; `npm run evaluate` aprovou 54/54 casos; `npm run build` concluiu com seis módulos transformados; `git diff --check` não encontrou erros. A busca por padrões de possíveis segredos no repositório e no diff não encontrou padrão de segredo real; referências textuais a `service_role` são proibições/documentação/teste, não credenciais.
+- **Rollback:** reverter o commit documental deste passo; não há schema, configuração remota ou deployment a desfazer.
+- **Próxima ação:** Passo 12 em branch própria, alterando somente a fundação de Supabase Auth e preservando o modo local; os passos 13–20 permanecem planejados e não implementados.
 
 
 
