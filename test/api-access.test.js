@@ -5,6 +5,7 @@ import generate from '../api/generate.js';
 import compilers from '../api/compilers.js';
 import health from '../api/health.js';
 import profiles from '../api/profiles.js';
+import providers from '../api/providers.js';
 import provenance from '../api/provenance.js';
 import { compilePrompt, findProfile, modelProfiles } from '../api/model-profiles.js';
 import { DEFAULT_COMPILER_MODEL, findCompilerModel, publicCompilerModels } from '../api/compiler-models.js';
@@ -278,6 +279,59 @@ test('GET /api/provenance fails closed when the base is unavailable', async () =
 
   assert.equal(response.statusCode, 503);
   assert.deepEqual(response.body, { status: 'unavailable', error: 'A proveniência não está disponível agora.' });
+});
+
+test('GET /api/providers exposes only active public provider fields', async () => {
+  let requestUrl;
+  globalThis.fetch = async (url) => {
+    requestUrl = url;
+    return jsonResponse([{
+      slug: 'openrouter',
+      display_name: 'OpenRouter',
+      category: 'gateway',
+      signup_url: 'https://openrouter.ai/',
+      api_key_url: 'https://openrouter.ai/settings/keys',
+      docs_url: 'https://openrouter.ai/docs/quickstart',
+      key_prefix_hint: 'sk-or-',
+      supports_generation: true,
+      supports_model_listing: true,
+      is_active: true,
+      sort_order: 10,
+    }]);
+  };
+  const response = createResponse();
+
+  await providers({ method: 'GET' }, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.providers.length, 1);
+  assert.match(requestUrl, /api_providers\?is_active=eq\.true/);
+  assert.match(requestUrl, /select=slug,display_name,category/);
+  assert.doesNotMatch(requestUrl, /user_api_credentials|ciphertext|auth_tag|user_id|base_url|auth_scheme/);
+  assert.equal('id' in response.body.providers[0], false);
+});
+
+test('GET /api/providers denies mutation methods', async () => {
+  globalThis.fetch = () => assert.fail('Denied methods must not access Supabase');
+  const response = createResponse();
+
+  await providers({ method: 'POST' }, response);
+
+  assert.equal(response.statusCode, 405);
+  assert.equal(response.headers.Allow, 'GET');
+});
+
+test('GET /api/providers fails closed when Supabase is unavailable', async () => {
+  globalThis.fetch = async () => jsonResponse({}, { ok: false, status: 503 });
+  const response = createResponse();
+
+  await providers({ method: 'GET' }, response);
+
+  assert.equal(response.statusCode, 503);
+  assert.deepEqual(response.body, {
+    status: 'unavailable',
+    error: 'O catálogo de provedores não está disponível agora.',
+  });
 });
 
 test('local compiler adapts instructions to task and provider', () => {

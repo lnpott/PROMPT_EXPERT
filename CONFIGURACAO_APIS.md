@@ -70,6 +70,14 @@ Nunca use prefixo `VITE_` em `GEMINI_API_KEY`, `service_role`, futura chave-mest
 
 Sem as duas variáveis públicas, os formulários de conta informam que Auth não está configurado, mas o compilador local e o restante do modo visitante continuam disponíveis.
 
+### Catálogo BYOK preparado no Passo 13
+
+O repositório agora versiona a migration que cria `api_providers` e `user_api_credentials`, mas ela ainda não foi aplicada ao Supabase remoto. O schema prepara o isolamento por `auth.uid()` e os campos que receberão material criptografado no Passo 14; ele não permite cadastrar nem usar API keys nesta etapa.
+
+O endpoint público `GET /api/providers` lê somente provedores ativos e devolve uma lista explícita de metadados públicos. O catálogo contém OpenRouter, Google Gemini, xAI, OpenAI, Anthropic/Claude Platform, DeepSeek, Mistral, GroqCloud, Alibaba Cloud Model Studio/Qwen e Kimi. A entrada Alibaba permanece inativa e sem `base_url`, pois endpoints e chaves dependem de região, workspace e plano; o cliente nunca poderá fornecer uma URL arbitrária para substituir essa decisão server-side.
+
+Nenhuma nova variável de ambiente foi adicionada. Não configure `USER_CREDENTIALS_MASTER_KEY`, `USER_CREDENTIALS_KEY_VERSION`, chave BYOK ou `service_role` para este passo. Uma constraint e grants por coluna mantêm `ciphertext`, `iv`, `auth_tag`, `key_version`, `secret_last4` e validação sem valores até a implementação criptográfica do Passo 14.
+
 ### Recuperação de conta nesta etapa
 
 “Esqueci minha senha” solicita ao Supabase Auth o envio do link e usa uma URL de retorno identificável. O listener preserva o evento `PASSWORD_RECOVERY` como estado distinto de login normal. Ainda não há cofre nem credenciais para apagar: a barreira server-side e o reset destrutivo obrigatório serão implementados somente no Passo 16. Não trate uma sessão de recovery como alteração voluntária de senha ao evoluir esse fluxo.

@@ -38,3 +38,13 @@ export async function getReviewedEvidenceSources() {
   if (!evidenceResponse.ok) throw new Error('Não foi possível carregar a proveniência das regras.');
   return evidenceResponse.json();
 }
+
+export async function getActiveApiProviders() {
+  const providersResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/api_providers?is_active=eq.true&select=slug,display_name,category,signup_url,api_key_url,docs_url,key_prefix_hint,supports_generation,supports_model_listing,is_active,sort_order&order=sort_order.asc`,
+    { headers },
+  );
+
+  if (!providersResponse.ok) throw new Error('Não foi possível carregar o catálogo de provedores.');
+  return providersResponse.json();
+}
