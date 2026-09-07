@@ -6,14 +6,14 @@ import { createAuthController, validateCredentials } from '../src/auth/session.j
 import { renderAccountState } from '../src/auth/ui.js';
 import { createSupabaseBrowserClient } from '../src/lib/supabase.js';
 
-function createAuthMock(initialUser = null) {
+function createAuthMock(initialUser = null, sessionError = null) {
   let callback;
   const calls = [];
   const client = {
     auth: {
       async getSession() {
         calls.push('getSession');
-        return { data: { session: initialUser ? { user: initialUser } : null }, error: null };
+        return { data: { session: initialUser ? { user: initialUser } : null }, error: sessionError };
       },
       onAuthStateChange(listener) {
         callback = listener;
@@ -116,6 +116,29 @@ test('missing public configuration keeps anonymous state available', async () =>
   const controller = createAuthController(null);
   await controller.initialize();
   assert.deepEqual(controller.getSnapshot(), { user: null, recoverySession: false, configured: false });
+});
+
+test('invalid public URL preserves guest mode instead of breaking startup', () => {
+  assert.equal(createSupabaseBrowserClient({
+    VITE_SUPABASE_URL: 'not-a-valid-url',
+    VITE_SUPABASE_PUBLISHABLE_KEY: 'public-test-placeholder',
+  }), null);
+  assert.equal(createSupabaseBrowserClient({
+    VITE_SUPABASE_URL: 'javascript:alert(1)',
+    VITE_SUPABASE_PUBLISHABLE_KEY: 'public-test-placeholder',
+  }), null);
+});
+
+test('auth listener remains active when initial session restoration fails', async () => {
+  const { client } = createAuthMock(null, { message: 'temporary storage failure' });
+  const controller = createAuthController(client);
+  const identities = [];
+  controller.subscribe(({ user }) => identities.push(user?.email || null));
+
+  await assert.rejects(controller.initialize(), /restaurar a sessão/);
+  await controller.signIn('recovered@example.test', 'safe-password');
+
+  assert.equal(identities.at(-1), 'recovered@example.test');
 });
 
 test('credentials are validated without persisting or logging passwords', () => {

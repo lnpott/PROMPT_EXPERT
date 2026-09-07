@@ -50,17 +50,17 @@ export function createAuthController(client) {
         return snapshot();
       }
 
-      const { data, error } = await client.auth.getSession();
-      if (error) throw new Error('Não foi possível restaurar a sessão.');
-      currentUser = data.session?.user || null;
-      notify();
-
       const listener = client.auth.onAuthStateChange((event, session) => {
         recoverySession = event === 'PASSWORD_RECOVERY';
         currentUser = session?.user || null;
         notify();
       });
       subscription = listener.data.subscription;
+
+      const { data, error } = await client.auth.getSession();
+      if (error) throw new Error('Não foi possível restaurar a sessão.');
+      currentUser = data.session?.user || null;
+      notify();
       return snapshot();
     },
     async signIn(email, password) {

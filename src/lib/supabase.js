@@ -6,11 +6,18 @@ export function createSupabaseBrowserClient(environment = import.meta.env) {
 
   if (!url || !publishableKey) return null;
 
-  return createClient(url, publishableKey, {
-    auth: {
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      persistSession: true,
-    },
-  });
+  try {
+    const parsedUrl = new URL(url);
+    if (!['https:', 'http:'].includes(parsedUrl.protocol)) return null;
+
+    return createClient(parsedUrl.toString(), publishableKey, {
+      auth: {
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        persistSession: true,
+      },
+    });
+  } catch {
+    return null;
+  }
 }
