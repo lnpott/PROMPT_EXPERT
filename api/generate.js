@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { getModelKnowledge } from './knowledge-base.js';
+import { getModelKnowledge } from '../server/knowledge-base.js';
 import { compilerApiKey, DEFAULT_COMPILER_MODEL, findCompilerModel } from './compiler-models.js';
 import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
 

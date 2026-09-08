@@ -1,4 +1,4 @@
-import { getReviewedEvidenceSources } from './knowledge-base.js';
+import { getReviewedEvidenceSources } from '../server/knowledge-base.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'GET') {

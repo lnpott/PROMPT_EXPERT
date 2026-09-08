@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { afterEach, beforeEach, test } from 'node:test';
 
-import { deleteCredential, listCredentials, putCredential, testCredential } from '../api/credential-service.js';
+import { deleteCredential, listCredentials, putCredential, testCredential } from '../server/credential-service.js';
 
 const originalFetch = globalThis.fetch;
 const users = {

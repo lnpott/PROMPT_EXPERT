@@ -11,7 +11,7 @@ import {
   getSecretLast4,
   loadCredentialCryptoConfig,
   validatePersistedCredentialMaterial,
-} from '../api/security/credential-crypto.js';
+} from '../server/security/credential-crypto.js';
 
 const ids = {
   userId: '11111111-1111-4111-8111-111111111111',

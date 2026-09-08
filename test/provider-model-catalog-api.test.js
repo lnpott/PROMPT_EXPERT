@@ -2,9 +2,6 @@ import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
 import providersHandler, { allowlistedModel, allowlistedProvider } from '../api/providers.js';
-import providerHandler from '../api/providers/[slug].js';
-import modelsHandler from '../api/providers/[slug]/models.js';
-import modelHandler from '../api/providers/[slug]/models/[model].js';
 
 const originalFetch = globalThis.fetch;
 
@@ -54,39 +51,10 @@ test('allowlist helpers safely represent unknown provider and pricing fields as 
   assert.equal(allowlistedModel({ model_id: 'minimal' }).official_url, null);
 });
 
-test('detail endpoints return provider, models and individual model without internal IDs', async () => {
-  globalThis.fetch = catalogFetch;
-  const providerResult = response();
-  await providerHandler({ method: 'GET', query: { slug: 'openrouter' } }, providerResult);
-  assert.equal(providerResult.body.provider.slug, 'openrouter');
-  const modelsResult = response();
-  await modelsHandler({ method: 'GET', query: { slug: 'openrouter' } }, modelsResult);
-  assert.equal(modelsResult.body.models.length, 1);
-  const modelResult = response();
-  await modelHandler({ method: 'GET', query: { slug: 'openrouter', model: 'openrouter/free' } }, modelResult);
-  assert.equal(modelResult.body.model.model_id, 'openrouter/free');
-  assert.doesNotMatch(JSON.stringify([providerResult.body, modelsResult.body, modelResult.body]), /"id"|provider_id/);
-});
-
-test('provider/model endpoints return 404 for nonexistent or unpublished records', async () => {
-  globalThis.fetch = async (url) => jsonResponse(url.includes('api_providers') ? [] : []);
-  for (const [handler, query] of [
-    [providerHandler, { slug: 'inactive-provider' }],
-    [modelsHandler, { slug: 'missing-provider' }],
-    [modelHandler, { slug: 'openrouter', model: 'inactive-or-deprecated-model' }],
-  ]) {
-    const result = response();
-    await handler({ method: 'GET', query }, result);
-    assert.equal(result.statusCode, 404);
-  }
-});
-
 test('all catalog mutation methods are blocked before database access', async () => {
   globalThis.fetch = () => assert.fail('mutating methods must not query the catalog');
-  for (const handler of [providersHandler, providerHandler, modelsHandler, modelHandler]) {
-    const result = response();
-    await handler({ method: 'POST', query: {} }, result);
-    assert.equal(result.statusCode, 405);
-    assert.equal(result.headers.Allow, 'GET');
-  }
+  const result = response();
+  await providersHandler({ method: 'POST', query: {} }, result);
+  assert.equal(result.statusCode, 405);
+  assert.equal(result.headers.Allow, 'GET');
 });

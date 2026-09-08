@@ -1,4 +1,4 @@
-import { getActiveApiProviders, getPublicAiModels } from './knowledge-base.js';
+import { getActiveApiProviders, getPublicAiModels } from '../server/knowledge-base.js';
 
 const PROVIDER_FIELDS = [
   'slug', 'display_name', 'category', 'signup_url', 'api_key_url', 'docs_url', 'key_prefix_hint',
