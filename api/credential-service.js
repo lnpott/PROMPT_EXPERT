@@ -57,7 +57,7 @@ function validatePutRequest(request) {
   if (label !== undefined && (typeof label !== 'string' || !label.trim() || label.trim().length > MAX_LABEL_LENGTH)) {
     return { status: 400, message: 'Rótulo inválido.' };
   }
-  return { secret, label: label?.trim() || null };
+  return { secret, label: label?.trim() || null, labelProvided: Object.hasOwn(request.body, 'label') };
 }
 
 function providerSlug(request) {
@@ -69,6 +69,17 @@ function providerSlug(request) {
 async function activeProvider(slug, auth, environment) {
   const response = await userDatabaseRequest(
     `api_providers?slug=eq.${encodeURIComponent(slug)}&is_active=eq.true&select=id,slug,display_name`,
+    auth,
+    environment,
+  );
+  if (!response.ok) throw new Error('provider lookup failed');
+  const [provider] = await response.json();
+  return provider || null;
+}
+
+async function ownedProviderForDeletion(slug, auth, environment) {
+  const response = await userDatabaseRequest(
+    `api_providers?slug=eq.${encodeURIComponent(slug)}&select=id,slug,display_name`,
     auth,
     environment,
   );
@@ -145,7 +156,7 @@ export async function putCredential(request, response, environment = process.env
     }
     const persisted = {
       ...(existing ? {} : { id: credentialId, user_id: auth.userId, provider_id: provider.id }),
-      label: input.label,
+      label: existing && !input.labelProvided ? existing.label : input.label,
       ciphertext: encrypted.ciphertext,
       iv: encrypted.iv,
       auth_tag: encrypted.authTag,
@@ -182,7 +193,7 @@ export async function deleteCredential(request, response, environment = process.
   if (!slug) return json(response, 404, { error: 'Provedor não encontrado.' });
   try {
     const auth = await authenticateUser(request, environment);
-    const provider = await activeProvider(slug, auth, environment);
+    const provider = await ownedProviderForDeletion(slug, auth, environment);
     if (!provider) return json(response, 404, { error: 'Provedor não encontrado.' });
     const deleted = await userDatabaseRequest(
       `user_api_credentials?provider_id=eq.${encodeURIComponent(provider.id)}`,

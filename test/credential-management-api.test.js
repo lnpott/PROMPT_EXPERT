@@ -40,7 +40,9 @@ function databaseMock(url, options = {}) {
 
   if (parsed.pathname.endsWith('/api_providers')) {
     const slug = parsed.searchParams.get('slug')?.replace('eq.', '');
-    const found = providers.filter((provider) => provider.slug === slug && provider.is_active);
+    const activeOnly = parsed.searchParams.get('is_active') === 'eq.true';
+    const ownedProviderIds = new Set(rows.filter((row) => row.user_id === userId).map((row) => row.provider_id));
+    const found = providers.filter((provider) => provider.slug === slug && (provider.is_active || (!activeOnly && ownedProviderIds.has(provider.id))));
     return response(found.map(({ id, slug: providerSlug, display_name }) => ({ id, slug: providerSlug, display_name })));
   }
   if (!parsed.pathname.endsWith('/user_api_credentials')) return response({}, { status: 404 });
@@ -150,7 +152,7 @@ test('creation encrypts before persistence, ignores client authority and returns
 
 test('replacement keeps credential identity and atomically replaces encrypted fields', async () => {
   const first = apiResponse();
-  await putCredential(request('PUT', { provider: 'openrouter', body: { secret: 'fictional-first-AAAA' }, headers: { 'content-type': 'application/json' } }), first, environment);
+  await putCredential(request('PUT', { provider: 'openrouter', body: { secret: 'fictional-first-AAAA', label: 'Keep me' }, headers: { 'content-type': 'application/json' } }), first, environment);
   const id = rows[0].id;
   const ciphertext = rows[0].ciphertext;
   const second = apiResponse();
@@ -160,6 +162,15 @@ test('replacement keeps credential identity and atomically replaces encrypted fi
   assert.equal(rows[0].id, id);
   assert.notEqual(rows[0].ciphertext, ciphertext);
   assert.equal(rows[0].secret_last4, 'BBBB');
+  assert.equal(rows[0].label, 'Keep me');
+});
+
+test('an owner can delete a credential after its provider becomes inactive', async () => {
+  rows.push({ id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', user_id: users['token-a'], provider_id: providers[1].id });
+  const result = apiResponse();
+  await deleteCredential(request('DELETE', { provider: 'inactive-provider' }), result, environment);
+  assert.equal(result.statusCode, 204);
+  assert.equal(rows.length, 0);
 });
 
 test('delete is owner-scoped and idempotent', async () => {

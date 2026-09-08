@@ -9,8 +9,8 @@ select col_is_pk('public', 'user_api_credentials', 'id', 'user_api_credentials h
 select policies_are(
   'public',
   'api_providers',
-  array['public can read active api providers'],
-  'api_providers exposes only its active-row SELECT policy'
+  array['anonymous can read active api providers', 'authenticated can read available api providers'],
+  'api_providers separates anonymous and authenticated availability policies'
 );
 select policies_are(
   'public',

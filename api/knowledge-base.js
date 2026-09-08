@@ -41,10 +41,20 @@ export async function getReviewedEvidenceSources() {
 
 export async function getActiveApiProviders() {
   const providersResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/api_providers?is_active=eq.true&select=slug,display_name,category,signup_url,api_key_url,docs_url,key_prefix_hint,supports_generation,supports_model_listing,is_active,sort_order&order=sort_order.asc`,
+    `${SUPABASE_URL}/rest/v1/api_providers?is_active=eq.true&select=slug,display_name,category,signup_url,api_key_url,docs_url,key_prefix_hint,supports_generation,supports_model_listing,is_active,sort_order,short_description,long_description,company_name,country_region,website_url,logo_url,media_url,primary_uses,strengths,limitations,free_tier_status,billing_notes,card_required,openai_compatible,region_notes,last_verified_at,source_url&order=sort_order.asc`,
     { headers },
   );
 
   if (!providersResponse.ok) throw new Error('Não foi possível carregar o catálogo de provedores.');
   return providersResponse.json();
+}
+
+export async function getPublicAiModels(providerSlug) {
+  const providerFilter = providerSlug ? `&api_providers.slug=eq.${encodeURIComponent(providerSlug)}` : '';
+  const modelsResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/ai_models?is_active=eq.true&is_public=eq.true&is_deprecated=eq.false${providerFilter}&select=model_id,display_name,family,description,input_modalities,output_modalities,reasoning_support,coding_suitability,tool_calling,vision,audio,image_generation,context_window_tokens,max_output_tokens,input_price,output_price,cached_input_price,currency,pricing_unit,pricing_notes,free_tier_status,is_deprecated,official_url,pricing_source_url,last_verified_at,sort_order,api_providers!inner(slug)&order=sort_order.asc`,
+    { headers },
+  );
+  if (!modelsResponse.ok) throw new Error('Não foi possível carregar o catálogo de modelos.');
+  return modelsResponse.json();
 }

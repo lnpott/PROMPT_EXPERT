@@ -4,6 +4,69 @@ const STATUS_LABELS = Object.freeze({
   invalid: 'Inválida',
   error: 'Erro na última validação',
 });
+const FREE_TIER_LABELS = Object.freeze({
+  none: 'Sem opção gratuita confirmada',
+  quota: 'Free tier com cota',
+  promotional: 'Crédito ou cota promocional',
+  gateway_free: 'Grátis via gateway',
+  unknown: 'Gratuidade não confirmada',
+});
+
+function externalLink(label, url) {
+  if (!url) return null;
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noreferrer';
+  link.textContent = label;
+  return link;
+}
+
+function capabilityLabels(model) {
+  return [
+    model.reasoning_support ? 'Raciocínio' : null,
+    model.tool_calling ? 'Ferramentas' : null,
+    model.vision ? 'Visão' : null,
+    model.audio ? 'Áudio' : null,
+    model.image_generation ? 'Geração de imagem' : null,
+  ].filter(Boolean);
+}
+
+export function priceSummary(model) {
+  if (model.input_price == null && model.output_price == null) return model.pricing_notes || null;
+  const unit = model.pricing_unit === 'million_tokens' ? 'por 1M tokens' : model.pricing_unit || '';
+  const currency = model.currency || '';
+  const parts = [];
+  if (model.input_price != null) parts.push(`entrada ${currency} ${Number(model.input_price).toFixed(2)}`);
+  if (model.output_price != null) parts.push(`saída ${currency} ${Number(model.output_price).toFixed(2)}`);
+  return `${parts.join(' · ')} ${unit}`.trim();
+}
+
+function modelCard(model) {
+  const item = document.createElement('li');
+  const title = document.createElement('strong');
+  title.textContent = model.display_name;
+  const description = document.createElement('p');
+  description.textContent = model.description || 'Descrição detalhada não publicada.';
+  item.append(title, description);
+  const capabilities = capabilityLabels(model);
+  if (capabilities.length) {
+    const line = document.createElement('p');
+    line.className = 'model-meta';
+    line.textContent = capabilities.join(' · ');
+    item.append(line);
+  }
+  const pricing = priceSummary(model);
+  if (pricing) {
+    const line = document.createElement('p');
+    line.className = 'model-price';
+    line.textContent = pricing;
+    item.append(line);
+  }
+  const official = externalLink('Modelo oficial ↗', model.official_url);
+  if (official) item.append(official);
+  return item;
+}
 
 function button(label, action, secondary = false) {
   const element = document.createElement('button');
@@ -25,18 +88,81 @@ export function renderCredentialProviders(elements, providers, credentials, hand
     card.className = 'provider-card';
     const heading = document.createElement('div');
     heading.className = 'provider-card-head';
+    const identity = document.createElement('div');
+    identity.className = 'provider-identity';
+    const logoFallback = document.createElement('span');
+    logoFallback.className = 'provider-logo-fallback';
+    logoFallback.textContent = provider.display_name?.slice(0, 2).toUpperCase() || 'AI';
+    if (provider.logo_url) {
+      const logo = document.createElement('img');
+      logo.className = 'provider-logo';
+      logo.src = provider.logo_url;
+      logo.alt = '';
+      logo.loading = 'lazy';
+      logo.referrerPolicy = 'no-referrer';
+      logo.addEventListener('load', () => { logoFallback.hidden = true; });
+      logo.addEventListener('error', () => logo.remove());
+      identity.append(logo);
+    }
+    identity.append(logoFallback);
     const title = document.createElement('h3');
     title.textContent = provider.display_name;
+    identity.append(title);
     const state = document.createElement('span');
     state.className = credential ? 'credential-state configured' : 'credential-state';
     state.textContent = credential ? 'Configurada' : 'Sem credencial';
-    heading.append(title, state);
+    heading.append(identity, state);
 
     const detail = document.createElement('p');
     detail.className = 'credential-detail';
-    detail.textContent = credential
+    detail.textContent = provider.short_description || 'Informações adicionais ainda não foram publicadas.';
+
+    const quickFacts = document.createElement('p');
+    quickFacts.className = 'provider-quick-facts';
+    const freeTier = FREE_TIER_LABELS[provider.free_tier_status] || 'Gratuidade não informada';
+    const uses = Array.isArray(provider.primary_uses) ? provider.primary_uses.slice(0, 2).join(' · ') : '';
+    quickFacts.textContent = [freeTier, uses].filter(Boolean).join(' · ');
+
+    const credentialDetail = document.createElement('p');
+    credentialDetail.className = 'credential-detail';
+    credentialDetail.textContent = credential
       ? `${credential.secretLast4 ? `••••••••${credential.secretLast4} · ` : ''}${STATUS_LABELS[credential.validationStatus] || 'Status indisponível'}`
-      : 'Adicione uma credencial para este provedor.';
+      : 'Adicione uma credencial para conectar esta plataforma.';
+
+    const highlights = document.createElement('ul');
+    highlights.className = 'model-highlights';
+    for (const model of (provider.models || []).slice(0, 3)) {
+      const item = document.createElement('li');
+      item.textContent = model.display_name;
+      highlights.append(item);
+    }
+
+    const details = document.createElement('details');
+    details.className = 'provider-details';
+    const summary = document.createElement('summary');
+    summary.textContent = 'Ver plataforma e modelos';
+    const expanded = document.createElement('p');
+    expanded.textContent = provider.long_description || provider.short_description || 'Descrição expandida não disponível.';
+    const links = document.createElement('div');
+    links.className = 'provider-links';
+    for (const link of [externalLink('Site oficial ↗', provider.website_url), externalLink('Documentação ↗', provider.docs_url)]) {
+      if (link) links.append(link);
+    }
+    const notes = document.createElement('p');
+    notes.className = 'provider-notes';
+    notes.textContent = [provider.billing_notes, provider.region_notes].filter(Boolean).join(' ');
+    const modelsTitle = document.createElement('h4');
+    modelsTitle.textContent = 'Modelos em destaque';
+    const models = document.createElement('ul');
+    models.className = 'provider-models';
+    for (const model of provider.models || []) models.append(modelCard(model));
+    const verified = document.createElement('p');
+    verified.className = 'last-verified';
+    verified.textContent = provider.last_verified_at ? `Verificado em ${provider.last_verified_at}` : 'Data de verificação não disponível';
+    details.append(summary, expanded, links);
+    if (notes.textContent) details.append(notes);
+    if ((provider.models || []).length) details.append(modelsTitle, models);
+    details.append(verified);
 
     const form = document.createElement('form');
     form.className = 'credential-form';
@@ -55,6 +181,7 @@ export function renderCredentialProviders(elements, providers, credentials, hand
     label.name = 'label';
     label.placeholder = 'Rótulo opcional';
     label.maxLength = 100;
+    label.value = credential?.label || '';
     const actions = document.createElement('div');
     actions.className = 'credential-actions';
     const save = button(credential ? 'Substituir' : 'Adicionar', 'save');
@@ -75,7 +202,9 @@ export function renderCredentialProviders(elements, providers, credentials, hand
       if (action === 'test') handlers.test(provider.slug, form);
       if (action === 'remove') handlers.remove(provider.slug, provider.display_name, form);
     });
-    card.append(heading, detail, form);
+    card.append(heading, detail, quickFacts);
+    if (highlights.children.length) card.append(highlights);
+    card.append(credentialDetail, details, form);
     return card;
   });
   elements.list.replaceChildren(...cards);

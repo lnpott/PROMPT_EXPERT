@@ -31,7 +31,7 @@ select policies_are(
 select policies_are(
   'public',
   'api_providers',
-  array['public can read active api providers'],
+  array['anonymous can read active api providers', 'authenticated can read available api providers'],
   'public can read active api providers'
 );
 select results_eq(
