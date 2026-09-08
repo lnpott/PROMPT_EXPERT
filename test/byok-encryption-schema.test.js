@@ -14,6 +14,10 @@ const rlsTest = readFileSync(
   new URL('../supabase/tests/database/byok_encryption_rls.test.sql', import.meta.url),
   'utf8',
 );
+const step15ConstraintFix = readFileSync(
+  new URL('../supabase/migrations/20260908160000_require_byok_key_version.sql', import.meta.url),
+  'utf8',
+);
 
 test('Step 14 evolves rather than rewriting the applied Step 13 migration', () => {
   assert.match(step13, /user_api_credentials_step_13_no_secret_check/);
@@ -46,5 +50,10 @@ test('Step 14 SQL suite preserves the original isolation contract', () => {
   assert.match(rlsTest, /anonymous users cannot read encrypted credentials/);
   assert.match(rlsTest, /structurally incomplete cryptographic material is rejected/);
   assert.match(rlsTest, /public can read active api providers/);
-  assert.match(rlsTest, /select plan\(16\)/);
+  assert.match(rlsTest, /select plan\(17\)/);
+});
+
+test('encrypted rows require a non-null key version', () => {
+  assert.match(step15ConstraintFix, /key_version is not null\s+and key_version between 1 and 2147483647/);
+  assert.match(rlsTest, /encrypted material without key version is rejected/);
 });

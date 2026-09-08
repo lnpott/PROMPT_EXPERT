@@ -30,6 +30,7 @@ function authErrorMessage(error, action) {
 
 export function createAuthController(client) {
   let currentUser = null;
+  let currentAccessToken = null;
   let recoverySession = false;
   const listeners = new Set();
   let subscription;
@@ -39,6 +40,9 @@ export function createAuthController(client) {
 
   return {
     getSnapshot: snapshot,
+    getAccessToken() {
+      return currentAccessToken;
+    },
     subscribe(listener) {
       listeners.add(listener);
       listener(snapshot());
@@ -53,6 +57,7 @@ export function createAuthController(client) {
       const listener = client.auth.onAuthStateChange((event, session) => {
         recoverySession = event === 'PASSWORD_RECOVERY';
         currentUser = session?.user || null;
+        currentAccessToken = session?.access_token || null;
         notify();
       });
       subscription = listener.data.subscription;
@@ -60,6 +65,7 @@ export function createAuthController(client) {
       const { data, error } = await client.auth.getSession();
       if (error) throw new Error('Não foi possível restaurar a sessão.');
       currentUser = data.session?.user || null;
+      currentAccessToken = data.session?.access_token || null;
       notify();
       return snapshot();
     },

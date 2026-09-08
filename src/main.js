@@ -3,6 +3,7 @@ import { compilePrompt, findProfile, publicProfiles } from '../api/model-profile
 import { publicCompilerModels } from '../api/compiler-models.js';
 import { createAuthController } from './auth/session.js';
 import { initializeAuthUI } from './auth/ui.js';
+import { initializeCredentialManager } from './byok/credentials.js';
 import { createSupabaseBrowserClient } from './lib/supabase.js';
 
 const brief = document.querySelector('#brief');
@@ -19,7 +20,9 @@ const source = document.querySelector('#source');
 let profiles = publicProfiles();
 let compilers = publicCompilerModels();
 
-initializeAuthUI(createAuthController(createSupabaseBrowserClient()), {
+const authController = createAuthController(createSupabaseBrowserClient());
+
+initializeAuthUI(authController, {
   accountStatus: document.querySelector('#account-status'),
   signedOut: document.querySelector('#signed-out'),
   signedIn: document.querySelector('#signed-in'),
@@ -34,6 +37,11 @@ initializeAuthUI(createAuthController(createSupabaseBrowserClient()), {
   signOut: document.querySelector('#sign-out'),
   recovery: document.querySelector('#recover-account'),
   actionButtons: document.querySelectorAll('#auth-form button'),
+});
+
+initializeCredentialManager(authController, {
+  feedback: document.querySelector('#credentials-feedback'),
+  list: document.querySelector('#providers-list'),
 });
 
 function updateProfileDescription() {
