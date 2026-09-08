@@ -150,14 +150,14 @@ test('credentials are validated without persisting or logging passwords', () => 
   });
 });
 
-test('guest compiler remains present and BYOK storage is absent', () => {
+test('guest compiler remains present while credential management stays isolated', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const trackedSource = [main, html].join('\n');
+  const generate = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
 
   assert.match(main, /compilePrompt/);
   assert.match(main, /response\.status === 404/);
   assert.match(html, /compilador local continua disponível sem conta/i);
-  assert.match(html, /Nenhuma chave de API pode ser cadastrada nesta versão/);
-  assert.doesNotMatch(trackedSource, /user_api_credentials|USER_CREDENTIALS_MASTER_KEY|AES-256-GCM|\/api\/credentials/);
+  assert.match(html, /chaves são enviadas somente ao backend/i);
+  assert.doesNotMatch(generate, /user_api_credentials|USER_CREDENTIALS_MASTER_KEY|decryptCredential|\/api\/credentials/);
 });

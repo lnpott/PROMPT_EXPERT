@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 select results_eq(
   $$select count(*) from pg_constraint where conrelid = 'public.user_api_credentials'::regclass and conname = 'user_api_credentials_crypto_material_check' and contype = 'c'$$,
@@ -74,6 +74,12 @@ select throws_ok(
   '23514',
   null,
   'invalid authentication tag length is rejected'
+);
+select throws_ok(
+  $$insert into public.user_api_credentials (id, user_id, provider_id, ciphertext, iv, auth_tag) select 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', id, 'ZmljdGlvbmFs', 'MDEyMzQ1Njc4OWFi', 'MDEyMzQ1Njc4OWFiY2RlZg==' from public.api_providers where slug = 'google-gemini'$$,
+  '23514',
+  null,
+  'encrypted material without key version is rejected'
 );
 
 set local request.jwt.claim.sub = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
