@@ -37,9 +37,13 @@ function createAuthMock(initialUser = null, sessionError = null) {
         calls.push({ action: 'recovery', email, options });
         return { error: null };
       },
+      async updateUser(attributes) {
+        calls.push({ action: 'updateUser', attributes });
+        return { error: null };
+      },
     },
   };
-  return { client, calls };
+  return { client, calls, emit(event, session) { callback(event, session); } };
 }
 
 function element() {
@@ -55,6 +59,7 @@ function uiElements() {
     accountStatus: element(),
     userEmail: element(),
     feedback: element(),
+    recoveryPanel: element(),
   };
 }
 
@@ -93,6 +98,18 @@ test('login and logout events update subscribed session state', async () => {
 
   assert.deepEqual(await controller.signOut(), { error: '' });
   assert.equal(identities.at(-1), null);
+});
+
+test('PASSWORD_RECOVERY is latched until explicit completion or sign-out', async () => {
+  const { client, emit } = createAuthMock();
+  const controller = createAuthController(client);
+  await controller.initialize();
+  emit('PASSWORD_RECOVERY', { user: { id: 'user-a' }, access_token: 'recovery-token' });
+  assert.equal(controller.getSnapshot().recoverySession, true);
+  emit('TOKEN_REFRESHED', { user: { id: 'user-a' }, access_token: 'refreshed-token' });
+  assert.equal(controller.getSnapshot().recoverySession, true);
+  await controller.signOut();
+  assert.equal(controller.getSnapshot().recoverySession, false);
 });
 
 test('account UI protects providers visually and uses textContent for email', () => {

@@ -300,12 +300,12 @@ export function initializeCredentialManager(controller, elements, request = fetc
 
   return controller.subscribe((state) => {
     const userId = state.user?.id || null;
-    if (!userId) {
+    if (!userId || state.recoverySession) {
       activeUserId = null;
       credentials = [];
       providers = [];
       elements.list.replaceChildren();
-      message('Entre em sua conta para gerenciar credenciais.');
+      message(state.recoverySession ? 'O cofre fica oculto durante a recuperação.' : 'Entre em sua conta para gerenciar credenciais.');
       return;
     }
     if (userId === activeUserId) return;
