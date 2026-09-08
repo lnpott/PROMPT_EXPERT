@@ -282,9 +282,10 @@ test('GET /api/provenance fails closed when the base is unavailable', async () =
 });
 
 test('GET /api/providers exposes only active public provider fields', async () => {
-  let requestUrl;
+  const requestUrls = [];
   globalThis.fetch = async (url) => {
-    requestUrl = url;
+    requestUrls.push(url);
+    if (url.includes('ai_models')) return jsonResponse([]);
     return jsonResponse([{
       slug: 'openrouter',
       display_name: 'OpenRouter',
@@ -305,9 +306,10 @@ test('GET /api/providers exposes only active public provider fields', async () =
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.providers.length, 1);
-  assert.match(requestUrl, /api_providers\?is_active=eq\.true/);
-  assert.match(requestUrl, /select=slug,display_name,category/);
-  assert.doesNotMatch(requestUrl, /user_api_credentials|ciphertext|auth_tag|user_id|base_url|auth_scheme/);
+  assert.match(requestUrls[0], /api_providers\?is_active=eq\.true/);
+  assert.match(requestUrls[0], /select=slug,display_name,category/);
+  assert.match(requestUrls[1], /ai_models\?is_active=eq\.true&is_public=eq\.true&is_deprecated=eq\.false/);
+  assert.doesNotMatch(requestUrls.join('\n'), /user_api_credentials|ciphertext|auth_tag|user_id|base_url|auth_scheme/);
   assert.equal('id' in response.body.providers[0], false);
 });
 
