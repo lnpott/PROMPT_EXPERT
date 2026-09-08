@@ -55,7 +55,8 @@ export function createAuthController(client) {
       }
 
       const listener = client.auth.onAuthStateChange((event, session) => {
-        recoverySession = event === 'PASSWORD_RECOVERY';
+        if (event === 'PASSWORD_RECOVERY') recoverySession = true;
+        if (event === 'SIGNED_OUT') recoverySession = false;
         currentUser = session?.user || null;
         currentAccessToken = session?.access_token || null;
         notify();
@@ -97,6 +98,23 @@ export function createAuthController(client) {
       if (!client) return { error: 'Configure o Supabase para recuperar a conta.' };
       const { error } = await client.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
       return { error: authErrorMessage(error, 'recovery') };
+    },
+    async updatePassword(password) {
+      if (typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) {
+        return { error: `A senha deve ter pelo menos ${PASSWORD_MIN_LENGTH} caracteres.` };
+      }
+      if (!client || !currentUser) return { error: 'Sessão de autenticação indisponível.' };
+      const { error } = await client.auth.updateUser({ password });
+      return { error: authErrorMessage(error, 'update') };
+    },
+    async finishRecovery() {
+      if (!client) return { error: '' };
+      const { error } = await client.auth.signOut();
+      if (!error) {
+        recoverySession = false;
+        notify();
+      }
+      return { error: authErrorMessage(error, 'signout') };
     },
     destroy() {
       subscription?.unsubscribe();

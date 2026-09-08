@@ -36,6 +36,12 @@ initializeAuthUI(authController, {
   signUp: document.querySelector('#sign-up'),
   signOut: document.querySelector('#sign-out'),
   recovery: document.querySelector('#recover-account'),
+  recoveryPanel: document.querySelector('#recovery-panel'),
+  recoveryForm: document.querySelector('#recovery-form'),
+  newPassword: document.querySelector('#recovery-new-password'),
+  confirmPassword: document.querySelector('#recovery-confirm-password'),
+  completeRecovery: document.querySelector('#complete-recovery'),
+  recoveryFeedback: document.querySelector('#recovery-feedback'),
   actionButtons: document.querySelectorAll('#auth-form button'),
 });
 

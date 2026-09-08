@@ -65,6 +65,18 @@
             <p>Autenticado como <strong id="user-email"></strong></p>
             <button id="sign-out" class="secondary" type="button">Sair</button>
           </div>
+          <div id="recovery-panel" class="recovery-panel" hidden>
+            <h3>Redefinir senha esquecida</h3>
+            <p>Por segurança, redefinir uma senha esquecida remove as chaves de API salvas na sua conta. Após redefinir a senha, você precisará cadastrá-las novamente.</p>
+            <div id="recovery-form">
+              <label for="recovery-new-password">Nova senha</label>
+              <input id="recovery-new-password" type="password" autocomplete="new-password" minlength="8" required />
+              <label for="recovery-confirm-password">Confirmar nova senha</label>
+              <input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="8" required />
+              <button id="complete-recovery" type="button">Remover chaves e redefinir senha</button>
+              <p id="recovery-feedback" role="status" aria-live="polite"></p>
+            </div>
+          </div>
           <p class="auth-feedback" id="auth-feedback" role="status" aria-live="polite"></p>
         </form>
       </section>

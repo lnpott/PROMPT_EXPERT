@@ -4,18 +4,20 @@ function setHidden(element, hidden) {
 
 export function renderAccountState(elements, state) {
   const authenticated = Boolean(state.user);
+  const recovery = authenticated && state.recoverySession;
   setHidden(elements.signedOut, authenticated);
-  setHidden(elements.signedIn, !authenticated);
-  setHidden(elements.providersLocked, authenticated);
-  setHidden(elements.providersPlaceholder, !authenticated);
-  elements.accountStatus.textContent = authenticated ? 'autenticado' : 'desconectado';
+  setHidden(elements.signedIn, !authenticated || recovery);
+  setHidden(elements.recoveryPanel, !recovery);
+  setHidden(elements.providersLocked, authenticated && !recovery);
+  setHidden(elements.providersPlaceholder, !authenticated || recovery);
+  elements.accountStatus.textContent = recovery ? 'recuperação' : authenticated ? 'autenticado' : 'desconectado';
   elements.userEmail.textContent = authenticated ? state.user.email || 'Conta autenticada' : '';
 
   if (!state.configured && !authenticated) {
     elements.feedback.textContent = 'Contas indisponíveis neste ambiente. O compilador local continua disponível.';
   }
   if (state.recoverySession) {
-    elements.feedback.textContent = 'Sessão de recuperação identificada. A conclusão segura e destrutiva do futuro cofre será implementada no Passo 16.';
+    elements.feedback.textContent = 'Defina uma nova senha para concluir a recuperação segura.';
   }
 }
 
@@ -24,7 +26,7 @@ function setBusy(elements, busy) {
   elements.authForm.setAttribute('aria-busy', String(busy));
 }
 
-export function initializeAuthUI(controller, elements) {
+export function initializeAuthUI(controller, elements, request = fetch) {
   const unsubscribe = controller.subscribe((state) => renderAccountState(elements, state));
 
   async function run(action, pendingMessage) {
@@ -72,6 +74,43 @@ export function initializeAuthUI(controller, elements) {
     );
     if (!result?.error) {
       elements.feedback.textContent = 'Se a conta existir, as instruções de recuperação serão enviadas por email.';
+    }
+  });
+
+  elements.completeRecovery.addEventListener('click', async () => {
+    if (elements.recoveryForm.getAttribute('aria-busy') === 'true') return;
+    const password = elements.newPassword.value;
+    const confirmation = elements.confirmPassword.value;
+    if (password !== confirmation) {
+      elements.recoveryFeedback.textContent = 'As senhas não coincidem.';
+      return;
+    }
+    elements.recoveryForm.setAttribute('aria-busy', 'true');
+    elements.completeRecovery.disabled = true;
+    elements.recoveryFeedback.textContent = 'Removendo credenciais salvas…';
+    try {
+      const token = controller.getAccessToken();
+      if (!token || !controller.getSnapshot().recoverySession) throw new Error('Sessão de recuperação indisponível. Solicite um novo link.');
+      const purge = await request('/api/account/recovery/purge-credentials', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!purge.ok || !(await purge.json().catch(() => ({}))).purged) {
+        throw new Error('Não foi possível remover as credenciais. Tente novamente antes de redefinir a senha.');
+      }
+      elements.recoveryFeedback.textContent = 'Credenciais removidas. Atualizando a senha…';
+      const updated = await controller.updatePassword(password);
+      if (updated.error) throw new Error(updated.error);
+      const finished = await controller.finishRecovery();
+      if (finished?.error) throw new Error('Senha redefinida, mas não foi possível encerrar a sessão. Saia manualmente antes de continuar.');
+      elements.recoveryFeedback.textContent = 'Senha redefinida. Entre novamente e cadastre suas chaves de API.';
+    } catch (error) {
+      elements.recoveryFeedback.textContent = error.message || 'Não foi possível concluir a recuperação.';
+    } finally {
+      elements.newPassword.value = '';
+      elements.confirmPassword.value = '';
+      elements.recoveryForm.setAttribute('aria-busy', 'false');
+      elements.completeRecovery.disabled = false;
     }
   });
 
