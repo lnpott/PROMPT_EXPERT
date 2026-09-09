@@ -752,3 +752,11 @@ Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperaç
 - Rollback: reverter o commit desta entrega; não há mudança de banco nesta etapa e as regras canônicas continuam inativas.
 - Preview: deployment Vercel `READY`; health, nove perfis e proveniência responderam HTTP 200. Em três gerações reais, a primeira e a segunda usaram o fallback local seguro por indisponibilidade/timeout transitório e a terceira respondeu pela Gemini, comprovando os dois caminhos sem interromper o produto.
 - Estado final: núcleo funcional concluído; expansões futuras dependem de requisito de negócio, evidência nova ou escala operacional.
+
+#### Passo 17 — OpenRouter BYOK — 2026-09-09
+
+- O gerador aceita explicitamente `platform`, `local` e `openrouter`. O modo local nunca consulta API externa; o modo plataforma mantém Gemini e seu fallback histórico; o modo OpenRouter não faz fallback para Gemini nem para geração local.
+- O adapter dedicado fixa `https://openrouter.ai/api/v1` no servidor, valida a chave em `GET /key` e gera em `POST /chat/completions`, com bearer construído exclusivamente no backend, timeout de 12 segundos, limite de resposta e parsing defensivo.
+- O fluxo OpenRouter autentica pelo Supabase, consulta provider/modelo ativos e apenas a credencial visível ao próprio JWT/RLS, autentica AES-GCM/AAD e descriptografa somente no servidor. A validação persiste `valid`, `invalid` ou `error` e `last_validated_at`; apenas 401/403 tornam a chave inválida. 402, 404, 429, 5xx, timeout, rede e resposta malformada são erros operacionais.
+- A interface oferece Plataforma, Somente local e OpenRouter BYOK. Exibe apenas `secretLast4` e os estados `untested`, `valid`, `invalid` e `error`; nenhum segredo completo retorna do backend.
+- Somente OpenRouter foi implementado. Nenhuma API key real foi usada nesta validação automatizada e um smoke pago não foi declarado. O Passo 18 não foi iniciado.

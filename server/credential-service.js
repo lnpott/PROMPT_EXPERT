@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { decryptCredential, encryptCredential } from './security/credential-crypto.js';
 import { authenticateUser, UserApiError, userDatabaseRequest } from './security/supabase-user.js';
+import { OpenRouterError, validateOpenRouterKey } from './providers/openrouter.js';
 
 const MAX_BODY_BYTES = 18_000;
 const MAX_SECRET_BYTES = 16_384;
@@ -232,13 +233,32 @@ export async function testCredential(request, response, environment = process.en
       credentialId: credential.id,
     }, environment);
     if (!plaintext) throw new Error('empty decrypted credential');
+    if (slug !== 'openrouter') return json(response, 400, { error: 'Validação remota ainda não disponível para este provedor.' });
+    let validationStatus;
+    let providerResult;
+    try {
+      providerResult = await validateOpenRouterKey(plaintext);
+      validationStatus = 'valid';
+    } catch (error) {
+      validationStatus = error instanceof OpenRouterError && error.code === 'invalid' ? 'invalid' : 'error';
+      providerResult = { code: error instanceof OpenRouterError ? error.code : 'operational_error' };
+    }
+    const validatedAt = new Date().toISOString();
+    const saved = await userDatabaseRequest(
+      `user_api_credentials?id=eq.${encodeURIComponent(credential.id)}&select=id,label,secret_last4,validation_status,last_validated_at,created_at,updated_at`,
+      { ...auth, method: 'PATCH', body: { validation_status: validationStatus, last_validated_at: validatedAt, updated_at: validatedAt }, prefer: 'return=representation' },
+      environment,
+    );
+    if (!saved.ok) throw new Error('validation persistence failed');
+    const [updated] = await saved.json();
     return json(response, 200, {
-      check: 'local_integrity',
+      check: 'provider',
       integrityVerified: true,
-      providerValidated: false,
-      validationStatus: credential.validation_status,
-      message: 'Integridade verificada localmente; o provedor ainda não foi consultado.',
-      credential: withProvider(credential, provider),
+      providerValidated: validationStatus === 'valid',
+      validationStatus,
+      providerResult: providerResult.code || 'valid',
+      message: validationStatus === 'valid' ? 'Credencial validada no OpenRouter.' : validationStatus === 'invalid' ? 'Credencial recusada pelo OpenRouter.' : 'Não foi possível validar no OpenRouter agora.',
+      credential: withProvider(updated, provider),
     });
   } catch (error) {
     const { status, message } = publicError(error);
@@ -246,4 +266,17 @@ export async function testCredential(request, response, environment = process.en
   } finally {
     plaintext = null;
   }
+}
+
+export async function openRouterCredential(request, environment = process.env) {
+  const auth = await authenticateUser(request, environment);
+  const provider = await activeProvider('openrouter', auth, environment);
+  if (!provider) throw new OpenRouterError('provider_unavailable', 404);
+  const credential = await credentialRecord(provider.id, auth, environment, true);
+  if (!credential) throw new OpenRouterError('credential_missing', 404);
+  const apiKey = decryptCredential({
+    ciphertext: credential.ciphertext, iv: credential.iv, authTag: credential.auth_tag,
+    keyVersion: credential.key_version, userId: auth.userId, providerId: provider.id, credentialId: credential.id,
+  }, environment);
+  return { apiKey, auth, provider };
 }

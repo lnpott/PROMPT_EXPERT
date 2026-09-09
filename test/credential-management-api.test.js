@@ -184,7 +184,7 @@ test('delete is owner-scoped and idempotent', async () => {
   assert.equal(rows[0].user_id, users['token-b']);
 });
 
-test('credential test verifies local integrity without claiming provider validation', async () => {
+test('OpenRouter credential test verifies integrity and persists provider validation', async () => {
   const save = apiResponse();
   await putCredential(request('PUT', { provider: 'openrouter', body: { secret: 'fictional-integrity-CCCC' }, headers: { 'content-type': 'application/json' } }), save, environment);
   const result = apiResponse();
@@ -192,7 +192,8 @@ test('credential test verifies local integrity without claiming provider validat
   assert.equal(result.statusCode, 200);
   assert.equal(result.body.integrityVerified, true);
   assert.equal(result.body.providerValidated, false);
-  assert.equal(result.body.validationStatus, 'untested');
+  assert.equal(result.body.validationStatus, 'invalid');
+  assert.match(result.body.message, /recusada pelo OpenRouter/);
   assert.doesNotMatch(JSON.stringify(result.body), /fictional|ciphertext|authTag|Authorization/);
 });
 

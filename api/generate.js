@@ -3,6 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { getModelKnowledge } from '../server/knowledge-base.js';
 import { compilerApiKey, DEFAULT_COMPILER_MODEL, findCompilerModel } from './compiler-models.js';
 import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
+import { openRouterCredential } from '../server/credential-service.js';
+import { userDatabaseRequest } from '../server/security/supabase-user.js';
+import { generateWithOpenRouter, OpenRouterError } from '../server/providers/openrouter.js';
 
 const MAX_BRIEF_LENGTH = 6000;
 const PROVIDER_TIMEOUT_MS = 9000;
@@ -87,8 +90,9 @@ export default async function handler(request, response) {
     ? request.body.compilerModel
     : (process.env.GEMINI_MODEL || DEFAULT_COMPILER_MODEL);
   const compiler = findCompilerModel(requestedCompiler);
+  const provider = request.body?.provider === undefined ? 'platform' : request.body.provider;
 
-  if (!profile || !compiler || !Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
+  if (!['local', 'platform', 'openrouter'].includes(provider) || !profile || !compiler || !Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
     return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.' });
   }
 
@@ -99,6 +103,41 @@ export default async function handler(request, response) {
   }
 
   const localPrompt = compilePrompt({ brief, profile, taskType });
+  if (provider === 'local') {
+    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local', status: 200, startedAt });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', compilerModel: compiler.slug, requestId });
+  }
+
+  if (provider === 'openrouter') {
+    let apiKey = null;
+    try {
+      const owned = await openRouterCredential(request);
+      apiKey = owned.apiKey;
+      const openRouterModel = typeof request.body?.openRouterModel === 'string' ? request.body.openRouterModel : '';
+      const modelsResponse = await userDatabaseRequest(
+        `ai_models?provider_id=eq.${encodeURIComponent(owned.provider.id)}&model_id=eq.${encodeURIComponent(openRouterModel)}&is_deprecated=eq.false&select=model_id`,
+        owned.auth,
+      );
+      if (!modelsResponse.ok) throw new OpenRouterError('model_lookup_error');
+      const [allowedModel] = await modelsResponse.json();
+      if (!allowedModel) throw new OpenRouterError('model_unavailable', 404);
+      const prompt = await generateWithOpenRouter({ apiKey, model: allowedModel.model_id, instruction: localPrompt });
+      logRequest({ requestId, model, compilerModel: allowedModel.model_id, source: 'openrouter', status: 200, startedAt });
+      return sendJson(response, 200, { prompt, source: 'openrouter', compilerModel: allowedModel.model_id, requestId });
+    } catch (error) {
+      const status = error?.status && Number.isInteger(error.status) ? error.status : 503;
+      const messages = {
+        invalid: 'A credencial OpenRouter foi recusada.', credential_missing: 'Adicione sua credencial OpenRouter antes de gerar.',
+        provider_unavailable: 'O OpenRouter não está ativo.', model_unavailable: 'O modelo OpenRouter selecionado não está disponível.',
+        insufficient_credits: 'A conta OpenRouter não possui créditos suficientes.', rate_limit: 'O OpenRouter limitou temporariamente as solicitações.',
+        timeout: 'O OpenRouter não respondeu a tempo.', temporary_provider_error: 'O OpenRouter está temporariamente indisponível.',
+      };
+      logRequest({ requestId, model, compilerModel: 'openrouter', source: 'openrouter', status, startedAt, error: error?.code || error?.name || 'Error' });
+      return sendJson(response, status, { error: messages[error?.code] || 'Não foi possível gerar com o OpenRouter.', code: error?.code || 'operational_error', requestId });
+    } finally {
+      apiKey = null;
+    }
+  }
   const apiKey = compilerApiKey(compiler);
   if (!apiKey) {
     logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local', status: 200, startedAt });

@@ -23,9 +23,9 @@ test('credential UI uses password inputs and clears secrets before asynchronous 
   assert.doesNotMatch(html, /USER_CREDENTIALS_MASTER_KEY|ciphertext|auth_tag|key_version/);
 });
 
-test('credential UI differentiates local integrity from provider validation', () => {
-  assert.match(ui, /Testando integridade/);
-  assert.match(ui, /Integridade verificada localmente/);
+test('credential UI differentiates OpenRouter provider validation', () => {
+  assert.match(ui, /Validando no OpenRouter/);
+  assert.match(ui, /Validar no provedor/);
   assert.doesNotMatch(ui, /API válida/);
   assert.match(html, /nunca voltam para esta tela/);
 });
@@ -39,7 +39,7 @@ test('rich catalog UI supports models, pricing, free tiers and optional media sa
   assert.match(ui, /if \(provider\.logo_url\)/);
   assert.match(ui, /provider-logo-fallback/);
   assert.doesNotMatch(ui, /innerHTML/);
-  assert.doesNotMatch(generate, /ai_models|richProviders|BYOK|user_api_credentials/);
+  assert.doesNotMatch(generate, /richProviders|user_api_credentials/);
 });
 
 test('model price summary distinguishes structured and unavailable pricing', () => {

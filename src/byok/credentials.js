@@ -187,7 +187,7 @@ export function renderCredentialProviders(elements, providers, credentials, hand
     const save = button(credential ? 'Substituir' : 'Adicionar', 'save');
     save.type = 'submit';
     actions.append(save);
-    if (credential) actions.append(button('Testar integridade', 'test', true), button('Remover', 'remove', true));
+    if (credential) actions.append(button(provider.slug === 'openrouter' ? 'Validar no provedor' : 'Testar integridade', 'test', true), button('Remover', 'remove', true));
     form.append(secretLabel, secret, label, actions);
 
     form.addEventListener('submit', (event) => {
@@ -276,11 +276,12 @@ export function initializeCredentialManager(controller, elements, request = fetc
       });
     },
     test(slug, form) {
-      return operation(form, 'Testando integridade…', async () => {
+      return operation(form, slug === 'openrouter' ? 'Validando no OpenRouter…' : 'Testando integridade…', async () => {
         const response = await authorized(`/api/credentials/${encodeURIComponent(slug)}/test`, { method: 'POST' });
         const result = await payload(response);
         if (!response.ok) throw new Error(result.error || 'Não foi possível testar a credencial.');
-        message(result.message || 'Integridade verificada localmente.', 'success');
+        await refresh();
+        message(result.message || 'Validação concluída.', result.validationStatus === 'valid' ? 'success' : 'error');
       });
     },
     remove(slug, name, form) {
