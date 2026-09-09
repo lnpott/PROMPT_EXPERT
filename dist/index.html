@@ -5,20 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Transforme uma ideia em um prompt de programação pronto para usar." />
     <title>Prompt Expert</title>
-    <script type="module" crossorigin src="/assets/index-B16Qk4Nu.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BpSTTDK0.css">
+    <script type="module" crossorigin src="/assets/index-9f7fZrlv.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Dxvr70Hk.css">
   </head>
   <body>
     <main class="shell">
       <header class="topbar">
         <a class="brand" href="#top" aria-label="Prompt Expert, início">Prompt <span>Expert</span></a>
-        <nav class="account-nav" aria-label="Conta">
-          <a href="#account">Conta</a>
+        <nav class="account-nav" id="account-navigation" aria-label="Conta" hidden>
+          <a href="#app">Gerador</a>
           <a href="#providers">APIs e provedores</a>
+          <a href="#account">Sessão</a>
           <p class="status"><i></i> <span id="account-status">desconectado</span></p>
         </nav>
       </header>
 
+      <p id="session-loading" class="session-loading" role="status">Verificando sessão…</p>
+
+      <section class="account-panel" id="account" aria-labelledby="account-title" hidden>
+        <div>
+          <p class="eyebrow">Conta</p>
+          <h1 id="account-title">Sua conta</h1>
+          <p class="account-copy">Entre para acessar o gerador e suas integrações com segurança.</p>
+        </div>
+
+        <form class="auth-form" id="auth-form" novalidate>
+          <div id="signed-out">
+            <label for="auth-email">Email</label><input id="auth-email" name="email" type="email" autocomplete="email" required />
+            <label for="auth-password">Senha</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+            <div class="auth-actions"><button id="sign-in" type="submit">Entrar</button><button id="sign-up" class="secondary" type="button">Criar conta</button><button id="recover-account" class="text-button" type="button">Esqueci minha senha</button></div>
+          </div>
+          <div id="signed-in" hidden><p>Autenticado como <strong id="user-email"></strong></p><button id="sign-out" class="secondary" type="button">Sair</button></div>
+          <div id="recovery-panel" class="recovery-panel" hidden>
+            <h2>Redefinir senha esquecida</h2><p>Por segurança, redefinir uma senha esquecida remove as chaves de API salvas na sua conta. Após redefinir a senha, você precisará cadastrá-las novamente.</p>
+            <div id="recovery-form"><label for="recovery-new-password">Nova senha</label><input id="recovery-new-password" type="password" autocomplete="new-password" minlength="8" required /><label for="recovery-confirm-password">Confirmar nova senha</label><input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="8" required /><button id="complete-recovery" type="button">Remover chaves e redefinir senha</button><p id="recovery-feedback" role="status" aria-live="polite"></p></div>
+          </div>
+          <p class="auth-feedback" id="auth-feedback" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <div id="app-content" hidden>
       <section class="intro" id="top" aria-labelledby="page-title">
         <p class="eyebrow">Do briefing ao código</p>
         <h1 id="page-title">Um briefing.<br /><em>Nove modelos prontos.</em></h1>
@@ -33,59 +59,21 @@
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
         <div class="controls controls-grid">
           <label class="model-picker" for="generation-provider"><span>Origem da geração</span><select id="generation-provider"><option value="platform">Plataforma</option><option value="local">Somente local</option><option value="openrouter">OpenRouter BYOK</option><option value="openai">OpenAI BYOK</option><option value="xai">xAI BYOK</option><option value="deepseek">DeepSeek BYOK</option><option value="groq">GroqCloud BYOK</option><option value="mistral">Mistral BYOK</option></select></label>
-          <label class="model-picker" for="provider-model" id="provider-model-field" hidden><span>Modelo do provider</span><select id="provider-model"></select></label>
+          <label class="model-picker" for="provider-model" id="provider-model-field" hidden><span>Modelo</span><select id="provider-model"></select></label>
           <label class="model-picker" for="model">
-            <span>Modelo de destino</span>
+            <span>Perfil do prompt</span>
             <select id="model" aria-describedby="model-description"><option value="grok">Grok</option></select>
           </label>
-          <label class="model-picker" for="compiler-model"><span>Motor de compilação</span><select id="compiler-model" aria-describedby="compiler-description"><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite · padrão</option></select></label>
+          <label class="model-picker" for="compiler-model" id="compiler-model-field"><span>Modelo da plataforma</span><select id="compiler-model" aria-describedby="compiler-description"><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite · padrão</option></select></label>
           <label class="model-picker" for="task-type"><span>Tipo de tarefa</span><select id="task-type"><option value="cited">Tarefas citadas</option><option value="application">Aplicação completa</option><option value="refactor">Refatoração</option><option value="debug">Correção de bug</option><option value="agent">Agente autônomo</option><option value="fim">Fill-in-the-Middle</option></select></label>
           <button id="generate" type="button">Gerar prompt <span aria-hidden="true">↗</span></button>
         </div>
         <p class="model-description" id="model-description">Carregando perfis especializados…</p>
         <p class="model-description" id="compiler-description">Carregando motores de compilação…</p>
+        <p class="provider-guidance" id="provider-guidance" hidden>API não configurada. <a href="#providers">Configurar em APIs e provedores</a>.</p>
       </section>
 
-      <section class="account-panel" id="account" aria-labelledby="account-title">
-        <div>
-          <p class="eyebrow">Conta</p>
-          <h2 id="account-title">Sua sessão</h2>
-          <p class="account-copy">Entrar é opcional. O compilador local continua disponível sem conta.</p>
-        </div>
-
-        <form class="auth-form" id="auth-form" novalidate>
-          <div id="signed-out">
-            <label for="auth-email">Email</label>
-            <input id="auth-email" name="email" type="email" autocomplete="email" required />
-            <label for="auth-password">Senha</label>
-            <input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
-            <div class="auth-actions">
-              <button id="sign-in" type="submit">Entrar</button>
-              <button id="sign-up" class="secondary" type="button">Criar conta</button>
-              <button id="recover-account" class="text-button" type="button">Esqueci minha senha</button>
-            </div>
-          </div>
-          <div id="signed-in" hidden>
-            <p>Autenticado como <strong id="user-email"></strong></p>
-            <button id="sign-out" class="secondary" type="button">Sair</button>
-          </div>
-          <div id="recovery-panel" class="recovery-panel" hidden>
-            <h3>Redefinir senha esquecida</h3>
-            <p>Por segurança, redefinir uma senha esquecida remove as chaves de API salvas na sua conta. Após redefinir a senha, você precisará cadastrá-las novamente.</p>
-            <div id="recovery-form">
-              <label for="recovery-new-password">Nova senha</label>
-              <input id="recovery-new-password" type="password" autocomplete="new-password" minlength="8" required />
-              <label for="recovery-confirm-password">Confirmar nova senha</label>
-              <input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="8" required />
-              <button id="complete-recovery" type="button">Remover chaves e redefinir senha</button>
-              <p id="recovery-feedback" role="status" aria-live="polite"></p>
-            </div>
-          </div>
-          <p class="auth-feedback" id="auth-feedback" role="status" aria-live="polite"></p>
-        </form>
-      </section>
-
-      <section class="providers-panel" id="providers" aria-labelledby="providers-title">
+      <section class="providers-panel" id="providers" aria-labelledby="providers-title" hidden>
         <p class="eyebrow">Área pessoal</p>
         <h2 id="providers-title">APIs e provedores</h2>
         <p id="providers-locked">Entre em sua conta para acessar este recurso protegido.</p>
@@ -107,6 +95,7 @@
         </div>
         <pre id="output">Seu prompt aparecerá aqui.</pre>
       </section>
+      </div>
     </main>
   </body>
 </html>
