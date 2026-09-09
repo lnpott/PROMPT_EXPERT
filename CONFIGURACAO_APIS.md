@@ -128,3 +128,9 @@ Confirme que a resposta tem `source: "gemini"`, um `requestId` e um `prompt` nã
 - Preview multi-modelo: `/api/health` retornou `generator: "gemini"`.
 - Preview multi-modelo: uma geração GPT/Codex retornou `source: "gemini"`, `requestId` e prompt não vazio.
 - Nenhum valor secreto foi lido, exibido ou persistido durante a verificação.
+
+## OpenRouter BYOK (Passo 17)
+
+A chave OpenRouter pertence ao usuário e deve ser cadastrada pela área autenticada; não existe variável `OPENROUTER_API_KEY` da plataforma. O navegador envia a chave somente ao endpoint do cofre na inclusão/substituição. Geração posterior envia apenas `provider: "openrouter"` e um `openRouterModel` proveniente do catálogo. A URL da API e o header de autorização são construídos exclusivamente pelo adapter server-side.
+
+O teste da credencial consulta `GET https://openrouter.ai/api/v1/key`. A geração consulta `POST https://openrouter.ai/api/v1/chat/completions`. Falhas OpenRouter são retornadas sem fallback pago ou local silencioso. Não altere `USER_CREDENTIALS_MASTER_KEY` ou sua versão para habilitar esta integração.

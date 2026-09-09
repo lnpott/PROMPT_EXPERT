@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Transforme uma ideia em um prompt de programação pronto para usar." />
     <title>Prompt Expert</title>
-    <script type="module" crossorigin src="/assets/index-DroLtCRp.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DpCu-8kT.css">
+    <script type="module" crossorigin src="/assets/index-BELND1rV.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BpSTTDK0.css">
   </head>
   <body>
     <main class="shell">
@@ -32,6 +32,8 @@
         </div>
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
         <div class="controls controls-grid">
+          <label class="model-picker" for="generation-provider"><span>Origem da geração</span><select id="generation-provider"><option value="platform">Plataforma</option><option value="local">Somente local</option><option value="openrouter">OpenRouter BYOK</option></select></label>
+          <label class="model-picker" for="openrouter-model" id="openrouter-model-field" hidden><span>Modelo OpenRouter</span><select id="openrouter-model"><option value="openrouter/free">OpenRouter Free Models Router</option></select></label>
           <label class="model-picker" for="model">
             <span>Modelo de destino</span>
             <select id="model" aria-describedby="model-description"><option value="grok">Grok</option></select>
@@ -67,6 +69,18 @@
             <p>Autenticado como <strong id="user-email"></strong></p>
             <button id="sign-out" class="secondary" type="button">Sair</button>
           </div>
+          <div id="recovery-panel" class="recovery-panel" hidden>
+            <h3>Redefinir senha esquecida</h3>
+            <p>Por segurança, redefinir uma senha esquecida remove as chaves de API salvas na sua conta. Após redefinir a senha, você precisará cadastrá-las novamente.</p>
+            <div id="recovery-form">
+              <label for="recovery-new-password">Nova senha</label>
+              <input id="recovery-new-password" type="password" autocomplete="new-password" minlength="8" required />
+              <label for="recovery-confirm-password">Confirmar nova senha</label>
+              <input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="8" required />
+              <button id="complete-recovery" type="button">Remover chaves e redefinir senha</button>
+              <p id="recovery-feedback" role="status" aria-live="polite"></p>
+            </div>
+          </div>
           <p class="auth-feedback" id="auth-feedback" role="status" aria-live="polite"></p>
         </form>
       </section>
@@ -76,8 +90,9 @@
         <h2 id="providers-title">APIs e provedores</h2>
         <p id="providers-locked">Entre em sua conta para acessar este recurso protegido.</p>
         <div id="providers-placeholder" hidden>
-          <p>A fundação da conta está pronta. O cadastro de credenciais será implementado em uma etapa futura.</p>
-          <p class="security-note">Nenhuma chave de API pode ser cadastrada nesta versão.</p>
+          <p class="security-note">As chaves são enviadas somente ao backend e nunca voltam para esta tela.</p>
+          <p id="credentials-feedback" class="credentials-feedback" role="status" aria-live="polite"></p>
+          <div id="providers-list" class="providers-list" aria-live="polite"></div>
         </div>
       </section>
 

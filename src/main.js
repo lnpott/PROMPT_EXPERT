@@ -11,6 +11,9 @@ const model = document.querySelector('#model');
 const taskType = document.querySelector('#task-type');
 const compilerModel = document.querySelector('#compiler-model');
 const compilerDescription = document.querySelector('#compiler-description');
+const generationProvider = document.querySelector('#generation-provider');
+const openRouterModel = document.querySelector('#openrouter-model');
+const openRouterModelField = document.querySelector('#openrouter-model-field');
 const modelDescription = document.querySelector('#model-description');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
@@ -105,6 +108,9 @@ async function loadCompilers() {
 
 model.addEventListener('change', updateProfileDescription);
 compilerModel.addEventListener('change', updateCompilerDescription);
+generationProvider.addEventListener('change', () => {
+  openRouterModelField.hidden = generationProvider.value !== 'openrouter';
+});
 loadProfiles();
 loadCompilers();
 
@@ -123,10 +129,11 @@ generate.addEventListener('click', async () => {
   generate.textContent = 'Gerando…';
 
   try {
+    const accessToken = generationProvider.value === 'openrouter' ? authController.getAccessToken() : null;
     const response = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value, compilerModel: compilerModel.value }),
+      headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value, compilerModel: compilerModel.value, provider: generationProvider.value, ...(generationProvider.value === 'openrouter' ? { openRouterModel: openRouterModel.value } : {}) }),
     });
     const payload = await response.json().catch(() => ({}));
 
@@ -138,7 +145,7 @@ generate.addEventListener('click', async () => {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
     } else {
       output.textContent = payload.prompt;
-      source.textContent = payload.source === 'gemini' ? `Compilado por ${payload.compilerModel || compilerModel.value}` : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
+      source.textContent = payload.source === 'openrouter' ? `OpenRouter BYOK · ${payload.compilerModel}` : payload.source === 'gemini' ? `Compilado por ${payload.compilerModel || compilerModel.value}` : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
     }
 
     result.classList.remove('is-empty');
