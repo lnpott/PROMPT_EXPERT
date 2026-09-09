@@ -4,8 +4,8 @@ import test from 'node:test';
 
 const generation = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
 
-test('generation exposes only explicit local, platform and OpenRouter modes', () => {
-  assert.match(generation, /\['local', 'platform', 'openrouter'\]/);
+test('generation continues to expose explicit local, platform and OpenRouter modes', () => {
+  assert.match(generation, /'local', 'platform', 'openrouter'/);
   assert.match(generation, /provider === 'local'/);
   assert.match(generation, /provider === 'openrouter'/);
 });

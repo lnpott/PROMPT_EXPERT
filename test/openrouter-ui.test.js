@@ -10,5 +10,5 @@ test('UI offers all three generation origins without accepting a base URL', () =
   assert.match(html, /value="local">Somente local/);
   assert.match(html, /value="openrouter">OpenRouter BYOK/);
   assert.doesNotMatch(html, /base.?url/i);
-  assert.match(main, /openRouterModel: openRouterModel\.value/);
+  assert.match(main, /openRouterModel: providerModel\.value/);
 });

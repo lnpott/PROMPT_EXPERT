@@ -23,8 +23,8 @@ test('credential UI uses password inputs and clears secrets before asynchronous 
   assert.doesNotMatch(html, /USER_CREDENTIALS_MASTER_KEY|ciphertext|auth_tag|key_version/);
 });
 
-test('credential UI differentiates OpenRouter provider validation', () => {
-  assert.match(ui, /Validando no OpenRouter/);
+test('credential UI differentiates provider validation', () => {
+  assert.match(ui, /Validando no provedor/);
   assert.match(ui, /Validar no provedor/);
   assert.doesNotMatch(ui, /API válida/);
   assert.match(html, /nunca voltam para esta tela/);
