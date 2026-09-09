@@ -29,6 +29,12 @@ test('logout and recovery hide workspace; recovery remains prioritized', () => {
   assert.equal(e.appContent.hidden, true); assert.equal(e.signedOut.hidden, false);
 });
 
+test('logout recomputes platform controls and in-flight generation locks selectors', () => {
+  assert.match(main, /generationProvider\.value = 'platform';[\s\S]*updateProviderModels\(\)/);
+  assert.match(main, /generationBusy \|\| \(byok && models\.length === 0\)/);
+  assert.match(main, /for \(const control of \[brief, generationProvider, providerModel, model, compilerModel, taskType\]\) control\.disabled = busy/);
+});
+
 test('hash navigation is session-derived and has account, app, providers and recovery states', () => {
   assert.match(main, /\['#app', '#providers', '#account', '#account-recovery'\]/);
   assert.match(main, /if \(recovery\) route = '#account-recovery'/);

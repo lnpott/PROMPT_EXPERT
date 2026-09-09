@@ -27,6 +27,7 @@ let profiles = publicProfiles();
 let compilers = publicCompilerModels();
 let byokProviders = [];
 let configuredCredentialSlugs = new Set();
+let generationBusy = false;
 
 const authController = createAuthController(createSupabaseBrowserClient());
 
@@ -101,6 +102,7 @@ function renderRoute(state) {
     source.textContent = '';
     copy.disabled = true;
     result.classList.add('is-empty');
+    updateProviderModels();
   }
 }
 
@@ -175,7 +177,7 @@ function updateProviderModels() {
   providerModelField.hidden = !controls.providerModel;
   compilerModelField.hidden = !controls.platformModel;
   compilerDescription.hidden = !controls.platformModel;
-  generate.disabled = byok && models.length === 0;
+  generate.disabled = generationBusy || (byok && models.length === 0);
   const credentialSlug = catalogSlugFor(generationProvider.value);
   providerGuidance.hidden = !byok || configuredCredentialSlugs.has(credentialSlug);
 }
@@ -186,6 +188,12 @@ fetch('/api/providers').then((response) => response.ok ? response.json() : null)
 }).catch(() => {});
 loadProfiles();
 loadCompilers();
+
+function setGenerationBusy(busy) {
+  generationBusy = busy;
+  for (const control of [brief, generationProvider, providerModel, model, compilerModel, taskType]) control.disabled = busy;
+  updateProviderModels();
+}
 
 generate.addEventListener('click', async () => {
   const request = brief.value.trim();
@@ -215,7 +223,7 @@ generate.addEventListener('click', async () => {
   }
 
   brief.removeAttribute('aria-invalid');
-  generate.disabled = true;
+  setGenerationBusy(true);
   generate.textContent = 'Gerando…';
 
   try {
@@ -248,7 +256,7 @@ generate.addEventListener('click', async () => {
     copy.disabled = true;
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } finally {
-    generate.disabled = false;
+    setGenerationBusy(false);
     generate.innerHTML = 'Gerar prompt <span aria-hidden="true">↗</span>';
   }
 });
