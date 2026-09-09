@@ -167,6 +167,43 @@ test('credentials are validated without persisting or logging passwords', () => 
   });
 });
 
+test('signup delegates normalized credentials directly to Supabase Auth', async () => {
+  const { client, calls } = createAuthMock();
+  const controller = createAuthController(client);
+  await controller.initialize();
+  const result = await controller.signUp(' person@example.test ', 'safe-password');
+  assert.deepEqual(calls.find((call) => call?.action === 'signUp')?.credentials, { email: 'person@example.test', password: 'safe-password' });
+  assert.deepEqual(result, { error: '', confirmationRequired: true });
+});
+
+test('signup network failures become safe connectivity guidance', async () => {
+  const { client } = createAuthMock();
+  client.auth.signUp = async () => { throw new TypeError('Failed to fetch'); };
+  const controller = createAuthController(client);
+  await controller.initialize();
+  const result = await controller.signUp('person@example.test', 'safe-password');
+  assert.match(result.error, /conexão, DNS ou bloqueio de rede/);
+  assert.equal(result.confirmationRequired, false);
+  assert.doesNotMatch(result.error, /Failed to fetch|supabase\.co|stack/i);
+});
+
+test('structured Auth errors are not mislabeled as network failures', async () => {
+  const { client } = createAuthMock();
+  client.auth.signUp = async () => ({ data: { session: null }, error: { code: 'signup_disabled', status: 422, message: 'Signups not allowed' } });
+  const controller = createAuthController(client);
+  await controller.initialize();
+  assert.deepEqual(await controller.signUp('person@example.test', 'safe-password'), {
+    error: 'A criação de contas está temporariamente desabilitada.', confirmationRequired: false,
+  });
+});
+
+test('auth connectivity handling introduces no local authority or privileged key', () => {
+  const session = readFileSync(new URL('../src/auth/session.js', import.meta.url), 'utf8');
+  const browserClient = readFileSync(new URL('../src/lib/supabase.js', import.meta.url), 'utf8');
+  assert.match(session, /client\.auth\.signUp\(credentials\)/);
+  assert.doesNotMatch(`${session}\n${browserClient}`, /service_role|localStorage\.setItem|indexedDB|fake session/i);
+});
+
 test('local compiler remains technically available while the workspace is account-gated', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
