@@ -1,4 +1,4 @@
-import { getGrokKnowledge } from './knowledge-base.js';
+import { getGrokKnowledge } from '../server/knowledge-base.js';
 
 export default async function handler(_request, response) {
   try {

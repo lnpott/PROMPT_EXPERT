@@ -91,11 +91,11 @@ USER_CREDENTIALS_KEY_VERSION=1
 
 Cada segredo usa AES-256-GCM com IV aleatório de 12 bytes e tag de 16 bytes. `ciphertext`, `iv` e `auth_tag` são persistidos em Base64; a subchave de 32 bytes é derivada por usuário com HKDF-SHA-256. A AAD é o UTF-8 de uma matriz JSON ordenada contendo domínio, versão do formato, `key_version`, UUID do usuário, UUID do provedor e UUID da credencial. Os UUIDs são normalizados para minúsculas. Qualquer troca de contexto ou adulteração invalida a autenticação.
 
-Somente os quatro últimos caracteres são produzidos como `secret_last4`; segredos com menos de quatro caracteres produzem `null`, evitando revelar todo o valor curto. A chave-mestra real ainda **não** foi configurada automaticamente. Rotação/recriptografia e keyring com versões antigas continuam pendentes; não troque a chave ou versão enquanto houver dados sem um procedimento de rotação aprovado.
+Somente os quatro últimos caracteres são produzidos como `secret_last4`; segredos com menos de quatro caracteres produzem `null`, evitando revelar todo o valor curto. A chave-mestra operacional foi provisionada como variável **Sensitive** na Vercel para Preview e Production em 8 de setembro de 2026, sem leitura ou registro do valor. A versão ativa é `1`. Os dois ambientes compartilham o mesmo Supabase e, portanto, precisam da mesma chave para evitar ciphertext incompatível entre deployments. Mudanças de variável exigem novo deployment; nunca substitua ou remova a master key enquanto houver credenciais. Rotação/recriptografia e keyring com versões antigas continuam pendentes.
 
 ### Recuperação de conta nesta etapa
 
-“Esqueci minha senha” solicita ao Supabase Auth o envio do link e usa uma URL de retorno identificável. O listener preserva o evento `PASSWORD_RECOVERY` como estado distinto de login normal. Ainda não há cofre nem credenciais para apagar: a barreira server-side e o reset destrutivo obrigatório serão implementados somente no Passo 16. Não trate uma sessão de recovery como alteração voluntária de senha ao evoluir esse fluxo.
+“Esqueci minha senha” solicita ao Supabase Auth o envio do link e usa uma URL de retorno identificável. O listener preserva o evento `PASSWORD_RECOVERY` como estado distinto de login normal. Nesse fluxo, a interface oculta o cofre, chama o purge autenticado e somente depois atualiza a senha e encerra a sessão; uma alteração voluntária de senha não chama o purge. O backend deriva a identidade do JWT e RLS, sem aceitar `user_id` ou uma flag de recovery do navegador como autoridade.
 
 ## Como confirmar a Gemini
 

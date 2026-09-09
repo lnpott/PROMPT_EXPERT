@@ -1,3 +1,3 @@
-import { listCredentials } from './credential-service.js';
+import { listCredentials } from '../server/credential-service.js';
 
 export default listCredentials;

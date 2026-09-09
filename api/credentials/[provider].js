@@ -1,4 +1,4 @@
-import { deleteCredential, putCredential } from '../credential-service.js';
+import { deleteCredential, putCredential } from '../../server/credential-service.js';
 
 export default function handler(request, response) {
   return request.method === 'DELETE'

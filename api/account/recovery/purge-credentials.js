@@ -1,4 +1,4 @@
-import { authenticateUser, UserApiError, userDatabaseRequest } from '../../security/supabase-user.js';
+import { authenticateUser, UserApiError, userDatabaseRequest } from '../../../server/security/supabase-user.js';
 
 function publicError(error) {
   if (error instanceof UserApiError && error.code === 'UNAUTHENTICATED') {
