@@ -32,10 +32,11 @@ export function createAuthController(client) {
   let currentUser = null;
   let currentAccessToken = null;
   let recoverySession = false;
+  let initialized = false;
   const listeners = new Set();
   let subscription;
 
-  const snapshot = () => ({ user: currentUser, recoverySession, configured: Boolean(client) });
+  const snapshot = () => ({ user: currentUser, recoverySession, configured: Boolean(client), initialized });
   const notify = () => listeners.forEach((listener) => listener(snapshot()));
 
   return {
@@ -50,6 +51,7 @@ export function createAuthController(client) {
     },
     async initialize() {
       if (!client) {
+        initialized = true;
         notify();
         return snapshot();
       }
@@ -64,9 +66,14 @@ export function createAuthController(client) {
       subscription = listener.data.subscription;
 
       const { data, error } = await client.auth.getSession();
-      if (error) throw new Error('Não foi possível restaurar a sessão.');
+      if (error) {
+        initialized = true;
+        notify();
+        throw new Error('Não foi possível restaurar a sessão.');
+      }
       currentUser = data.session?.user || null;
       currentAccessToken = data.session?.access_token || null;
+      initialized = true;
       notify();
       return snapshot();
     },

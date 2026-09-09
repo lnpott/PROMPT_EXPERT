@@ -132,7 +132,7 @@ test('missing public configuration keeps anonymous state available', async () =>
   assert.equal(createSupabaseBrowserClient({}), null);
   const controller = createAuthController(null);
   await controller.initialize();
-  assert.deepEqual(controller.getSnapshot(), { user: null, recoverySession: false, configured: false });
+  assert.deepEqual(controller.getSnapshot(), { user: null, recoverySession: false, configured: false, initialized: true });
 });
 
 test('invalid public URL preserves guest mode instead of breaking startup', () => {
@@ -167,14 +167,15 @@ test('credentials are validated without persisting or logging passwords', () => 
   });
 });
 
-test('guest compiler remains present while credential management stays isolated', () => {
+test('local compiler remains technically available while the workspace is account-gated', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const generate = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
 
   assert.match(main, /compilePrompt/);
   assert.match(main, /response\.status === 404/);
-  assert.match(html, /compilador local continua disponível sem conta/i);
+  assert.match(html, /id="session-loading"/);
+  assert.match(html, /id="app-content" hidden/);
   assert.match(html, /chaves são enviadas somente ao backend/i);
   assert.doesNotMatch(generate, /user_api_credentials|USER_CREDENTIALS_MASTER_KEY|decryptCredential|\/api\/credentials/);
 });

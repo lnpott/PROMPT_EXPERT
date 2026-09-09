@@ -247,6 +247,7 @@ export function initializeCredentialManager(controller, elements, request = fetc
     if (!requestedForUser || requestedForUser !== activeUserId) return;
     providers = providersPayload.providers || [];
     credentials = credentialsPayload.credentials || [];
+    elements.onChange?.(credentials);
     render();
     message(credentials.length ? 'Credenciais carregadas.' : 'Nenhuma credencial configurada.', 'success');
   };
@@ -304,6 +305,7 @@ export function initializeCredentialManager(controller, elements, request = fetc
     if (!userId || state.recoverySession) {
       activeUserId = null;
       credentials = [];
+      elements.onChange?.([]);
       providers = [];
       elements.list.replaceChildren();
       message(state.recoverySession ? 'O cofre fica oculto durante a recuperação.' : 'Entre em sua conta para gerenciar credenciais.');

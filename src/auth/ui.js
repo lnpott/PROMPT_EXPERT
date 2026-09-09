@@ -1,20 +1,26 @@
 function setHidden(element, hidden) {
-  element.hidden = hidden;
+  if (element) element.hidden = hidden;
 }
 
 export function renderAccountState(elements, state) {
   const authenticated = Boolean(state.user);
   const recovery = authenticated && state.recoverySession;
+  const loading = state.initialized === false;
+  setHidden(elements.sessionLoading, !loading);
+  setHidden(elements.accountPanel, loading || (authenticated && !recovery));
+  setHidden(elements.appContent, loading || !authenticated || recovery);
+  setHidden(elements.accountNavigation, loading || !authenticated || recovery);
+  if (loading) return;
   setHidden(elements.signedOut, authenticated);
   setHidden(elements.signedIn, !authenticated || recovery);
   setHidden(elements.recoveryPanel, !recovery);
   setHidden(elements.providersLocked, authenticated && !recovery);
   setHidden(elements.providersPlaceholder, !authenticated || recovery);
-  elements.accountStatus.textContent = recovery ? 'recuperação' : authenticated ? 'autenticado' : 'desconectado';
+  elements.accountStatus.textContent = recovery ? 'recuperação' : authenticated ? state.user.email || 'conta' : 'desconectado';
   elements.userEmail.textContent = authenticated ? state.user.email || 'Conta autenticada' : '';
 
   if (!state.configured && !authenticated) {
-    elements.feedback.textContent = 'Contas indisponíveis neste ambiente. O compilador local continua disponível.';
+    elements.feedback.textContent = 'Contas indisponíveis neste ambiente.';
   }
   if (state.recoverySession) {
     elements.feedback.textContent = 'Defina uma nova senha para concluir a recuperação segura.';
