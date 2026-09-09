@@ -30,8 +30,8 @@
         </div>
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
         <div class="controls controls-grid">
-          <label class="model-picker" for="generation-provider"><span>Origem da geração</span><select id="generation-provider"><option value="platform">Plataforma</option><option value="local">Somente local</option><option value="openrouter">OpenRouter BYOK</option></select></label>
-          <label class="model-picker" for="openrouter-model" id="openrouter-model-field" hidden><span>Modelo OpenRouter</span><select id="openrouter-model"><option value="openrouter/free">OpenRouter Free Models Router</option></select></label>
+          <label class="model-picker" for="generation-provider"><span>Origem da geração</span><select id="generation-provider"><option value="platform">Plataforma</option><option value="local">Somente local</option><option value="openrouter">OpenRouter BYOK</option><option value="openai">OpenAI BYOK</option><option value="xai">xAI BYOK</option><option value="deepseek">DeepSeek BYOK</option><option value="groq">GroqCloud BYOK</option><option value="mistral">Mistral BYOK</option></select></label>
+          <label class="model-picker" for="provider-model" id="provider-model-field" hidden><span>Modelo do provider</span><select id="provider-model"></select></label>
           <label class="model-picker" for="model">
             <span>Modelo de destino</span>
             <select id="model" aria-describedby="model-description"><option value="grok">Grok</option></select>

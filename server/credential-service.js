@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { decryptCredential, encryptCredential } from './security/credential-crypto.js';
 import { authenticateUser, UserApiError, userDatabaseRequest } from './security/supabase-user.js';
 import { OpenRouterError, validateOpenRouterKey } from './providers/openrouter.js';
+import { DirectProviderError } from './providers/openai-compatible.js';
+import { directProvider, validateDirectCredential } from './providers/direct-providers.js';
 
 const MAX_BODY_BYTES = 18_000;
 const MAX_SECRET_BYTES = 16_384;
@@ -64,7 +66,7 @@ function validatePutRequest(request) {
 function providerSlug(request) {
   const value = request.query?.provider;
   if (typeof value !== 'string' || !PROVIDER_PATTERN.test(value)) return null;
-  return value;
+  return value === 'groq' ? 'groqcloud' : value;
 }
 
 async function activeProvider(slug, auth, environment) {
@@ -233,15 +235,20 @@ export async function testCredential(request, response, environment = process.en
       credentialId: credential.id,
     }, environment);
     if (!plaintext) throw new Error('empty decrypted credential');
-    if (slug !== 'openrouter') return json(response, 400, { error: 'Validação remota ainda não disponível para este provedor.' });
+    const direct = directProvider(slug);
+    if (slug !== 'openrouter' && !direct) return json(response, 400, { error: 'Validação remota ainda não disponível para este provedor.' });
     let validationStatus;
     let providerResult;
     try {
-      providerResult = await validateOpenRouterKey(plaintext);
+      providerResult = slug === 'openrouter'
+        ? await validateOpenRouterKey(plaintext)
+        : await validateDirectCredential(slug, plaintext);
       validationStatus = 'valid';
     } catch (error) {
-      validationStatus = error instanceof OpenRouterError && error.code === 'invalid' ? 'invalid' : 'error';
-      providerResult = { code: error instanceof OpenRouterError ? error.code : 'operational_error' };
+      const invalid = (error instanceof OpenRouterError && error.code === 'invalid')
+        || (error instanceof DirectProviderError && error.code === 'credential_invalid');
+      validationStatus = invalid ? 'invalid' : 'error';
+      providerResult = { code: error instanceof OpenRouterError || error instanceof DirectProviderError ? error.code : 'operational_error' };
     }
     const validatedAt = new Date().toISOString();
     const saved = await userDatabaseRequest(
@@ -257,7 +264,7 @@ export async function testCredential(request, response, environment = process.en
       providerValidated: validationStatus === 'valid',
       validationStatus,
       providerResult: providerResult.code || 'valid',
-      message: validationStatus === 'valid' ? 'Credencial validada no OpenRouter.' : validationStatus === 'invalid' ? 'Credencial recusada pelo OpenRouter.' : 'Não foi possível validar no OpenRouter agora.',
+      message: validationStatus === 'valid' ? `Credencial validada no ${provider.display_name}.` : validationStatus === 'invalid' ? `Credencial recusada pelo ${provider.display_name}.` : `Não foi possível validar no ${provider.display_name} agora.`,
       credential: withProvider(updated, provider),
     });
   } catch (error) {
@@ -269,11 +276,15 @@ export async function testCredential(request, response, environment = process.en
 }
 
 export async function openRouterCredential(request, environment = process.env) {
+  return ownedCredential(request, 'openrouter', environment);
+}
+
+export async function ownedCredential(request, slug, environment = process.env) {
   const auth = await authenticateUser(request, environment);
-  const provider = await activeProvider('openrouter', auth, environment);
-  if (!provider) throw new OpenRouterError('provider_unavailable', 404);
+  const provider = await activeProvider(slug, auth, environment);
+  if (!provider) throw new DirectProviderError('provider_unavailable', 404);
   const credential = await credentialRecord(provider.id, auth, environment, true);
-  if (!credential) throw new OpenRouterError('credential_missing', 404);
+  if (!credential) throw new DirectProviderError('credential_missing', 404);
   const apiKey = decryptCredential({
     ciphertext: credential.ciphertext, iv: credential.iv, authTag: credential.auth_tag,
     keyVersion: credential.key_version, userId: auth.userId, providerId: provider.id, credentialId: credential.id,
