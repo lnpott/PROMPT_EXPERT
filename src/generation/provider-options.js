@@ -10,9 +10,12 @@ export function modelsForProvider(providers, provider) {
   return Array.isArray(entry?.models) ? entry.models : [];
 }
 
-export function controlsForProvider(provider) {
-  return {
-    platformModel: provider === 'platform',
-    providerModel: BYOK_GENERATION_PROVIDERS.includes(provider),
-  };
+export function generationModelsForProvider({ providers, compilers }, provider) {
+  if (provider === 'platform') return compilers.map((compiler) => ({
+    modelId: compiler.slug,
+    displayName: compiler.displayName,
+    isDefault: compiler.isDefault,
+  }));
+  if (provider === 'local') return [{ modelId: 'local-deterministic', displayName: 'Compilador determinístico local', isDefault: true }];
+  return modelsForProvider(providers, provider).map((model) => ({ modelId: model.model_id, displayName: model.display_name, isDefault: false }));
 }

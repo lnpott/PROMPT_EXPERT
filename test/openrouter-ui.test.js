@@ -8,7 +8,7 @@ const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 test('UI offers all three generation origins without accepting a base URL', () => {
   assert.match(html, /value="platform">Plataforma/);
   assert.match(html, /value="local">Somente local/);
-  assert.match(html, /value="openrouter">OpenRouter BYOK/);
+  assert.match(html, /value="openrouter">OpenRouter/);
   assert.doesNotMatch(html, /base.?url/i);
-  assert.match(main, /openRouterModel: providerModel\.value/);
+  assert.match(main, /generationModel: generationModel\.value/);
 });

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Transforme uma ideia em um prompt de programação pronto para usar." />
     <title>Prompt Expert</title>
-    <script type="module" crossorigin src="/assets/index-BQ1E9_9q.js"></script>
+    <script type="module" crossorigin src="/assets/index-CRanPKpC.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-Dxvr70Hk.css">
   </head>
   <body>
@@ -58,19 +58,15 @@
         </div>
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
         <div class="controls controls-grid">
-          <label class="model-picker" for="generation-provider"><span>Origem da geração</span><select id="generation-provider"><option value="platform">Plataforma</option><option value="local">Somente local</option><option value="openrouter">OpenRouter BYOK</option><option value="openai">OpenAI BYOK</option><option value="xai">xAI BYOK</option><option value="deepseek">DeepSeek BYOK</option><option value="groq">GroqCloud BYOK</option><option value="mistral">Mistral BYOK</option></select></label>
-          <label class="model-picker" for="provider-model" id="provider-model-field" hidden><span>Modelo</span><select id="provider-model"></select></label>
-          <label class="model-picker" for="model">
-            <span>Perfil do prompt</span>
-            <select id="model" aria-describedby="model-description"><option value="grok">Grok</option></select>
-          </label>
-          <label class="model-picker" for="compiler-model" id="compiler-model-field"><span>Modelo da plataforma</span><select id="compiler-model" aria-describedby="compiler-description"><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite · padrão</option></select></label>
+          <label class="model-picker" for="generation-provider"><span>Provedor de geração</span><select id="generation-provider"><optgroup label="Serviços da aplicação"><option value="platform">Plataforma</option></optgroup><optgroup label="Providers BYOK"><option value="openrouter">OpenRouter</option><option value="openai">OpenAI</option><option value="xai">xAI</option><option value="deepseek">DeepSeek</option><option value="groq">GroqCloud</option><option value="mistral">Mistral</option></optgroup><optgroup label="Estratégia sem API"><option value="local">Somente local</option></optgroup></select></label>
+          <label class="model-picker" for="generation-model"><span>Modelo de geração</span><select id="generation-model" aria-describedby="generation-model-description"></select></label>
           <label class="model-picker" for="task-type"><span>Tipo de tarefa</span><select id="task-type"><option value="cited">Tarefas citadas</option><option value="application">Aplicação completa</option><option value="refactor">Refatoração</option><option value="debug">Correção de bug</option><option value="agent">Agente autônomo</option><option value="fim">Fill-in-the-Middle</option></select></label>
+          <label class="model-picker" for="target-model"><span>Otimização para modelo</span><select id="target-model" aria-describedby="target-model-description"><option value="grok">Grok</option></select></label>
           <button id="generate" type="button">Gerar prompt <span aria-hidden="true">↗</span></button>
         </div>
-        <p class="model-description" id="model-description">Carregando perfis especializados…</p>
-        <p class="model-description" id="compiler-description">Carregando motores de compilação…</p>
-        <p class="provider-guidance" id="provider-guidance" hidden>API não configurada. <a href="#providers">Configurar em APIs e provedores</a>.</p>
+        <p class="model-description" id="generation-model-description">Carregando modelos executáveis…</p>
+        <p class="model-description" id="target-model-description">O alvo seleciona a metodologia e não será chamado.</p>
+        <p class="provider-guidance" id="provider-guidance" hidden><span id="credential-state"></span> <a id="credential-cta" href="#providers">Configurar em APIs e provedores</a>.</p>
       </section>
 
       <section class="providers-panel" id="providers" aria-labelledby="providers-title" hidden>

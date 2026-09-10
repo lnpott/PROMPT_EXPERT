@@ -19,7 +19,7 @@ test('client-controlled transport fields are never consumed', () => {
 });
 
 test('direct-provider errors return before the platform Gemini path', () => {
-  const direct = generation.slice(generation.indexOf('if (DIRECT_PROVIDER_SLUGS.includes(provider))'), generation.indexOf('const apiKey = compilerApiKey'));
+  const direct = generation.slice(generation.indexOf('if (DIRECT_PROVIDER_SLUGS.includes(generationProvider))'), generation.indexOf('const apiKey = compilerApiKey'));
   assert.match(direct, /return sendJson\(response, status/);
   assert.doesNotMatch(direct, /requestGemini|local-fallback|OpenRouter/);
 });
