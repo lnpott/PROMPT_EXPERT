@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { renderAccountState } from '../src/auth/ui.js';
-import { catalogSlugFor, controlsForProvider, modelsForProvider } from '../src/generation/provider-options.js';
+import { catalogSlugFor, generationModelsForProvider, modelsForProvider } from '../src/generation/provider-options.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
@@ -30,9 +30,9 @@ test('logout and recovery hide workspace; recovery remains prioritized', () => {
 });
 
 test('logout recomputes platform controls and in-flight generation locks selectors', () => {
-  assert.match(main, /generationProvider\.value = 'platform';[\s\S]*updateProviderModels\(\)/);
-  assert.match(main, /generationBusy \|\| \(byok && models\.length === 0\)/);
-  assert.match(main, /for \(const control of \[brief, generationProvider, providerModel, model, compilerModel, taskType\]\) control\.disabled = busy/);
+  assert.match(main, /generationProvider\.value = 'platform';[\s\S]*updateGenerationModels\(\)/);
+  assert.match(main, /generationBusy \|\| models\.length === 0 \|\| \(byok && !credentialMetadata\.has/);
+  assert.match(main, /for \(const control of \[brief, generationProvider, generationModel, targetModel, taskType\]\) control\.disabled = busy/);
 });
 
 test('hash navigation is session-derived and has account, app, providers and recovery states', () => {
@@ -50,17 +50,17 @@ test('each BYOK provider receives only its catalog models', () => {
   assert.deepEqual(modelsForProvider(providers, 'platform'), []);
 });
 
-test('provider changes replace stale models and platform owns Gemini selector exclusively', () => {
+test('provider changes replace stale generation models while targets remain independent', () => {
   const providers = [{ slug: 'openai', models: [{ model_id: 'openai-only' }] }, { slug: 'deepseek', models: [{ model_id: 'deepseek-only' }] }, { slug: 'mistral', models: [{ model_id: 'mistral-only' }] }];
-  assert.deepEqual(modelsForProvider(providers, 'openai').map(x=>x.model_id), ['openai-only']);
-  assert.deepEqual(modelsForProvider(providers, 'deepseek').map(x=>x.model_id), ['deepseek-only']);
-  assert.deepEqual(modelsForProvider(providers, 'mistral').map(x=>x.model_id), ['mistral-only']);
-  assert.deepEqual(controlsForProvider('platform'), { platformModel: true, providerModel: false });
-  assert.deepEqual(controlsForProvider('deepseek'), { platformModel: false, providerModel: true });
+  const compilers = [{ slug: 'gemini-platform', displayName: 'Gemini Platform', isDefault: true }];
+  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'openai').map(x=>x.modelId), ['openai-only']);
+  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'deepseek').map(x=>x.modelId), ['deepseek-only']);
+  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'mistral').map(x=>x.modelId), ['mistral-only']);
+  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'platform').map(x=>x.modelId), ['gemini-platform']);
 });
 
 test('missing BYOK credential has a providers CTA and no fallback', () => {
   assert.match(html, /Configurar em APIs e provedores/);
-  assert.match(main, /Credencial BYOK não configurada/);
+  assert.match(main, /Configure your key first/);
   assert.match(main, /response\.status === 404 && generationProvider\.value === 'platform'/);
 });

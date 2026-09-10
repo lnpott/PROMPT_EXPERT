@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { getModelKnowledge } from '../server/knowledge-base.js';
-import { compilerApiKey, DEFAULT_COMPILER_MODEL, findCompilerModel } from './compiler-models.js';
+import { compilerApiKey, findCompilerModel } from './compiler-models.js';
 import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
 import { openRouterCredential, ownedCredential } from '../server/credential-service.js';
 import { userDatabaseRequest } from '../server/security/supabase-user.js';
@@ -50,9 +50,9 @@ async function requestGemini(url, options) {
   }
 }
 
-function logRequest({ requestId, model, compilerModel, source, status, startedAt, attempts = 0, error }) {
+function logRequest({ requestId, targetModel, generationModel, generationProvider, source, status, startedAt, attempts = 0, error }) {
   console.info(JSON.stringify({
-    event: 'generation_complete', requestId, model, compilerModel, source, status,
+    event: 'generation_complete', requestId, targetModel, generationModel, generationProvider, source, status,
     durationMs: Date.now() - startedAt, attempts, ...(error ? { error } : {}),
   }));
 }
@@ -85,47 +85,46 @@ export default async function handler(request, response) {
   }
 
   const brief = typeof request.body?.brief === 'string' ? request.body.brief.trim() : '';
-  const model = typeof request.body?.model === 'string' ? request.body.model : '';
-  const profile = findProfile(model);
+  const targetModel = typeof request.body?.targetModel === 'string' ? request.body.targetModel : '';
+  const profile = findProfile(targetModel);
   const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'cited';
-  const requestedCompiler = typeof request.body?.compilerModel === 'string'
-    ? request.body.compilerModel
-    : (process.env.GEMINI_MODEL || DEFAULT_COMPILER_MODEL);
-  const compiler = findCompilerModel(requestedCompiler);
-  const provider = request.body?.provider === undefined ? 'platform' : request.body.provider;
+  const generationProvider = typeof request.body?.generationProvider === 'string' ? request.body.generationProvider : '';
+  const generationModel = typeof request.body?.generationModel === 'string' ? request.body.generationModel : '';
 
-  if (!['local', 'platform', 'openrouter', ...DIRECT_PROVIDER_SLUGS].includes(provider) || !profile || !compiler || !Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) {
-    return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.' });
-  }
+  if (!profile) return sendJson(response, 400, { error: 'O modelo-alvo de otimização é inválido ou não possui metodologia.', code: 'target_model_invalid' });
+  if (!['local', 'platform', 'openrouter', ...DIRECT_PROVIDER_SLUGS].includes(generationProvider)) return sendJson(response, 400, { error: 'O provedor de geração não é suportado.', code: 'generation_provider_unsupported' });
+  if (!Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.', code: 'invalid_request' });
+  const compiler = generationProvider === 'platform' ? findCompilerModel(generationModel) : null;
+  if (generationProvider === 'platform' && !compiler) return sendJson(response, 400, { error: 'O modelo de geração da plataforma é inválido.', code: 'generation_model_invalid' });
+  if (generationProvider === 'local' && generationModel !== 'local-deterministic') return sendJson(response, 400, { error: 'O modelo de geração local é inválido.', code: 'generation_model_invalid' });
 
   if (clientIsLimited(request)) {
     response.setHeader('Retry-After', '60');
-    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'rejected', status: 429, startedAt });
+    logRequest({ requestId, targetModel, generationModel, generationProvider, source: 'rejected', status: 429, startedAt });
     return sendJson(response, 429, { error: 'Limite temporário atingido. Aguarde um minuto.' });
   }
 
   const localPrompt = compilePrompt({ brief, profile, taskType });
-  if (provider === 'local') {
-    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local', status: 200, startedAt });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local', compilerModel: compiler.slug, requestId });
+  if (generationProvider === 'local') {
+    logRequest({ requestId, targetModel, generationModel, generationProvider, source: 'local', status: 200, startedAt });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider, generationModel, targetModel, requestId });
   }
 
-  if (provider === 'openrouter') {
+  if (generationProvider === 'openrouter') {
     let apiKey = null;
     try {
       const owned = await openRouterCredential(request);
       apiKey = owned.apiKey;
-      const openRouterModel = typeof request.body?.openRouterModel === 'string' ? request.body.openRouterModel : '';
       const modelsResponse = await userDatabaseRequest(
-        `ai_models?provider_id=eq.${encodeURIComponent(owned.provider.id)}&model_id=eq.${encodeURIComponent(openRouterModel)}&is_active=eq.true&is_public=eq.true&is_deprecated=eq.false&select=model_id`,
+        `ai_models?provider_id=eq.${encodeURIComponent(owned.provider.id)}&model_id=eq.${encodeURIComponent(generationModel)}&is_active=eq.true&is_public=eq.true&is_deprecated=eq.false&select=model_id`,
         owned.auth,
       );
       if (!modelsResponse.ok) throw new OpenRouterError('model_lookup_error');
       const [allowedModel] = await modelsResponse.json();
       if (!allowedModel) throw new OpenRouterError('model_unavailable', 404);
       const prompt = await generateWithOpenRouter({ apiKey, model: allowedModel.model_id, instruction: localPrompt });
-      logRequest({ requestId, model, compilerModel: allowedModel.model_id, source: 'openrouter', status: 200, startedAt });
-      return sendJson(response, 200, { prompt, source: 'openrouter', compilerModel: allowedModel.model_id, requestId });
+      logRequest({ requestId, targetModel, generationModel: allowedModel.model_id, generationProvider, source: 'openrouter', status: 200, startedAt });
+      return sendJson(response, 200, { prompt, source: 'openrouter', generationProvider, generationModel: allowedModel.model_id, targetModel, requestId });
     } catch (error) {
       const status = error?.status && Number.isInteger(error.status) ? error.status : 503;
       const messages = {
@@ -134,29 +133,28 @@ export default async function handler(request, response) {
         insufficient_credits: 'A conta OpenRouter não possui créditos suficientes.', rate_limit: 'O OpenRouter limitou temporariamente as solicitações.',
         timeout: 'O OpenRouter não respondeu a tempo.', temporary_provider_error: 'O OpenRouter está temporariamente indisponível.',
       };
-      logRequest({ requestId, model, compilerModel: 'openrouter', source: 'openrouter', status, startedAt, error: error?.code || error?.name || 'Error' });
+      logRequest({ requestId, targetModel, generationModel, generationProvider, source: 'openrouter', status, startedAt, error: error?.code || error?.name || 'Error' });
       return sendJson(response, status, { error: messages[error?.code] || 'Não foi possível gerar com o OpenRouter.', code: error?.code || 'operational_error', requestId });
     } finally {
       apiKey = null;
     }
   }
-  if (DIRECT_PROVIDER_SLUGS.includes(provider)) {
+  if (DIRECT_PROVIDER_SLUGS.includes(generationProvider)) {
     let apiKey = null;
     try {
-      const config = directProvider(provider);
+      const config = directProvider(generationProvider);
       const owned = await ownedCredential(request, config.credentialSlug);
       apiKey = owned.apiKey;
-      const providerModel = typeof request.body?.providerModel === 'string' ? request.body.providerModel : '';
       const modelsResponse = await userDatabaseRequest(
-        `ai_models?provider_id=eq.${encodeURIComponent(owned.provider.id)}&model_id=eq.${encodeURIComponent(providerModel)}&is_active=eq.true&is_public=eq.true&is_deprecated=eq.false&select=model_id`,
+        `ai_models?provider_id=eq.${encodeURIComponent(owned.provider.id)}&model_id=eq.${encodeURIComponent(generationModel)}&is_active=eq.true&is_public=eq.true&is_deprecated=eq.false&select=model_id`,
         owned.auth,
       );
       if (!modelsResponse.ok) throw new DirectProviderError('provider_unavailable', 503);
       const [allowedModel] = await modelsResponse.json();
       if (!allowedModel) throw new DirectProviderError('provider_model_unavailable', 404);
-      const generated = await generateWithDirectProvider(provider, { apiKey, model: allowedModel.model_id, instruction: localPrompt });
-      logRequest({ requestId, model, compilerModel: allowedModel.model_id, source: provider, status: 200, startedAt });
-      return sendJson(response, 200, { prompt: generated.content, source: provider, provider, model: allowedModel.model_id, ...(generated.usage ? { usage: generated.usage } : {}), requestId });
+      const generated = await generateWithDirectProvider(generationProvider, { apiKey, model: allowedModel.model_id, instruction: localPrompt });
+      logRequest({ requestId, targetModel, generationModel: allowedModel.model_id, generationProvider, source: generationProvider, status: 200, startedAt });
+      return sendJson(response, 200, { prompt: generated.content, source: generationProvider, generationProvider, generationModel: allowedModel.model_id, targetModel, ...(generated.usage ? { usage: generated.usage } : {}), requestId });
     } catch (error) {
       const status = error?.status && Number.isInteger(error.status) ? error.status : 503;
       const messages = {
@@ -166,7 +164,7 @@ export default async function handler(request, response) {
         provider_unavailable: 'O provedor está temporariamente indisponível.', provider_network_error: 'Não foi possível conectar ao provedor.',
         provider_invalid_response: 'O provedor retornou uma resposta inválida.',
       };
-      logRequest({ requestId, model, compilerModel: provider, source: provider, status, startedAt, error: error?.code || error?.name || 'Error' });
+      logRequest({ requestId, targetModel, generationModel, generationProvider, source: generationProvider, status, startedAt, error: error?.code || error?.name || 'Error' });
       return sendJson(response, status, { error: messages[error?.code] || 'Não foi possível gerar com o provedor selecionado.', code: error?.code || 'provider_error', requestId });
     } finally {
       apiKey = null;
@@ -174,8 +172,8 @@ export default async function handler(request, response) {
   }
   const apiKey = compilerApiKey(compiler);
   if (!apiKey) {
-    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local', status: 200, startedAt });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local', compilerModel: compiler.slug, requestId });
+    logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local', status: 200, startedAt });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider, generationModel: compiler.slug, targetModel, requestId });
   }
 
   try {
@@ -206,21 +204,21 @@ export default async function handler(request, response) {
     );
 
     if (!geminiResponse.ok) {
-      logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local-fallback', status: 200, startedAt, attempts, error: `ProviderHTTP${geminiResponse.status}` });
-      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', compilerModel: compiler.slug, requestId });
+      logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local-fallback', status: 200, startedAt, attempts, error: `ProviderHTTP${geminiResponse.status}` });
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider, generationModel: compiler.slug, targetModel, requestId });
     }
 
     const payload = await geminiResponse.json();
     const prompt = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim();
 
     if (!prompt) {
-      logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local-fallback', status: 200, startedAt, attempts, error: 'EmptyProviderResponse' });
-      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', compilerModel: compiler.slug, requestId });
+      logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local-fallback', status: 200, startedAt, attempts, error: 'EmptyProviderResponse' });
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider, generationModel: compiler.slug, targetModel, requestId });
     }
-    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'gemini', status: 200, startedAt, attempts });
-    return sendJson(response, 200, { prompt, source: 'gemini', compilerModel: compiler.slug, requestId });
+    logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'gemini', status: 200, startedAt, attempts });
+    return sendJson(response, 200, { prompt, source: 'gemini', generationProvider, generationModel: compiler.slug, targetModel, requestId });
   } catch (error) {
-    logRequest({ requestId, model, compilerModel: compiler.slug, source: 'local-fallback', status: 200, startedAt, error: error?.name || 'Error' });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', compilerModel: compiler.slug, requestId });
+    logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local-fallback', status: 200, startedAt, error: error?.name || 'Error' });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider, generationModel: compiler.slug, targetModel, requestId });
   }
 }

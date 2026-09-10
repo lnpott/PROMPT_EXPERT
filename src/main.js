@@ -5,19 +5,18 @@ import { createAuthController } from './auth/session.js';
 import { initializeAuthUI } from './auth/ui.js';
 import { initializeCredentialManager } from './byok/credentials.js';
 import { createSupabaseBrowserClient } from './lib/supabase.js';
-import { BYOK_GENERATION_PROVIDERS, catalogSlugFor, controlsForProvider, modelsForProvider } from './generation/provider-options.js';
+import { BYOK_GENERATION_PROVIDERS, catalogSlugFor, generationModelsForProvider } from './generation/provider-options.js';
 
 const brief = document.querySelector('#brief');
-const model = document.querySelector('#model');
+const targetModel = document.querySelector('#target-model');
 const taskType = document.querySelector('#task-type');
-const compilerModel = document.querySelector('#compiler-model');
-const compilerDescription = document.querySelector('#compiler-description');
-const compilerModelField = document.querySelector('#compiler-model-field');
+const generationModel = document.querySelector('#generation-model');
+const generationModelDescription = document.querySelector('#generation-model-description');
 const generationProvider = document.querySelector('#generation-provider');
-const providerModel = document.querySelector('#provider-model');
-const providerModelField = document.querySelector('#provider-model-field');
-const modelDescription = document.querySelector('#model-description');
+const targetModelDescription = document.querySelector('#target-model-description');
 const providerGuidance = document.querySelector('#provider-guidance');
+const credentialState = document.querySelector('#credential-state');
+const credentialCta = document.querySelector('#credential-cta');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
 const output = document.querySelector('#output');
@@ -26,7 +25,7 @@ const source = document.querySelector('#source');
 let profiles = publicProfiles();
 let compilers = publicCompilerModels();
 let byokProviders = [];
-let configuredCredentialSlugs = new Set();
+let credentialMetadata = new Map();
 let generationBusy = false;
 
 const authController = createAuthController(createSupabaseBrowserClient());
@@ -62,8 +61,8 @@ initializeCredentialManager(authController, {
   feedback: document.querySelector('#credentials-feedback'),
   list: document.querySelector('#providers-list'),
   onChange(credentials) {
-    configuredCredentialSlugs = new Set(credentials.map((credential) => credential.providerSlug));
-    updateProviderModels();
+    credentialMetadata = new Map(credentials.map((credential) => [credential.providerSlug, credential]));
+    updateGenerationModels();
   },
 });
 
@@ -95,39 +94,52 @@ function renderRoute(state) {
   providersPanel.hidden = !providersRoute;
   if (!authenticated) {
     generationProvider.value = 'platform';
-    providerModel.replaceChildren();
-    configuredCredentialSlugs = new Set();
+    generationModel.replaceChildren();
+    credentialMetadata = new Map();
     brief.value = '';
     output.textContent = 'Seu prompt aparecerá aqui.';
     source.textContent = '';
     copy.disabled = true;
     result.classList.add('is-empty');
-    updateProviderModels();
+    updateGenerationModels();
   }
 }
 
 authController.subscribe(renderRoute);
 window.addEventListener('hashchange', () => renderRoute(authController.getSnapshot()));
 
-function updateProfileDescription() {
-  const profile = profiles.find((item) => item.slug === model.value);
-  modelDescription.textContent = profile ? `${profile.provider} · ${profile.guidance}` : 'Perfil especializado selecionado.';
+function updateTargetDescription() {
+  const profile = profiles.find((item) => item.slug === targetModel.value);
+  targetModelDescription.textContent = profile ? `${profile.provider} · ${profile.guidance}` : 'Perfil especializado selecionado.';
 }
 
-function updateCompilerDescription() {
-  const compiler = compilers.find((item) => item.slug === compilerModel.value);
-  compilerDescription.textContent = compiler ? `${compiler.tier} · ${compiler.recommendation}` : 'Motor de compilação selecionado.';
+function updateGenerationDescription() {
+  const compiler = compilers.find((item) => item.slug === generationModel.value);
+  const byokModel = byokProviders.flatMap((provider) => provider.models || []).find((item) => item.model_id === generationModel.value);
+  generationModelDescription.textContent = compiler
+    ? `Plataforma · ${compiler.tier} · ${compiler.recommendation}`
+    : byokModel?.description || (generationProvider.value === 'local' ? 'Execução determinística, sem chamada a provider.' : 'Modelo executável selecionado para esta geração.');
 }
 
 async function loadProfiles() {
   const renderProfiles = () => {
-    model.replaceChildren(...profiles.map((profile) => {
-      const option = document.createElement('option');
-      option.value = profile.slug;
-      option.textContent = profile.displayName;
-      return option;
+    const groups = new Map();
+    for (const profile of profiles) {
+      if (!groups.has(profile.provider)) groups.set(profile.provider, []);
+      groups.get(profile.provider).push(profile);
+    }
+    targetModel.replaceChildren(...[...groups].map(([provider, entries]) => {
+      const group = document.createElement('optgroup');
+      group.label = provider;
+      group.append(...entries.map((profile) => {
+        const option = document.createElement('option');
+        option.value = profile.slug;
+        option.textContent = profile.displayName;
+        return option;
+      }));
+      return group;
     }));
-    updateProfileDescription();
+    updateTargetDescription();
   };
 
   renderProfiles();
@@ -137,62 +149,54 @@ async function loadProfiles() {
     ({ profiles } = await response.json());
     renderProfiles();
   } catch {
-    modelDescription.textContent = `${profiles.find((item) => item.slug === model.value)?.provider || 'Local'} · compilador local disponível`;
+    targetModelDescription.textContent = `${profiles.find((item) => item.slug === targetModel.value)?.provider || 'Local'} · compilador local disponível`;
   }
 }
 
 async function loadCompilers() {
-  const renderCompilers = () => {
-    compilerModel.replaceChildren(...compilers.map((compiler) => {
-      const option = document.createElement('option');
-      option.value = compiler.slug;
-      option.textContent = `${compiler.displayName}${compiler.isDefault ? ' · padrão' : ''}`;
-      return option;
-    }));
-    updateCompilerDescription();
-  };
-  renderCompilers();
+  updateGenerationModels();
   try {
     const response = await fetch('/api/compilers');
     if (!response.ok) throw new Error();
     ({ compilers } = await response.json());
-    renderCompilers();
+    updateGenerationModels();
   } catch {
-    compilerDescription.textContent = 'Catálogo local · a geração continua disponível por fallback';
+    generationModelDescription.textContent = 'Catálogo local · a geração continua disponível por fallback';
   }
 }
 
-model.addEventListener('change', updateProfileDescription);
-compilerModel.addEventListener('change', updateCompilerDescription);
-function updateProviderModels() {
-  const models = modelsForProvider(byokProviders, generationProvider.value);
-  providerModel.replaceChildren(...models.map((item) => {
+targetModel.addEventListener('change', updateTargetDescription);
+generationModel.addEventListener('change', updateGenerationDescription);
+function updateGenerationModels() {
+  const models = generationModelsForProvider({ providers: byokProviders, compilers }, generationProvider.value);
+  generationModel.replaceChildren(...models.map((item) => {
     const option = document.createElement('option');
-    option.value = item.model_id;
-    option.textContent = item.display_name;
+    option.value = item.modelId;
+    option.textContent = `${item.displayName}${item.isDefault ? ' · padrão' : ''}`;
     return option;
   }));
-  const controls = controlsForProvider(generationProvider.value);
-  const byok = controls.providerModel;
-  providerModelField.hidden = !controls.providerModel;
-  compilerModelField.hidden = !controls.platformModel;
-  compilerDescription.hidden = !controls.platformModel;
-  generate.disabled = generationBusy || (byok && models.length === 0);
+  const byok = BYOK_GENERATION_PROVIDERS.includes(generationProvider.value);
+  generate.disabled = generationBusy || models.length === 0 || (byok && !credentialMetadata.has(catalogSlugFor(generationProvider.value)));
   const credentialSlug = catalogSlugFor(generationProvider.value);
-  providerGuidance.hidden = !byok || configuredCredentialSlugs.has(credentialSlug);
+  const credential = credentialMetadata.get(credentialSlug);
+  const configured = Boolean(credential);
+  providerGuidance.hidden = !byok;
+  credentialState.textContent = configured ? `Use your own key. Status: ${credential.validationStatus || 'untested'}.` : 'Configure your key first.';
+  credentialCta.hidden = configured;
+  updateGenerationDescription();
 }
-generationProvider.addEventListener('change', updateProviderModels);
+generationProvider.addEventListener('change', updateGenerationModels);
 fetch('/api/providers').then((response) => response.ok ? response.json() : null).then((payload) => {
   byokProviders = payload?.providers || [];
-  updateProviderModels();
+  updateGenerationModels();
 }).catch(() => {});
 loadProfiles();
 loadCompilers();
 
 function setGenerationBusy(busy) {
   generationBusy = busy;
-  for (const control of [brief, generationProvider, providerModel, model, compilerModel, taskType]) control.disabled = busy;
-  updateProviderModels();
+  for (const control of [brief, generationProvider, generationModel, targetModel, taskType]) control.disabled = busy;
+  updateGenerationModels();
 }
 
 generate.addEventListener('click', async () => {
@@ -206,7 +210,7 @@ generate.addEventListener('click', async () => {
   }
 
   const credentialSlug = catalogSlugFor(generationProvider.value);
-  if (BYOK_GENERATION_PROVIDERS.includes(generationProvider.value) && !configuredCredentialSlugs.has(credentialSlug)) {
+  if (BYOK_GENERATION_PROVIDERS.includes(generationProvider.value) && !credentialMetadata.has(credentialSlug)) {
     output.textContent = `Configure sua API em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`;
     source.textContent = 'Credencial BYOK não configurada';
     result.hidden = false;
@@ -214,8 +218,8 @@ generate.addEventListener('click', async () => {
     copy.disabled = true;
     return;
   }
-  if (!providerModelField.hidden && !providerModel.value) {
-    output.textContent = 'Nenhum modelo válido está disponível para este provider.';
+  if (!generationModel.value) {
+    output.textContent = 'Nenhum modelo de geração válido está disponível para este provedor.';
     result.hidden = false;
     result.classList.remove('is-empty');
     copy.disabled = true;
@@ -231,19 +235,19 @@ generate.addEventListener('click', async () => {
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
-      body: JSON.stringify({ brief: request, model: model.value, taskType: taskType.value, compilerModel: compilerModel.value, provider: generationProvider.value, ...(generationProvider.value === 'openrouter' ? { openRouterModel: providerModel.value } : {}), ...(BYOK_GENERATION_PROVIDERS.filter((slug) => slug !== 'openrouter').includes(generationProvider.value) ? { providerModel: providerModel.value } : {}) }),
+      body: JSON.stringify({ brief: request, generationProvider: generationProvider.value, generationModel: generationModel.value, taskType: taskType.value, targetModel: targetModel.value }),
     });
     const payload = await response.json().catch(() => ({}));
 
     if (response.status === 404 && generationProvider.value === 'platform') {
-      const profile = findProfile(model.value);
+      const profile = findProfile(targetModel.value);
       output.textContent = compilePrompt({ brief: request, profile, taskType: taskType.value });
       source.textContent = 'Compilador local · sem chave necessária';
     } else if (!response.ok) {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
     } else {
       output.textContent = payload.prompt;
-      source.textContent = ['openrouter', 'openai', 'xai', 'deepseek', 'groq', 'mistral'].includes(payload.source) ? `${payload.source} BYOK · ${payload.model || payload.compilerModel}` : payload.source === 'gemini' ? `Compilado por ${payload.compilerModel || compilerModel.value}` : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
+      source.textContent = ['openrouter', 'openai', 'xai', 'deepseek', 'groq', 'mistral'].includes(payload.source) ? `${payload.source} BYOK · ${payload.generationModel}` : payload.source === 'gemini' ? `Compilado por ${payload.generationModel || generationModel.value}` : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
     }
 
     result.classList.remove('is-empty');
