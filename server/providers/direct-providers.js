@@ -6,6 +6,8 @@ const configurations = Object.freeze({
   deepseek: Object.freeze({ slug: 'deepseek', credentialSlug: 'deepseek', displayName: 'DeepSeek', baseUrl: 'https://api.deepseek.com', modelsPath: '/models', chatPath: '/chat/completions' }),
   groq: Object.freeze({ slug: 'groq', credentialSlug: 'groqcloud', displayName: 'GroqCloud', baseUrl: 'https://api.groq.com/openai/v1', modelsPath: '/models', chatPath: '/chat/completions' }),
   mistral: Object.freeze({ slug: 'mistral', credentialSlug: 'mistral', displayName: 'Mistral', baseUrl: 'https://api.mistral.ai/v1', modelsPath: '/models', chatPath: '/chat/completions' }),
+  kimi: Object.freeze({ slug: 'kimi', credentialSlug: 'kimi', displayName: 'Kimi API Platform', baseUrl: 'https://api.moonshot.ai/v1', modelsPath: '/models', chatPath: '/chat/completions' }),
+  'alibaba-model-studio': Object.freeze({ slug: 'alibaba-model-studio', credentialSlug: 'alibaba-model-studio', displayName: 'Alibaba Cloud Model Studio', baseUrl: 'https://dashscope-us.aliyuncs.com/compatible-mode/v1', modelsPath: '/models', chatPath: '/chat/completions' }),
 });
 
 export const DIRECT_PROVIDER_SLUGS = Object.freeze(Object.keys(configurations));

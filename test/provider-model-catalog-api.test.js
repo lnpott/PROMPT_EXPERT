@@ -61,7 +61,7 @@ test('Google Gemini is exposed as provider with the real platform model allowlis
   await providersHandler({ method: 'GET' }, result);
   assert.equal(result.body.providers[0].display_name, 'Google Gemini');
   assert.equal(result.body.providers[0].generation.generationSupported, true);
-  assert.deepEqual(result.body.providers[0].generation.credentialSources, ['platform']);
+  assert.deepEqual(result.body.providers[0].generation.credentialSources, ['platform', 'byok']);
   assert.ok(result.body.providers[0].models.some(({ model_id }) => model_id === 'gemini-3.5-flash-lite'));
 });
 

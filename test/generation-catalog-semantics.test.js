@@ -21,14 +21,10 @@ const provider = (slug, supported, sources, models = []) => ({
 });
 
 test('registry separates catalog presence, adapter support and credential source', () => {
-  assert.deepEqual(generationCapability('google-gemini').credentialSources, ['platform']);
-  for (const slug of ['openrouter', 'openai', 'xai', 'deepseek', 'groqcloud', 'mistral']) {
+  assert.deepEqual(generationCapability('google-gemini').credentialSources, ['platform', 'byok']);
+  for (const slug of ['openrouter', 'openai', 'xai', 'deepseek', 'groqcloud', 'mistral', 'kimi', 'alibaba-model-studio', 'anthropic']) {
     assert.equal(generationCapability(slug).generationSupported, true);
     assert.deepEqual(generationCapability(slug).credentialSources, ['byok']);
-  }
-  for (const slug of ['anthropic', 'alibaba-model-studio', 'kimi']) {
-    assert.equal(generationCapability(slug).generationSupported, false);
-    assert.deepEqual(generationCapability(slug).credentialSources, []);
   }
 });
 
@@ -43,8 +39,8 @@ test('all ten versioned providers and twelve curated model IDs remain represente
 });
 
 test('Google Gemini is the real provider and platform is only its credential source', () => {
-  assert.equal(resolveGenerationRoute('google-gemini', 'platform').adapter, 'gemini-platform');
-  assert.equal(resolveGenerationRoute('google-gemini', 'byok'), null);
+  assert.equal(resolveGenerationRoute('google-gemini', 'platform').adapter, 'gemini');
+  assert.equal(resolveGenerationRoute('google-gemini', 'byok').adapter, 'gemini');
   assert.equal(resolveGenerationRoute('openai', 'platform'), null);
   assert.match(html, /Provedor de geração/);
   assert.doesNotMatch(html, /value="platform"/);
@@ -57,8 +53,8 @@ test('legacy platform mode normalizes explicitly to Google Gemini', () => {
 });
 
 test('provider without adapter remains visible with models but cannot execute', () => {
-  const anthropic = provider('anthropic', false, [], [{ model_id: 'claude-catalog', display_name: 'Claude catalog' }]);
-  assert.equal(generationModelsForProvider([anthropic], 'anthropic').length, 1);
+  const anthropic = provider('unsupported', false, [], [{ model_id: 'catalog-only', display_name: 'Catalog only' }]);
+  assert.equal(generationModelsForProvider([anthropic], 'unsupported').length, 1);
   assert.deepEqual(generationUiState({ provider: anthropic, credential: { validationStatus: 'valid' } }), {
     executable: false,
     availability: 'Execução ainda não disponível',
@@ -98,9 +94,9 @@ test('platform Gemini executes without BYOK and returns canonical provider seman
 
 test('backend rejects provider without adapter and invalid credential sources', async () => {
   for (const body of [
-    { generationProvider: 'anthropic', generationModel: 'claude-sonnet-5', credentialSource: 'byok' },
+    { generationProvider: 'unsupported', generationModel: 'catalog-only', credentialSource: 'byok' },
     { generationProvider: 'openai', generationModel: 'gpt-5.6-sol', credentialSource: 'platform' },
-    { generationProvider: 'google-gemini', generationModel: 'gemini-3.8-flash', credentialSource: 'byok' },
+    { generationProvider: 'google-gemini', generationModel: 'gemini-3.8-flash', credentialSource: 'invalid' },
   ]) {
     const result = response();
     await generate({ method: 'POST', body: { brief: 'Crie uma página.', targetModel: 'grok', taskType: 'cited', ...body } }, result);
