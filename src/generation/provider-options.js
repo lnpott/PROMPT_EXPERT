@@ -16,10 +16,10 @@ export function generationModelsForProvider(providers, providerSlug) {
   }));
 }
 
-export function generationUiState({ provider, credential }) {
+export function generationUiState({ provider, credential, credentialSource: selectedSource }) {
   if (!provider) return { executable: false, availability: 'Catálogo indisponível', credentialSource: '', credentialStatus: '' };
   const supported = Boolean(provider.generation?.generationSupported);
-  const [credentialSource] = provider.generation?.credentialSources || [];
+  const credentialSource = selectedSource || provider.generation?.credentialSources?.[0];
   if (!supported) return {
     executable: false,
     availability: 'Execução ainda não disponível',

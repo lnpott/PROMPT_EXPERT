@@ -16,7 +16,7 @@ const localGeneration = document.querySelector('#local-generation');
 const targetModelDescription = document.querySelector('#target-model-description');
 const credentialState = document.querySelector('#credential-state');
 const executionStatus = document.querySelector('#execution-status');
-const credentialSource = document.querySelector('#credential-source');
+const credentialSourceSelect = document.querySelector('#credential-source-select');
 const credentialCta = document.querySelector('#credential-cta');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
@@ -54,6 +54,10 @@ initializeAuthUI(authController, {
   confirmPassword: document.querySelector('#recovery-confirm-password'),
   completeRecovery: document.querySelector('#complete-recovery'),
   recoveryFeedback: document.querySelector('#recovery-feedback'),
+  changePassword: document.querySelector('#change-password'),
+  changePasswordConfirm: document.querySelector('#change-password-confirm'),
+  changePasswordSubmit: document.querySelector('#change-password-submit'),
+  changePasswordFeedback: document.querySelector('#change-password-feedback'),
   actionButtons: document.querySelectorAll('#auth-form button'),
 });
 
@@ -167,16 +171,20 @@ function updateGenerationModels() {
     return option;
   }));
   const credential = credentialMetadata.get(generationProvider.value);
-  const state = local ? { executable: true, availability: 'Disponível', credentialSource: 'Nenhuma', credentialStatus: 'Execução local' } : generationUiState({ provider, credential });
+  const sources = local ? ['local'] : provider?.generation?.credentialSources || [];
+  const previousSource = credentialSourceSelect.value;
+  credentialSourceSelect.replaceChildren(...sources.map((source) => { const option=document.createElement('option'); option.value=source; option.textContent=source==='platform'?'Chave da plataforma':source==='byok'?'Sua chave':'Nenhuma'; return option; }));
+  if (sources.includes(previousSource)) credentialSourceSelect.value = previousSource;
+  const state = local ? { executable: true, availability: 'Disponível', credentialSource: 'Nenhuma', credentialStatus: 'Execução local' } : generationUiState({ provider, credential, credentialSource: credentialSourceSelect.value });
   generate.disabled = generationBusy || models.length === 0 || !state.executable;
   executionStatus.textContent = state.availability;
-  credentialSource.textContent = state.credentialSource;
   credentialState.textContent = state.credentialStatus;
   credentialCta.hidden = local || state.credentialSource !== 'Sua chave' || Boolean(credential);
   generationProvider.disabled = local || generationBusy;
   updateGenerationDescription();
 }
 generationProvider.addEventListener('change', updateGenerationModels);
+credentialSourceSelect.addEventListener('change', updateGenerationModels);
 localGeneration.addEventListener('change', updateGenerationModels);
 fetch('/api/providers').then((response) => response.ok ? response.json() : null).then((payload) => {
   generationProviders = executableProviders(payload?.providers || []);
@@ -208,7 +216,7 @@ generate.addEventListener('click', async () => {
   }
 
   const provider = providerBySlug(generationProviders, generationProvider.value);
-  const selectedCredentialSource = localGeneration.checked ? LOCAL_GENERATION_OPTION.credentialSource : provider?.generation?.credentialSources?.[0];
+  const selectedCredentialSource = localGeneration.checked ? LOCAL_GENERATION_OPTION.credentialSource : credentialSourceSelect.value;
   if (!localGeneration.checked && selectedCredentialSource === 'byok' && !credentialMetadata.has(generationProvider.value)) {
     output.textContent = `Configure sua API em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`;
     source.textContent = 'Credencial BYOK não configurada';
