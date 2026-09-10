@@ -209,8 +209,8 @@ test('local compiler remains technically available while the workspace is accoun
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const generate = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
 
-  assert.match(main, /compilePrompt/);
-  assert.match(main, /response\.status === 404/);
+  assert.match(main, /LOCAL_GENERATION_OPTION/);
+  assert.match(main, /localGeneration\.checked/);
   assert.match(html, /id="session-loading"/);
   assert.match(html, /id="app-content" hidden/);
   assert.match(html, /chaves são enviadas somente ao backend/i);

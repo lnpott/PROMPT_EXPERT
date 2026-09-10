@@ -809,6 +809,7 @@ Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperaç
 | --- | --- |
 | 18.5 — account-first e coerência inicial provider/model | Concluído; Auth real libera workspace e protege navegação privada. |
 | 18.6 — executor versus alvo metodológico | Esta entrega; consolida contrato, catálogos e validação independentes. |
+| 18.6.1 — catálogo real de geração | Corrige provider, adapter, disponibilidade e origem/status de credencial sem alterar o target. |
 | Account Security / Password Lifecycle | Planejado, sem implementação neste passo; detalhes abaixo. |
 | 18B — adapters especializados | Futuro; expansão separada para providers ainda não executáveis. |
 | Hardening e rollout | Futuro; observabilidade, segurança operacional e promoção controlada após os marcos anteriores. |
@@ -820,3 +821,32 @@ Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperaç
 - **Separação e privacidade:** mudança voluntária autenticada preserva o vault; recuperação por email destrói o vault conforme contrato. A resposta pública de recuperação deve continuar semanticamente equivalente a “Se houver uma conta associada a este email, enviaremos as instruções”, sem enumeração de usuários.
 - **Redirects e entrega:** antes da implementação, auditar Production, Preview, Site URL, allowlist, `#account-recovery`, refresh e sessão recovery. Confirmação de cadastro, recovery e reautenticação dependem de email; o mailer padrão atual do Supabase deve ser reavaliado para SMTP próprio no hardening, sem alterar SMTP agora.
 - **Testes planejados:** cobrir senha atual incorreta quando aplicável, change password, reauthenticate/nonce, vault preservado na alteração voluntária, `resetPasswordForEmail`, `PASSWORD_RECOVERY`, purge destrutivo, `updateUser`, logout obrigatório, redirect inválido, link expirado, rate limit, não enumeração, rede, ausência de password armazenado e ausência de `service_role`.
+
+#### Passo 18.6.1 — catálogo de geração, adapter e credencial — 2026-09-10
+
+- **Correção após 18.6:** a separação executor/target estava correta, mas a UI ainda apresentava `platform` como se fosse um fornecedor e construía a lista a partir dos adapters já conhecidos no frontend. A regra definitiva passa a ser: provider no catálogo não implica adapter; adapter disponível não implica credencial cadastrada; credencial cadastrada não torna disponível um adapter inexistente.
+- **Autoridade:** `server/providers/generation-registry.js` deriva os providers OpenAI-compatible do registry já existente e centraliza capability de geração, adapter e origens de credencial. `/api/providers` combina esses dados calculados com o catálogo público. Nenhum campo de schema foi necessário: `is_active`/`is_public`/`is_deprecated` continuam descrevendo catálogo, enquanto suporte de execução é derivado do código realmente instalado.
+- **Provider real e origem:** Google Gemini (`google-gemini`) é o provider real. A Plataforma é apenas `credentialSource=platform`, suportada exclusivamente para Gemini por meio do adapter interno `gemini-platform` e `GEMINI_API_KEY`. A UI nunca lista “Plataforma” como vendor. O alias de request `generationProvider=platform` permanece temporariamente no backend apenas para clientes anteriores, é normalizado explicitamente para Google Gemini e deve ser removido depois da migração desses consumidores. Gemini BYOK não existe e continua reservado ao Passo 18B.
+- **Local:** `local-deterministic` permanece funcional como estratégia técnica selecionada por controle próprio, fora do select de providers externos. Seu contrato usa `generationProvider=local` e `credentialSource=local`; não representa empresa, adapter remoto ou credencial.
+- **Catálogo visível:** o select é preenchido exclusivamente pelo `GET /api/providers`. Providers ativos sem adapter, hoje Anthropic e Kimi, continuam visíveis com seus modelos catalogados e rótulo “Em breve”; o botão permanece bloqueado, ainda que exista metadata de chave. Alibaba Cloud Model Studio existe no schema versionado, mas está inativo e, conforme RLS/public availability, não integra o catálogo público nem a UI.
+- **Estados independentes:** disponibilidade mostra `Disponível`, `Disponível com BYOK` ou `Execução ainda não disponível`. Origem mostra `Chave da plataforma`, `Sua chave` ou nenhuma origem executável. Status mostra `Nenhuma chave pessoal necessária`, `Configure sua chave`, `Chave configurada · status …` ou adapter indisponível. “Use your own key” deixou de ser usado como status. O status persistido continua informativo e existência não é apresentada como validação.
+- **Contrato e segurança:** o contrato preserva `generationProvider`, `generationModel`, `taskType` e `targetModel` e acrescenta o eixo inequívoco `credentialSource`. O backend rejeita origem não permitida, provider sem adapter e modelo inválido; BYOK continua consultando somente a credencial vinculada ao provider canônico e ao JWT/RLS. Nenhuma chave é testada no page load, nenhum host vem do browser e falhas BYOK não caem em Gemini/local.
+- **OpenRouter:** permanece o provider de API/agregador. Seus IDs de modelo continuam pertencendo ao catálogo OpenRouter, mesmo quando o modelo subjacente pertence a outra família; não há reclassificação automática nem sincronização externa do catálogo.
+- **Schema, escopo e rollback:** nenhuma migration local/remota, Auth, recovery, password lifecycle, crypto, RLS, variável ou configuração remota foi alterada. Nenhum adapter 18B foi implementado. Rollback consiste em reverter código/UI/testes/documentação; o catálogo e o cofre remotos permanecem intactos.
+
+##### Catálogo versionado auditado no Passo 18.6.1
+
+| Provider (slug) | Modelos versionados | Ativo | Adapter | BYOK | Plataforma | Estado na UI |
+| --- | --- | --- | --- | --- | --- | --- |
+| OpenRouter (`openrouter`) | `openrouter/free` | Sim | OpenRouter | Sim | Não | Disponível com BYOK |
+| Google Gemini (`google-gemini`) | `gemini-3.8-flash`; allowlist executável também contém `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite` | Sim | Gemini da plataforma | Não | Sim | Disponível, chave da plataforma |
+| xAI (`xai`) | `grok-4.6`, `grok-code-fast-1` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| OpenAI (`openai`) | `gpt-5.6-sol` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| Anthropic (`anthropic`) | `claude-sonnet-5` | Sim | Não implementado | Não executável | Não | Em breve |
+| DeepSeek (`deepseek`) | `deepseek-v4-flash` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| Mistral (`mistral`) | `mistral-small-latest` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| GroqCloud (`groqcloud`) | `openai/gpt-oss-120b` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| Alibaba Cloud Model Studio (`alibaba-model-studio`) | `qwen3.7-plus` | Não | Não implementado | Não executável | Não | Oculto pela política de catálogo inativo |
+| Kimi (`kimi`) | `kimi-k3`, `kimi-k2.7-code-highspeed` | Sim | Não implementado | Não executável | Não | Em breve |
+
+Todos os 12 registros de `ai_models` versionados têm defaults `is_active=true`, `is_public=true` e `is_deprecated=false`; o modelo Qwen permanece invisível porque seu provider está inativo. Os dados de source, modalidades, coding suitability e capabilities continuam nos registros da migration `20260908230000_enrich_provider_model_catalog.sql` e são expostos somente por allowlist. Para Gemini, a UI usa a allowlist realmente executável da Plataforma em vez de afirmar que apenas o único registro comercial de `ai_models` é chamável.

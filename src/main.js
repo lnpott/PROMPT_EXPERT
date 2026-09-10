@@ -1,11 +1,10 @@
 import './style.css';
-import { compilePrompt, findProfile, publicProfiles } from '../api/model-profiles.js';
-import { publicCompilerModels } from '../api/compiler-models.js';
+import { publicProfiles } from '../api/model-profiles.js';
 import { createAuthController } from './auth/session.js';
 import { initializeAuthUI } from './auth/ui.js';
 import { initializeCredentialManager } from './byok/credentials.js';
 import { createSupabaseBrowserClient } from './lib/supabase.js';
-import { BYOK_GENERATION_PROVIDERS, catalogSlugFor, generationModelsForProvider } from './generation/provider-options.js';
+import { executableProviders, generationModelsForProvider, generationUiState, LOCAL_GENERATION_OPTION, providerBySlug } from './generation/provider-options.js';
 
 const brief = document.querySelector('#brief');
 const targetModel = document.querySelector('#target-model');
@@ -13,9 +12,11 @@ const taskType = document.querySelector('#task-type');
 const generationModel = document.querySelector('#generation-model');
 const generationModelDescription = document.querySelector('#generation-model-description');
 const generationProvider = document.querySelector('#generation-provider');
+const localGeneration = document.querySelector('#local-generation');
 const targetModelDescription = document.querySelector('#target-model-description');
-const providerGuidance = document.querySelector('#provider-guidance');
 const credentialState = document.querySelector('#credential-state');
+const executionStatus = document.querySelector('#execution-status');
+const credentialSource = document.querySelector('#credential-source');
 const credentialCta = document.querySelector('#credential-cta');
 const generate = document.querySelector('#generate');
 const result = document.querySelector('#result');
@@ -23,8 +24,7 @@ const output = document.querySelector('#output');
 const copy = document.querySelector('#copy');
 const source = document.querySelector('#source');
 let profiles = publicProfiles();
-let compilers = publicCompilerModels();
-let byokProviders = [];
+let generationProviders = [];
 let credentialMetadata = new Map();
 let generationBusy = false;
 
@@ -93,7 +93,7 @@ function renderRoute(state) {
   result.hidden = !generatorRoute;
   providersPanel.hidden = !providersRoute;
   if (!authenticated) {
-    generationProvider.value = 'platform';
+    localGeneration.checked = false;
     generationModel.replaceChildren();
     credentialMetadata = new Map();
     brief.value = '';
@@ -114,11 +114,12 @@ function updateTargetDescription() {
 }
 
 function updateGenerationDescription() {
-  const compiler = compilers.find((item) => item.slug === generationModel.value);
-  const byokModel = byokProviders.flatMap((provider) => provider.models || []).find((item) => item.model_id === generationModel.value);
-  generationModelDescription.textContent = compiler
-    ? `Plataforma · ${compiler.tier} · ${compiler.recommendation}`
-    : byokModel?.description || (generationProvider.value === 'local' ? 'Execução determinística, sem chamada a provider.' : 'Modelo executável selecionado para esta geração.');
+  if (localGeneration.checked) {
+    generationModelDescription.textContent = 'Estratégia técnica local, sem provider de IA ou chamada externa.';
+    return;
+  }
+  const model = providerBySlug(generationProviders, generationProvider.value)?.models?.find((item) => item.model_id === generationModel.value);
+  generationModelDescription.textContent = model?.description || 'Modelo cadastrado para este provider.';
 }
 
 async function loadProfiles() {
@@ -153,49 +154,46 @@ async function loadProfiles() {
   }
 }
 
-async function loadCompilers() {
-  updateGenerationModels();
-  try {
-    const response = await fetch('/api/compilers');
-    if (!response.ok) throw new Error();
-    ({ compilers } = await response.json());
-    updateGenerationModels();
-  } catch {
-    generationModelDescription.textContent = 'Catálogo local · a geração continua disponível por fallback';
-  }
-}
-
 targetModel.addEventListener('change', updateTargetDescription);
 generationModel.addEventListener('change', updateGenerationDescription);
 function updateGenerationModels() {
-  const models = generationModelsForProvider({ providers: byokProviders, compilers }, generationProvider.value);
+  const provider = providerBySlug(generationProviders, generationProvider.value);
+  const local = localGeneration.checked;
+  const models = local ? [{ modelId: LOCAL_GENERATION_OPTION.model, displayName: 'Compilador determinístico local' }] : generationModelsForProvider(generationProviders, generationProvider.value);
   generationModel.replaceChildren(...models.map((item) => {
     const option = document.createElement('option');
     option.value = item.modelId;
-    option.textContent = `${item.displayName}${item.isDefault ? ' · padrão' : ''}`;
+    option.textContent = item.displayName;
     return option;
   }));
-  const byok = BYOK_GENERATION_PROVIDERS.includes(generationProvider.value);
-  generate.disabled = generationBusy || models.length === 0 || (byok && !credentialMetadata.has(catalogSlugFor(generationProvider.value)));
-  const credentialSlug = catalogSlugFor(generationProvider.value);
-  const credential = credentialMetadata.get(credentialSlug);
-  const configured = Boolean(credential);
-  providerGuidance.hidden = !byok;
-  credentialState.textContent = configured ? `Use your own key. Status: ${credential.validationStatus || 'untested'}.` : 'Configure your key first.';
-  credentialCta.hidden = configured;
+  const credential = credentialMetadata.get(generationProvider.value);
+  const state = local ? { executable: true, availability: 'Disponível', credentialSource: 'Nenhuma', credentialStatus: 'Execução local' } : generationUiState({ provider, credential });
+  generate.disabled = generationBusy || models.length === 0 || !state.executable;
+  executionStatus.textContent = state.availability;
+  credentialSource.textContent = state.credentialSource;
+  credentialState.textContent = state.credentialStatus;
+  credentialCta.hidden = local || state.credentialSource !== 'Sua chave' || Boolean(credential);
+  generationProvider.disabled = local || generationBusy;
   updateGenerationDescription();
 }
 generationProvider.addEventListener('change', updateGenerationModels);
+localGeneration.addEventListener('change', updateGenerationModels);
 fetch('/api/providers').then((response) => response.ok ? response.json() : null).then((payload) => {
-  byokProviders = payload?.providers || [];
+  generationProviders = executableProviders(payload?.providers || []);
+  generationProvider.replaceChildren(...generationProviders.map((provider) => {
+    const option = document.createElement('option');
+    option.value = provider.slug;
+    option.textContent = `${provider.display_name}${provider.generation?.generationSupported ? '' : ' · Em breve'}`;
+    return option;
+  }));
+  if (generationProviders.some((provider) => provider.slug === 'google-gemini')) generationProvider.value = 'google-gemini';
   updateGenerationModels();
 }).catch(() => {});
 loadProfiles();
-loadCompilers();
 
 function setGenerationBusy(busy) {
   generationBusy = busy;
-  for (const control of [brief, generationProvider, generationModel, targetModel, taskType]) control.disabled = busy;
+  for (const control of [brief, generationModel, targetModel, taskType, localGeneration]) control.disabled = busy;
   updateGenerationModels();
 }
 
@@ -209,8 +207,9 @@ generate.addEventListener('click', async () => {
     return;
   }
 
-  const credentialSlug = catalogSlugFor(generationProvider.value);
-  if (BYOK_GENERATION_PROVIDERS.includes(generationProvider.value) && !credentialMetadata.has(credentialSlug)) {
+  const provider = providerBySlug(generationProviders, generationProvider.value);
+  const selectedCredentialSource = localGeneration.checked ? LOCAL_GENERATION_OPTION.credentialSource : provider?.generation?.credentialSources?.[0];
+  if (!localGeneration.checked && selectedCredentialSource === 'byok' && !credentialMetadata.has(generationProvider.value)) {
     output.textContent = `Configure sua API em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`;
     source.textContent = 'Credencial BYOK não configurada';
     result.hidden = false;
@@ -231,23 +230,20 @@ generate.addEventListener('click', async () => {
   generate.textContent = 'Gerando…';
 
   try {
-    const accessToken = BYOK_GENERATION_PROVIDERS.includes(generationProvider.value) ? authController.getAccessToken() : null;
+    const selectedProvider = localGeneration.checked ? LOCAL_GENERATION_OPTION.provider : generationProvider.value;
+    const accessToken = selectedCredentialSource === 'byok' ? authController.getAccessToken() : null;
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
-      body: JSON.stringify({ brief: request, generationProvider: generationProvider.value, generationModel: generationModel.value, taskType: taskType.value, targetModel: targetModel.value }),
+      body: JSON.stringify({ brief: request, generationProvider: selectedProvider, generationModel: generationModel.value, credentialSource: selectedCredentialSource, taskType: taskType.value, targetModel: targetModel.value }),
     });
     const payload = await response.json().catch(() => ({}));
 
-    if (response.status === 404 && generationProvider.value === 'platform') {
-      const profile = findProfile(targetModel.value);
-      output.textContent = compilePrompt({ brief: request, profile, taskType: taskType.value });
-      source.textContent = 'Compilador local · sem chave necessária';
-    } else if (!response.ok) {
+    if (!response.ok) {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
     } else {
       output.textContent = payload.prompt;
-      source.textContent = ['openrouter', 'openai', 'xai', 'deepseek', 'groq', 'mistral'].includes(payload.source) ? `${payload.source} BYOK · ${payload.generationModel}` : payload.source === 'gemini' ? `Compilado por ${payload.generationModel || generationModel.value}` : payload.source === 'local-fallback' ? 'Compilador local · fallback seguro' : 'Compilador local · sem chave necessária';
+      source.textContent = payload.credentialSource === 'byok' ? `${payload.generationProvider} · sua chave · ${payload.generationModel}` : payload.source === 'gemini' ? `Google Gemini · chave da plataforma · ${payload.generationModel}` : payload.source === 'local-fallback' ? 'Google Gemini · fallback local seguro' : 'Estratégia local · sem chave necessária';
     }
 
     result.classList.remove('is-empty');
