@@ -131,11 +131,20 @@ test('ordinary password update does not invoke destructive recovery', async () =
   assert.deepEqual(calls, ['updateUser']);
 });
 
+test('authenticated password controls preserve vault and never store passwords', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const ui = readFileSync(new URL('../src/auth/ui.js', import.meta.url), 'utf8');
+  assert.match(html, /id="change-password"/);
+  assert.match(html, /alteração voluntária preserva suas chaves/i);
+  assert.match(ui, /controller\.updatePassword\(password\)/);
+  assert.doesNotMatch(ui, /purge-credentials[\s\S]*changePasswordSubmit|localStorage|sessionStorage|indexedDB/i);
+});
+
 test('recovery implementation preserves guest mode and generation/catalog scope', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const ui = readFileSync(new URL('../src/auth/ui.js', import.meta.url), 'utf8');
   const generate = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
   assert.match(html, /remove as chaves de API salvas/i);
   assert.doesNotMatch(ui, /secret_last4|ciphertext|auth_tag|service_role/);
-  assert.doesNotMatch(generate, /purge-credentials|user_api_credentials|BYOK/i);
+  assert.doesNotMatch(generate, /purge-credentials|user_api_credentials/i);
 });

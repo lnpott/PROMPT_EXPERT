@@ -5,6 +5,8 @@ import { authenticateUser, UserApiError, userDatabaseRequest } from './security/
 import { OpenRouterError, validateOpenRouterKey } from './providers/openrouter.js';
 import { DirectProviderError } from './providers/openai-compatible.js';
 import { directProvider, validateDirectCredential } from './providers/direct-providers.js';
+import { AnthropicError, validateAnthropicKey } from './providers/anthropic.js';
+import { GeminiProviderError, validateGeminiKey } from './providers/gemini.js';
 
 const MAX_BODY_BYTES = 18_000;
 const MAX_SECRET_BYTES = 16_384;
@@ -236,19 +238,20 @@ export async function testCredential(request, response, environment = process.en
     }, environment);
     if (!plaintext) throw new Error('empty decrypted credential');
     const direct = directProvider(slug);
-    if (slug !== 'openrouter' && !direct) return json(response, 400, { error: 'Validação remota ainda não disponível para este provedor.' });
+    if (!['openrouter','google-gemini','anthropic'].includes(slug) && !direct) return json(response, 400, { error: 'Validação remota ainda não disponível para este provedor.' });
     let validationStatus;
     let providerResult;
     try {
-      providerResult = slug === 'openrouter'
-        ? await validateOpenRouterKey(plaintext)
-        : await validateDirectCredential(slug, plaintext);
+      providerResult = slug === 'openrouter' ? await validateOpenRouterKey(plaintext)
+        : slug === 'google-gemini' ? await validateGeminiKey(plaintext)
+          : slug === 'anthropic' ? await validateAnthropicKey(plaintext)
+            : await validateDirectCredential(slug, plaintext);
       validationStatus = 'valid';
     } catch (error) {
       const invalid = (error instanceof OpenRouterError && error.code === 'invalid')
-        || (error instanceof DirectProviderError && error.code === 'credential_invalid');
+        || ([DirectProviderError, AnthropicError, GeminiProviderError].some((Type) => error instanceof Type) && error.code === 'credential_invalid');
       validationStatus = invalid ? 'invalid' : 'error';
-      providerResult = { code: error instanceof OpenRouterError || error instanceof DirectProviderError ? error.code : 'operational_error' };
+      providerResult = { code: error?.code || 'operational_error' };
     }
     const validatedAt = new Date().toISOString();
     const saved = await userDatabaseRequest(

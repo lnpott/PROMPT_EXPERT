@@ -30,6 +30,6 @@ test('frontend never converts a BYOK error into a local result', () => {
   assert.doesNotMatch(ui, /response\.status === 404|compilePrompt/);
 });
 
-test('step 18B providers are not registered', () => {
-  assert.doesNotMatch(registry, /anthropic|claude|alibaba|qwen|kimi|gemini/i);
+test('native Anthropic stays out of the OpenAI-compatible registry', () => {
+  assert.doesNotMatch(registry, /anthropic|claude/i);
 });

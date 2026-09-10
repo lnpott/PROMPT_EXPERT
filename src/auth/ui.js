@@ -72,6 +72,26 @@ export function initializeAuthUI(controller, elements, request = fetch) {
     if (!result?.error) elements.feedback.textContent = 'Sessão encerrada.';
   });
 
+  elements.changePasswordSubmit?.addEventListener('click', async () => {
+    const password = elements.changePassword.value;
+    if (password !== elements.changePasswordConfirm.value) {
+      elements.changePasswordFeedback.textContent = 'As senhas não coincidem.';
+      return;
+    }
+    elements.changePasswordSubmit.disabled = true;
+    elements.changePasswordFeedback.textContent = 'Atualizando senha…';
+    try {
+      const result = await controller.updatePassword(password);
+      elements.changePasswordFeedback.textContent = result.error || 'Senha alterada. Suas chaves de API foram preservadas.';
+    } catch {
+      elements.changePasswordFeedback.textContent = 'Não foi possível alterar a senha.';
+    } finally {
+      elements.changePassword.value = '';
+      elements.changePasswordConfirm.value = '';
+      elements.changePasswordSubmit.disabled = false;
+    }
+  });
+
   elements.recovery.addEventListener('click', async () => {
     const redirectTo = `${window.location.origin}${window.location.pathname}#account-recovery`;
     const result = await run(

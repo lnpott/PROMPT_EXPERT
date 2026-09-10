@@ -6,6 +6,7 @@ import { generateCompatible, validateCompatibleCredential } from '../server/prov
 const expected = {
   openai: 'https://api.openai.com/v1', xai: 'https://api.x.ai/v1', deepseek: 'https://api.deepseek.com',
   groq: 'https://api.groq.com/openai/v1', mistral: 'https://api.mistral.ai/v1',
+  kimi: 'https://api.moonshot.ai/v1', 'alibaba-model-studio': 'https://dashscope-us.aliyuncs.com/compatible-mode/v1',
 };
 function response(status, body = {}) { return { ok: status >= 200 && status < 300, status, headers: new Headers(), text: async () => typeof body === 'string' ? body : JSON.stringify(body) }; }
 

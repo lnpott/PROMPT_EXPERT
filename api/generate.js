@@ -9,6 +9,8 @@ import { generateWithOpenRouter, OpenRouterError } from '../server/providers/ope
 import { DirectProviderError } from '../server/providers/openai-compatible.js';
 import { directProvider, generateWithDirectProvider } from '../server/providers/direct-providers.js';
 import { resolveGenerationRoute } from '../server/providers/generation-registry.js';
+import { generateWithGemini } from '../server/providers/gemini.js';
+import { generateWithAnthropic, AnthropicError } from '../server/providers/anthropic.js';
 
 const MAX_BRIEF_LENGTH = 6000;
 const PROVIDER_TIMEOUT_MS = 9000;
@@ -98,8 +100,8 @@ export default async function handler(request, response) {
   if (!route) return sendJson(response, 400, { error: 'O provedor ou a origem da credencial não possui execução disponível.', code: 'generation_route_unsupported' });
   if (!Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.', code: 'invalid_request' });
   const canonicalProvider = route.providerSlug;
-  const compiler = route.adapter === 'gemini-platform' ? findCompilerModel(generationModel) : null;
-  if (route.adapter === 'gemini-platform' && !compiler) return sendJson(response, 400, { error: 'O modelo de geração do Google Gemini é inválido.', code: 'generation_model_invalid' });
+  const compiler = route.adapter === 'gemini' ? findCompilerModel(generationModel) : null;
+  if (route.adapter === 'gemini' && !compiler) return sendJson(response, 400, { error: 'O modelo de geração do Google Gemini é inválido.', code: 'generation_model_invalid' });
   if (route.adapter === 'local' && generationModel !== 'local-deterministic') return sendJson(response, 400, { error: 'O modelo de geração local é inválido.', code: 'generation_model_invalid' });
 
   if (clientIsLimited(request)) {
@@ -112,6 +114,20 @@ export default async function handler(request, response) {
   if (route.adapter === 'local') {
     logRequest({ requestId, targetModel, generationModel, generationProvider, source: 'local', status: 200, startedAt });
     return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider: 'local', credentialSource: 'local', generationModel, targetModel, requestId });
+  }
+
+  if (route.adapter === 'gemini' && credentialSource === 'byok') {
+    let apiKey=null;
+    try { const owned=await ownedCredential(request,'google-gemini'); apiKey=owned.apiKey; const generated=await generateWithGemini({apiKey,model:compiler.slug,instruction:localPrompt}); return sendJson(response,200,{prompt:generated.content,source:'google-gemini',generationProvider:canonicalProvider,credentialSource:'byok',generationModel:compiler.slug,targetModel,requestId}); }
+    catch(error){const status=Number.isInteger(error?.status)?error.status:503;return sendJson(response,status,{error:'Não foi possível gerar com sua chave do Google Gemini.',code:error?.code||'provider_error',requestId});}
+    finally{apiKey=null;}
+  }
+
+  if (route.adapter === 'anthropic') {
+    let apiKey=null;
+    try { const owned=await ownedCredential(request,'anthropic'); apiKey=owned.apiKey; const modelsResponse=await userDatabaseRequest(`ai_models?provider_id=eq.${encodeURIComponent(owned.provider.id)}&model_id=eq.${encodeURIComponent(generationModel)}&is_active=eq.true&is_public=eq.true&is_deprecated=eq.false&select=model_id`,owned.auth); const [allowed]=modelsResponse.ok?await modelsResponse.json():[]; if(!allowed)throw new AnthropicError('provider_model_unavailable',404); const generated=await generateWithAnthropic({apiKey,model:allowed.model_id,instruction:localPrompt}); return sendJson(response,200,{prompt:generated.content,source:'anthropic',generationProvider:canonicalProvider,credentialSource:'byok',generationModel:allowed.model_id,targetModel,requestId}); }
+    catch(error){const status=Number.isInteger(error?.status)?error.status:503;return sendJson(response,status,{error:'Não foi possível gerar com Anthropic.',code:error?.code||'provider_error',requestId});}
+    finally{apiKey=null;}
   }
 
   if (route.adapter === 'openrouter') {

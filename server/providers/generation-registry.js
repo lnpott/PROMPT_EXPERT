@@ -3,12 +3,10 @@ import { DIRECT_PROVIDER_SLUGS } from './direct-providers.js';
 const directCatalogSlugs = Object.freeze(DIRECT_PROVIDER_SLUGS.map((slug) => slug === 'groq' ? 'groqcloud' : slug));
 
 const entries = Object.freeze({
-  'google-gemini': Object.freeze({ adapter: 'gemini-platform', adapterStatus: 'available', credentialSources: Object.freeze(['platform']) }),
+  'google-gemini': Object.freeze({ adapter: 'gemini', adapterStatus: 'available', credentialSources: Object.freeze(['platform', 'byok']), validationSupported: true }),
   openrouter: Object.freeze({ adapter: 'openrouter', adapterStatus: 'available', credentialSources: Object.freeze(['byok']) }),
   ...Object.fromEntries(directCatalogSlugs.map((slug) => [slug, Object.freeze({ adapter: 'openai-compatible', adapterStatus: 'available', credentialSources: Object.freeze(['byok']) })])),
-  anthropic: Object.freeze({ adapter: null, adapterStatus: 'planned', credentialSources: Object.freeze([]) }),
-  'alibaba-model-studio': Object.freeze({ adapter: null, adapterStatus: 'planned', credentialSources: Object.freeze([]) }),
-  kimi: Object.freeze({ adapter: null, adapterStatus: 'planned', credentialSources: Object.freeze([]) }),
+  anthropic: Object.freeze({ adapter: 'anthropic', adapterStatus: 'available', credentialSources: Object.freeze(['byok']), validationSupported: true }),
 });
 
 export const LOCAL_GENERATION_STRATEGY = Object.freeze({
@@ -21,6 +19,7 @@ export function generationCapability(providerSlug) {
     adapterStatus: entry.adapterStatus,
     generationSupported: entry.adapterStatus === 'available',
     credentialSources: [...entry.credentialSources],
+    validationSupported: Boolean(entry.validationSupported ?? entry.credentialSources.includes('byok')),
   } : { adapterStatus: 'unavailable', generationSupported: false, credentialSources: [] };
 }
 
@@ -28,7 +27,7 @@ export function resolveGenerationRoute(providerSlug, credentialSource) {
   // Temporary compatibility for clients predating Passo 18.6.1. The public UI
   // never exposes "platform" as a provider; remove after legacy clients migrate.
   if (providerSlug === 'platform' && (!credentialSource || credentialSource === 'platform')) {
-    return { providerSlug: 'google-gemini', credentialSource: 'platform', adapter: 'gemini-platform', legacyAlias: true };
+    return { providerSlug: 'google-gemini', credentialSource: 'platform', adapter: 'gemini', legacyAlias: true };
   }
   if (providerSlug === LOCAL_GENERATION_STRATEGY.slug) {
     return credentialSource === 'local'
