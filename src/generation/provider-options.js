@@ -1,21 +1,45 @@
-export const BYOK_GENERATION_PROVIDERS = Object.freeze(['openrouter', 'openai', 'xai', 'deepseek', 'groq', 'mistral']);
-
-export function catalogSlugFor(provider) {
-  return provider === 'groq' ? 'groqcloud' : provider;
+export function executableProviders(providers) {
+  return providers.filter((provider) => provider?.slug && provider?.display_name);
 }
 
-export function modelsForProvider(providers, provider) {
-  if (!BYOK_GENERATION_PROVIDERS.includes(provider)) return [];
-  const entry = providers.find((item) => item.slug === catalogSlugFor(provider));
-  return Array.isArray(entry?.models) ? entry.models : [];
+export function providerBySlug(providers, slug) {
+  return providers.find((provider) => provider.slug === slug) || null;
 }
 
-export function generationModelsForProvider({ providers, compilers }, provider) {
-  if (provider === 'platform') return compilers.map((compiler) => ({
-    modelId: compiler.slug,
-    displayName: compiler.displayName,
-    isDefault: compiler.isDefault,
+export function generationModelsForProvider(providers, providerSlug) {
+  const provider = providerBySlug(providers, providerSlug);
+  return (provider?.models || []).map((model) => ({
+    modelId: model.model_id,
+    displayName: model.display_name,
+    description: model.description,
+    generationSupported: Boolean(provider.generation?.generationSupported),
   }));
-  if (provider === 'local') return [{ modelId: 'local-deterministic', displayName: 'Compilador determinístico local', isDefault: true }];
-  return modelsForProvider(providers, provider).map((model) => ({ modelId: model.model_id, displayName: model.display_name, isDefault: false }));
 }
+
+export function generationUiState({ provider, credential }) {
+  if (!provider) return { executable: false, availability: 'Catálogo indisponível', credentialSource: '', credentialStatus: '' };
+  const supported = Boolean(provider.generation?.generationSupported);
+  const [credentialSource] = provider.generation?.credentialSources || [];
+  if (!supported) return {
+    executable: false,
+    availability: 'Execução ainda não disponível',
+    credentialSource: 'Nenhuma origem de credencial executável',
+    credentialStatus: credential ? 'Chave configurada; adapter ainda indisponível' : 'Adapter ainda não implementado',
+  };
+  if (credentialSource === 'platform') return {
+    executable: true,
+    availability: 'Disponível',
+    credentialSource: 'Chave da plataforma',
+    credentialStatus: 'Nenhuma chave pessoal necessária',
+  };
+  return {
+    executable: Boolean(credential),
+    availability: 'Disponível com BYOK',
+    credentialSource: 'Sua chave',
+    credentialStatus: credential ? `Chave configurada · status ${credential.validationStatus || 'untested'}` : 'Configure sua chave',
+  };
+}
+
+export const LOCAL_GENERATION_OPTION = Object.freeze({
+  provider: 'local', model: 'local-deterministic', credentialSource: 'local',
+});

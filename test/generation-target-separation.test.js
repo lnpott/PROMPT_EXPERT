@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import generate from '../api/generate.js';
-import { publicCompilerModels } from '../api/compiler-models.js';
 import { publicProfiles } from '../api/model-profiles.js';
 import { generationModelsForProvider } from '../src/generation/provider-options.js';
 
@@ -25,11 +24,11 @@ test('generation catalog is provider-bound and uses stable model IDs rather than
     { slug: 'deepseek', models: [{ model_id: 'deepseek-api-id', display_name: 'Visual label' }] },
     { slug: 'openai', models: [{ model_id: 'openai-api-id', display_name: 'Visual label' }] },
   ];
-  assert.deepEqual(generationModelsForProvider({ providers, compilers: [] }, 'deepseek'), [
-    { modelId: 'deepseek-api-id', displayName: 'Visual label', isDefault: false },
+  assert.deepEqual(generationModelsForProvider(providers, 'deepseek'), [
+    { modelId: 'deepseek-api-id', displayName: 'Visual label', description: undefined, generationSupported: false },
   ]);
-  assert.deepEqual(generationModelsForProvider({ providers, compilers: [] }, 'openai').map(({ modelId }) => modelId), ['openai-api-id']);
-  assert.deepEqual(generationModelsForProvider({ providers, compilers: [] }, 'xai'), []);
+  assert.deepEqual(generationModelsForProvider(providers, 'openai').map(({ modelId }) => modelId), ['openai-api-id']);
+  assert.deepEqual(generationModelsForProvider(providers, 'xai'), []);
 });
 
 test('changing provider rebuilds generation choices and cannot preserve a stale model', () => {
@@ -37,8 +36,8 @@ test('changing provider rebuilds generation choices and cannot preserve a stale 
     { slug: 'deepseek', models: [{ model_id: 'deepseek-only', display_name: 'DeepSeek' }] },
     { slug: 'mistral', models: [{ model_id: 'mistral-only', display_name: 'Mistral' }] },
   ];
-  const first = generationModelsForProvider({ providers, compilers: [] }, 'deepseek');
-  const second = generationModelsForProvider({ providers, compilers: [] }, 'mistral');
+  const first = generationModelsForProvider(providers, 'deepseek');
+  const second = generationModelsForProvider(providers, 'mistral');
   assert.equal(first.some(({ modelId }) => modelId === second[0].modelId), false);
   assert.match(main, /generationModel\.replaceChildren/);
 });
@@ -47,7 +46,7 @@ test('optimization targets are methodological profiles independent from executor
   const targetIds = publicProfiles().map(({ slug }) => slug);
   assert.ok(targetIds.includes('claude'));
   assert.ok(targetIds.includes('deepseek'));
-  assert.ok(generationModelsForProvider({ providers: [], compilers: publicCompilerModels() }, 'platform').length > 0);
+  assert.equal(generationModelsForProvider([], 'google-gemini').length, 0);
   assert.match(main, /option\.value = profile\.slug/);
   assert.match(html, /Otimização para modelo/);
 });
@@ -61,6 +60,7 @@ test('a local executor can generate for a cross-family Claude target without cre
       brief: 'Crie um formulário acessível.',
       generationProvider: 'local',
       generationModel: 'local-deterministic',
+      credentialSource: 'local',
       taskType: 'cited',
       targetModel: 'claude',
     },
@@ -95,10 +95,10 @@ test('ambiguous legacy fields are not accepted as the new generation contract', 
 });
 
 test('BYOK presence is not presented as validation and no key test runs on page load', () => {
-  assert.match(main, /Use your own key\. Status:/);
-  assert.match(main, /Configure your key first/);
+  assert.match(main, /generationUiState/);
+  assert.match(main, /credentialMetadata\.get/);
   assert.doesNotMatch(main, /fetch\([^\n]*\/test/);
-  assert.match(main, /generationProvider: generationProvider\.value/);
+  assert.match(main, /generationProvider: selectedProvider/);
   assert.match(main, /generationModel: generationModel\.value/);
   assert.match(main, /targetModel: targetModel\.value/);
 });
@@ -106,7 +106,7 @@ test('BYOK presence is not presented as validation and no key test runs on page 
 test('backend selects methodology from target and adapters from generation provider', () => {
   assert.match(generation, /findProfile\(targetModel\)/);
   assert.match(generation, /compilePrompt\(\{ brief, profile, taskType \}\)/);
-  assert.match(generation, /generateWithDirectProvider\(generationProvider/);
+  assert.match(generation, /generateWithDirectProvider\(canonicalProvider/);
   assert.match(generation, /model: allowedModel\.model_id/);
   assert.doesNotMatch(generation, /request\.body\?\.(?:baseUrl|endpoint|apiKey|headers)/);
 });

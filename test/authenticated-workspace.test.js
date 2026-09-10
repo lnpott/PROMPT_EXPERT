@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { renderAccountState } from '../src/auth/ui.js';
-import { catalogSlugFor, generationModelsForProvider, modelsForProvider } from '../src/generation/provider-options.js';
+import { generationModelsForProvider, generationUiState } from '../src/generation/provider-options.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
@@ -29,10 +29,10 @@ test('logout and recovery hide workspace; recovery remains prioritized', () => {
   assert.equal(e.appContent.hidden, true); assert.equal(e.signedOut.hidden, false);
 });
 
-test('logout recomputes platform controls and in-flight generation locks selectors', () => {
-  assert.match(main, /generationProvider\.value = 'platform';[\s\S]*updateGenerationModels\(\)/);
-  assert.match(main, /generationBusy \|\| models\.length === 0 \|\| \(byok && !credentialMetadata\.has/);
-  assert.match(main, /for \(const control of \[brief, generationProvider, generationModel, targetModel, taskType\]\) control\.disabled = busy/);
+test('logout clears local mode and in-flight generation locks controls', () => {
+  assert.match(main, /localGeneration\.checked = false;[\s\S]*updateGenerationModels\(\)/);
+  assert.match(main, /generationBusy \|\| models\.length === 0 \|\| !state\.executable/);
+  assert.match(main, /for \(const control of \[brief, generationModel, targetModel, taskType, localGeneration\]\) control\.disabled = busy/);
 });
 
 test('hash navigation is session-derived and has account, app, providers and recovery states', () => {
@@ -41,26 +41,24 @@ test('hash navigation is session-derived and has account, app, providers and rec
   assert.match(main, /else if \(!authenticated\) route = '#login'/);
 });
 
-test('each BYOK provider receives only its catalog models', () => {
+test('each provider receives only its own catalog models', () => {
   const providers = ['openrouter','openai','xai','deepseek','groqcloud','mistral'].map((slug) => ({ slug, models: [{ model_id: `${slug}-model` }] }));
-  for (const provider of ['openrouter','openai','xai','deepseek','groq','mistral']) {
-    const models = modelsForProvider(providers, provider);
-    assert.deepEqual(models.map((item) => item.model_id), [`${catalogSlugFor(provider)}-model`]);
+  for (const provider of providers.map(({ slug }) => slug)) {
+    assert.deepEqual(generationModelsForProvider(providers, provider).map((item) => item.modelId), [`${provider}-model`]);
   }
-  assert.deepEqual(modelsForProvider(providers, 'platform'), []);
+  assert.deepEqual(generationModelsForProvider(providers, 'unknown'), []);
 });
 
 test('provider changes replace stale generation models while targets remain independent', () => {
   const providers = [{ slug: 'openai', models: [{ model_id: 'openai-only' }] }, { slug: 'deepseek', models: [{ model_id: 'deepseek-only' }] }, { slug: 'mistral', models: [{ model_id: 'mistral-only' }] }];
-  const compilers = [{ slug: 'gemini-platform', displayName: 'Gemini Platform', isDefault: true }];
-  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'openai').map(x=>x.modelId), ['openai-only']);
-  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'deepseek').map(x=>x.modelId), ['deepseek-only']);
-  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'mistral').map(x=>x.modelId), ['mistral-only']);
-  assert.deepEqual(generationModelsForProvider({ providers, compilers }, 'platform').map(x=>x.modelId), ['gemini-platform']);
+  assert.deepEqual(generationModelsForProvider(providers, 'openai').map(x=>x.modelId), ['openai-only']);
+  assert.deepEqual(generationModelsForProvider(providers, 'deepseek').map(x=>x.modelId), ['deepseek-only']);
+  assert.deepEqual(generationModelsForProvider(providers, 'mistral').map(x=>x.modelId), ['mistral-only']);
 });
 
 test('missing BYOK credential has a providers CTA and no fallback', () => {
-  assert.match(html, /Configurar em APIs e provedores/);
-  assert.match(main, /Configure your key first/);
-  assert.match(main, /response\.status === 404 && generationProvider\.value === 'platform'/);
+  const provider = { generation: { generationSupported: true, credentialSources: ['byok'] } };
+  assert.equal(generationUiState({ provider }).credentialStatus, 'Configure sua chave');
+  assert.match(html, /APIs e provedores/);
+  assert.doesNotMatch(main, /response\.status === 404|compilePrompt/);
 });

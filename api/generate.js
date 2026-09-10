@@ -7,7 +7,8 @@ import { openRouterCredential, ownedCredential } from '../server/credential-serv
 import { userDatabaseRequest } from '../server/security/supabase-user.js';
 import { generateWithOpenRouter, OpenRouterError } from '../server/providers/openrouter.js';
 import { DirectProviderError } from '../server/providers/openai-compatible.js';
-import { directProvider, DIRECT_PROVIDER_SLUGS, generateWithDirectProvider } from '../server/providers/direct-providers.js';
+import { directProvider, generateWithDirectProvider } from '../server/providers/direct-providers.js';
+import { resolveGenerationRoute } from '../server/providers/generation-registry.js';
 
 const MAX_BRIEF_LENGTH = 6000;
 const PROVIDER_TIMEOUT_MS = 9000;
@@ -90,13 +91,16 @@ export default async function handler(request, response) {
   const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'cited';
   const generationProvider = typeof request.body?.generationProvider === 'string' ? request.body.generationProvider : '';
   const generationModel = typeof request.body?.generationModel === 'string' ? request.body.generationModel : '';
+  const credentialSource = typeof request.body?.credentialSource === 'string' ? request.body.credentialSource : '';
+  const route = resolveGenerationRoute(generationProvider, credentialSource);
 
   if (!profile) return sendJson(response, 400, { error: 'O modelo-alvo de otimização é inválido ou não possui metodologia.', code: 'target_model_invalid' });
-  if (!['local', 'platform', 'openrouter', ...DIRECT_PROVIDER_SLUGS].includes(generationProvider)) return sendJson(response, 400, { error: 'O provedor de geração não é suportado.', code: 'generation_provider_unsupported' });
+  if (!route) return sendJson(response, 400, { error: 'O provedor ou a origem da credencial não possui execução disponível.', code: 'generation_route_unsupported' });
   if (!Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.', code: 'invalid_request' });
-  const compiler = generationProvider === 'platform' ? findCompilerModel(generationModel) : null;
-  if (generationProvider === 'platform' && !compiler) return sendJson(response, 400, { error: 'O modelo de geração da plataforma é inválido.', code: 'generation_model_invalid' });
-  if (generationProvider === 'local' && generationModel !== 'local-deterministic') return sendJson(response, 400, { error: 'O modelo de geração local é inválido.', code: 'generation_model_invalid' });
+  const canonicalProvider = route.providerSlug;
+  const compiler = route.adapter === 'gemini-platform' ? findCompilerModel(generationModel) : null;
+  if (route.adapter === 'gemini-platform' && !compiler) return sendJson(response, 400, { error: 'O modelo de geração do Google Gemini é inválido.', code: 'generation_model_invalid' });
+  if (route.adapter === 'local' && generationModel !== 'local-deterministic') return sendJson(response, 400, { error: 'O modelo de geração local é inválido.', code: 'generation_model_invalid' });
 
   if (clientIsLimited(request)) {
     response.setHeader('Retry-After', '60');
@@ -105,12 +109,12 @@ export default async function handler(request, response) {
   }
 
   const localPrompt = compilePrompt({ brief, profile, taskType });
-  if (generationProvider === 'local') {
+  if (route.adapter === 'local') {
     logRequest({ requestId, targetModel, generationModel, generationProvider, source: 'local', status: 200, startedAt });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider, generationModel, targetModel, requestId });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider: 'local', credentialSource: 'local', generationModel, targetModel, requestId });
   }
 
-  if (generationProvider === 'openrouter') {
+  if (route.adapter === 'openrouter') {
     let apiKey = null;
     try {
       const owned = await openRouterCredential(request);
@@ -124,7 +128,7 @@ export default async function handler(request, response) {
       if (!allowedModel) throw new OpenRouterError('model_unavailable', 404);
       const prompt = await generateWithOpenRouter({ apiKey, model: allowedModel.model_id, instruction: localPrompt });
       logRequest({ requestId, targetModel, generationModel: allowedModel.model_id, generationProvider, source: 'openrouter', status: 200, startedAt });
-      return sendJson(response, 200, { prompt, source: 'openrouter', generationProvider, generationModel: allowedModel.model_id, targetModel, requestId });
+      return sendJson(response, 200, { prompt, source: 'openrouter', generationProvider: canonicalProvider, credentialSource, generationModel: allowedModel.model_id, targetModel, requestId });
     } catch (error) {
       const status = error?.status && Number.isInteger(error.status) ? error.status : 503;
       const messages = {
@@ -139,10 +143,10 @@ export default async function handler(request, response) {
       apiKey = null;
     }
   }
-  if (DIRECT_PROVIDER_SLUGS.includes(generationProvider)) {
+  if (route.adapter === 'openai-compatible') {
     let apiKey = null;
     try {
-      const config = directProvider(generationProvider);
+      const config = directProvider(canonicalProvider);
       const owned = await ownedCredential(request, config.credentialSlug);
       apiKey = owned.apiKey;
       const modelsResponse = await userDatabaseRequest(
@@ -152,9 +156,9 @@ export default async function handler(request, response) {
       if (!modelsResponse.ok) throw new DirectProviderError('provider_unavailable', 503);
       const [allowedModel] = await modelsResponse.json();
       if (!allowedModel) throw new DirectProviderError('provider_model_unavailable', 404);
-      const generated = await generateWithDirectProvider(generationProvider, { apiKey, model: allowedModel.model_id, instruction: localPrompt });
+      const generated = await generateWithDirectProvider(canonicalProvider, { apiKey, model: allowedModel.model_id, instruction: localPrompt });
       logRequest({ requestId, targetModel, generationModel: allowedModel.model_id, generationProvider, source: generationProvider, status: 200, startedAt });
-      return sendJson(response, 200, { prompt: generated.content, source: generationProvider, generationProvider, generationModel: allowedModel.model_id, targetModel, ...(generated.usage ? { usage: generated.usage } : {}), requestId });
+      return sendJson(response, 200, { prompt: generated.content, source: canonicalProvider, generationProvider: canonicalProvider, credentialSource, generationModel: allowedModel.model_id, targetModel, ...(generated.usage ? { usage: generated.usage } : {}), requestId });
     } catch (error) {
       const status = error?.status && Number.isInteger(error.status) ? error.status : 503;
       const messages = {
@@ -173,7 +177,7 @@ export default async function handler(request, response) {
   const apiKey = compilerApiKey(compiler);
   if (!apiKey) {
     logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local', status: 200, startedAt });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider, generationModel: compiler.slug, targetModel, requestId });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local', generationProvider: canonicalProvider, credentialSource: 'platform', generationModel: compiler.slug, targetModel, requestId });
   }
 
   try {
@@ -205,7 +209,7 @@ export default async function handler(request, response) {
 
     if (!geminiResponse.ok) {
       logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local-fallback', status: 200, startedAt, attempts, error: `ProviderHTTP${geminiResponse.status}` });
-      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider, generationModel: compiler.slug, targetModel, requestId });
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider: canonicalProvider, credentialSource: 'platform', generationModel: compiler.slug, targetModel, requestId });
     }
 
     const payload = await geminiResponse.json();
@@ -213,12 +217,12 @@ export default async function handler(request, response) {
 
     if (!prompt) {
       logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local-fallback', status: 200, startedAt, attempts, error: 'EmptyProviderResponse' });
-      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider, generationModel: compiler.slug, targetModel, requestId });
+      return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider: canonicalProvider, credentialSource: 'platform', generationModel: compiler.slug, targetModel, requestId });
     }
     logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'gemini', status: 200, startedAt, attempts });
-    return sendJson(response, 200, { prompt, source: 'gemini', generationProvider, generationModel: compiler.slug, targetModel, requestId });
+    return sendJson(response, 200, { prompt, source: 'gemini', generationProvider: canonicalProvider, credentialSource: 'platform', generationModel: compiler.slug, targetModel, requestId });
   } catch (error) {
     logRequest({ requestId, targetModel, generationModel: compiler.slug, generationProvider, source: 'local-fallback', status: 200, startedAt, error: error?.name || 'Error' });
-    return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider, generationModel: compiler.slug, targetModel, requestId });
+    return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider: canonicalProvider, credentialSource: 'platform', generationModel: compiler.slug, targetModel, requestId });
   }
 }
