@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Transforme uma ideia em um prompt de programação pronto para usar." />
     <title>Prompt Expert</title>
-    <script type="module" crossorigin src="/assets/index-BALxOI_j.js"></script>
+    <script type="module" crossorigin src="/assets/index-EWFqE7_V.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-B9Ifk-Rq.css">
   </head>
   <body>
@@ -35,7 +35,7 @@
             <label for="auth-password">Senha</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
             <div class="auth-actions"><button id="sign-in" type="submit">Entrar</button><button id="sign-up" class="secondary" type="button">Criar conta</button><button id="recover-account" class="text-button" type="button">Esqueci minha senha</button></div>
           </div>
-          <div id="signed-in" hidden><p>Autenticado como <strong id="user-email"></strong></p><button id="sign-out" class="secondary" type="button">Sair</button></div>
+          <div id="signed-in" hidden><p>Autenticado como <strong id="user-email"></strong></p><section class="account-security" aria-labelledby="security-title"><h2 id="security-title">Segurança</h2><label for="change-password">Nova senha</label><input id="change-password" type="password" autocomplete="new-password" minlength="8" /><label for="change-password-confirm">Confirmar nova senha</label><input id="change-password-confirm" type="password" autocomplete="new-password" minlength="8" /><button id="change-password-submit" type="button">Alterar senha</button><p id="change-password-feedback" role="status" aria-live="polite"></p><p class="security-note">A alteração voluntária preserva suas chaves de API.</p></section><button id="sign-out" class="secondary" type="button">Sair</button></div>
           <div id="recovery-panel" class="recovery-panel" hidden>
             <h2>Redefinir senha esquecida</h2><p>Por segurança, redefinir uma senha esquecida remove as chaves de API salvas na sua conta. Após redefinir a senha, você precisará cadastrá-las novamente.</p>
             <div id="recovery-form"><label for="recovery-new-password">Nova senha</label><input id="recovery-new-password" type="password" autocomplete="new-password" minlength="8" required /><label for="recovery-confirm-password">Confirmar nova senha</label><input id="recovery-confirm-password" type="password" autocomplete="new-password" minlength="8" required /><button id="complete-recovery" type="button">Remover chaves e redefinir senha</button><p id="recovery-feedback" role="status" aria-live="polite"></p></div>
@@ -67,7 +67,7 @@
         <label class="local-strategy"><input id="local-generation" type="checkbox" /> Usar estratégia local, sem chamar uma IA externa</label>
         <p class="model-description" id="generation-model-description">Carregando modelos executáveis…</p>
         <p class="model-description" id="target-model-description">O alvo seleciona a metodologia e não será chamado.</p>
-        <div class="provider-guidance" id="provider-guidance"><p><strong>Disponibilidade:</strong> <span id="execution-status">Verificando catálogo…</span></p><p><strong>Origem da credencial:</strong> <span id="credential-source">—</span></p><p><strong>Status da credencial:</strong> <span id="credential-state">—</span> <a id="credential-cta" href="#providers" hidden>APIs e provedores</a></p></div>
+        <div class="provider-guidance" id="provider-guidance"><p><strong>Disponibilidade:</strong> <span id="execution-status">Verificando catálogo…</span></p><p><label for="credential-source-select"><strong>Origem da credencial:</strong></label> <select id="credential-source-select"></select></p><p><strong>Status da credencial:</strong> <span id="credential-state">—</span> <a id="credential-cta" href="#providers" hidden>APIs e provedores</a></p></div>
       </section>
 
       <section class="providers-panel" id="providers" aria-labelledby="providers-title" hidden>

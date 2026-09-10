@@ -140,3 +140,7 @@ O teste da credencial consulta `GET https://openrouter.ai/api/v1/key`. A geraç�
 OpenAI, xAI, DeepSeek, GroqCloud e Mistral reutilizam o cofre por usuário: não configure chaves desses providers em variáveis da aplicação. A validação usa o endpoint oficial `GET /models`; a geração usa `POST /chat/completions`. Bases HTTPS, paths, bearer, timeout e payload são definidos pelo registry server-side e não podem ser substituídos pelo navegador.
 
 Somente 401/403 marcam a credencial como inválida. Falta de créditos, rate limit, indisponibilidade, timeout, rede e resposta inválida são falhas operacionais. Uma falha BYOK não usa a chave Gemini da plataforma, OpenRouter, outro BYOK ou compilação local como fallback. As variáveis criptográficas existentes não devem ser alteradas.
+
+## Providers BYOK do Passo 18B
+
+Google Gemini, Anthropic e Kimi usam exclusivamente credenciais do usuário armazenadas no cofre existente; Alibaba/Qwen possui adapter e migration local de ativação ainda não aplicada. Nenhuma variável de ambiente de provider BYOK deve ser criada. `GEMINI_API_KEY` continua exclusiva de `credentialSource=platform` e jamais deve ser copiada para o vault ou exposta ao frontend.
