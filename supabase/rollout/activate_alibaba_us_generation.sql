@@ -1,4 +1,4 @@
--- LOCAL ONLY until explicitly authorized for remote application.
+-- MANUAL ROLLOUT PROPOSAL. Do not execute without explicit authorization.
 update public.api_providers
 set is_active = true,
     base_url = 'https://dashscope-us.aliyuncs.com/compatible-mode/v1',
