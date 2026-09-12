@@ -58,3 +58,22 @@ export function generationUiState({ provider, credential, credentialSource: sele
 export const LOCAL_GENERATION_OPTION = Object.freeze({
   provider: 'local', model: 'local-deterministic', credentialSource: 'local',
 });
+
+export function generationResultLabels(payload) {
+  if (payload.source === 'local-fallback') return {
+    generatedBy: 'Compilador local (fallback)',
+    sourceText: 'Falha do Google Gemini · fallback local seguro',
+  };
+  if (payload.source === 'local') return {
+    generatedBy: 'Compilador local',
+    sourceText: 'Compilador local · sem conta, chave ou chamada externa',
+  };
+  if (payload.credentialSource === 'byok') return {
+    generatedBy: payload.generationModel,
+    sourceText: `${payload.generationProvider} · sua chave · ${payload.generationModel}`,
+  };
+  return {
+    generatedBy: payload.generationModel,
+    sourceText: `Google Gemini · chave da plataforma · ${payload.generationModel}`,
+  };
+}
