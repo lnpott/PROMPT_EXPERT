@@ -169,5 +169,14 @@
       "officialSource": "https://www.alibabacloud.com/help/en/model-studio/models",
       "runtime": "US rollout proposed; inactive and not exposed"
     }
-  ]
+  ],
+  "postRollout": {
+    "appliedOn": "2026-09-12",
+    "migration": "20260912010000_replace_deepseek_legacy_model.sql",
+    "provider": "deepseek",
+    "previousModelId": "deepseek-v4-flash",
+    "currentModelId": "deepseek-flash",
+    "remoteApplied": true,
+    "legacyAliasVisible": false
+  }
 }
