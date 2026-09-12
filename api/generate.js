@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
 import { compilerApiKey, findCompilerModel } from './compiler-models.js';
-import { compilePrompt, findProfile, selectMethodologyRules, taskTypes } from './model-profiles.js';
+import { compilePrompt, resolveMethodologyPackage, taskTypes } from './model-profiles.js';
+import { loadCanonicalMethodology } from '../server/canonical-methodology.js';
 import { openRouterCredential, ownedCredential } from '../server/credential-service.js';
 import { userDatabaseRequest } from '../server/security/supabase-user.js';
 import { generateWithOpenRouter, OpenRouterError } from '../server/providers/openrouter.js';
@@ -100,13 +101,15 @@ export default async function handler(request, response) {
 
   const brief = typeof request.body?.brief === 'string' ? request.body.brief.trim() : '';
   const targetModel = typeof request.body?.targetModel === 'string' ? request.body.targetModel : '';
-  const profile = findProfile(targetModel);
   const taskType = typeof request.body?.taskType === 'string' ? request.body.taskType : 'cited';
   const generationProvider = typeof request.body?.generationProvider === 'string' ? request.body.generationProvider : '';
   const generationModel = typeof request.body?.generationModel === 'string' ? request.body.generationModel : '';
   const credentialSource = typeof request.body?.credentialSource === 'string' ? request.body.credentialSource : '';
   const route = resolveGenerationRoute(generationProvider, credentialSource);
 
+  const canonical = await loadCanonicalMethodology();
+  const methodologyPackage = resolveMethodologyPackage(targetModel, taskType, canonical.corpus);
+  const profile = methodologyPackage?.profile;
   if (!profile) return sendJson(response, 400, { error: 'O modelo-alvo de otimização é inválido ou não possui metodologia.', code: 'target_model_invalid' });
   if (!route) return sendJson(response, 400, { error: 'O provedor ou a origem da credencial não possui execução disponível.', code: 'generation_route_unsupported' });
   if (!Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.', code: 'invalid_request' });
@@ -121,7 +124,7 @@ export default async function handler(request, response) {
     return sendJson(response, 429, { error: 'Limite temporário atingido. Aguarde um minuto.' });
   }
 
-  const localPrompt = compilePrompt({ brief, profile, taskType });
+  const localPrompt = compilePrompt({ brief, profile, taskType, methodologyPackage });
   const providerInstruction = buildProviderInstruction(localPrompt, profile);
   if (route.adapter === 'local') {
     logRequest({ requestId, targetModel, generationModel, generationProvider, source: 'local', status: 200, startedAt });
@@ -214,7 +217,7 @@ export default async function handler(request, response) {
       system_guidance: profile.guidance,
       output_contract: profile.format,
     };
-    const rules = selectMethodologyRules(profile, taskType)
+    const rules = methodologyPackage.rules
       .map((rule) => ({ rule_text: rule.text, priority: rule.priority }));
     const { response: geminiResponse, attempts } = await requestGemini(
       `https://generativelanguage.googleapis.com/v1beta/models/${compiler.slug}:generateContent`,
