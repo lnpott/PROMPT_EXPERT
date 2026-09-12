@@ -1,5 +1,4 @@
 import { getActiveApiProviders, getPublicAiModels } from '../server/knowledge-base.js';
-import { publicCompilerModels } from './compiler-models.js';
 import { generationCapability } from '../server/providers/generation-registry.js';
 
 const PROVIDER_FIELDS = [
@@ -32,9 +31,7 @@ export function allowlistedProvider(provider, models = []) {
 export async function richProviders() {
   const [providers, models] = await Promise.all([getActiveApiProviders(), getPublicAiModels()]);
   return providers.map((provider) => {
-    const providerModels = provider.slug === 'google-gemini'
-      ? publicCompilerModels().map((model) => ({ model_id: model.slug, display_name: model.displayName, description: model.recommendation, is_active: true, is_public: true, is_deprecated: false }))
-      : models.filter((model) => model.api_providers?.slug === provider.slug);
+    const providerModels = models.filter((model) => model.api_providers?.slug === provider.slug);
     return allowlistedProvider(provider, providerModels);
   });
 }

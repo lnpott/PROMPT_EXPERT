@@ -4,7 +4,7 @@ import { createAuthController } from './auth/session.js';
 import { initializeAuthUI } from './auth/ui.js';
 import { initializeCredentialManager } from './byok/credentials.js';
 import { createSupabaseBrowserClient } from './lib/supabase.js';
-import { executableProviders, generationModelsForProvider, generationUiState, LOCAL_GENERATION_OPTION, providerBySlug } from './generation/provider-options.js';
+import { executableProviders, generationModelSelection, generationModelsForProvider, generationUiState, LOCAL_GENERATION_OPTION, providerBySlug } from './generation/provider-options.js';
 
 const brief = document.querySelector('#brief');
 const targetModel = document.querySelector('#target-model');
@@ -31,6 +31,7 @@ let generationProviders = [];
 let credentialMetadata = new Map();
 let generationBusy = false;
 let localGenerationTouched = false;
+let renderedGenerationProvider = null;
 
 const authController = createAuthController(createSupabaseBrowserClient());
 
@@ -166,12 +167,17 @@ function updateGenerationModels() {
   const provider = providerBySlug(generationProviders, generationProvider.value);
   const local = localGeneration.checked;
   const models = local ? [{ modelId: LOCAL_GENERATION_OPTION.model, displayName: 'Compilador determinístico local' }] : generationModelsForProvider(generationProviders, generationProvider.value);
+  const previousModel = generationModel.value;
+  const selectionProvider = local ? LOCAL_GENERATION_OPTION.provider : generationProvider.value;
+  const providerChanged = renderedGenerationProvider !== selectionProvider;
   generationModel.replaceChildren(...models.map((item) => {
     const option = document.createElement('option');
     option.value = item.modelId;
     option.textContent = item.displayName;
     return option;
   }));
+  generationModel.value = generationModelSelection(models, previousModel, providerChanged);
+  renderedGenerationProvider = selectionProvider;
   const credential = credentialMetadata.get(generationProvider.value);
   const sources = local ? ['local'] : provider?.generation?.credentialSources || [];
   const previousSource = credentialSourceSelect.value;

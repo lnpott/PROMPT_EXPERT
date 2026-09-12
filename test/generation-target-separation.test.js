@@ -4,7 +4,7 @@ import test from 'node:test';
 
 import generate from '../api/generate.js';
 import { publicProfiles } from '../api/model-profiles.js';
-import { generationModelsForProvider } from '../src/generation/provider-options.js';
+import { generationModelSelection, generationModelsForProvider } from '../src/generation/provider-options.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
@@ -40,6 +40,14 @@ test('changing provider rebuilds generation choices and cannot preserve a stale 
   const second = generationModelsForProvider(providers, 'mistral');
   assert.equal(first.some(({ modelId }) => modelId === second[0].modelId), false);
   assert.match(main, /generationModel\.replaceChildren/);
+});
+
+test('model reconciliation preserves a valid manual choice only for the same provider', () => {
+  const models = [{ modelId: 'first' }, { modelId: 'manual' }];
+  assert.equal(generationModelSelection(models, 'manual', false), 'manual');
+  assert.equal(generationModelSelection(models, 'stale', false), 'first');
+  assert.equal(generationModelSelection(models, 'manual', true), 'first');
+  assert.equal(generationModelSelection([], 'manual', true), '');
 });
 
 test('optimization targets are methodological profiles independent from executors', () => {
