@@ -9,11 +9,11 @@
   <body>
     <main class="shell">
       <header class="topbar">
-        <a class="brand" href="#top" aria-label="Prompt Expert, início">Prompt <span>Expert</span></a>
+        <a class="brand" href="#app" aria-label="Prompt Expert, gerador">Prompt <span>Expert</span></a>
         <nav class="account-nav" id="account-navigation" aria-label="Conta" hidden>
           <a href="#app">Gerador</a>
           <a href="#providers">APIs e provedores</a>
-          <a href="#account">Sessão</a>
+          <a href="#account">Conta</a>
           <p class="status"><i></i> <span id="account-status">desconectado</span></p>
         </nav>
       </header>
@@ -24,7 +24,7 @@
         <div>
           <p class="eyebrow">Conta</p>
           <h1 id="account-title">Sua conta</h1>
-          <p class="account-copy">Entre para acessar o gerador e suas integrações com segurança.</p>
+          <p class="account-copy">O gerador local funciona sem conta. Entre somente para usar integrações e configurações pessoais.</p>
         </div>
 
         <form class="auth-form" id="auth-form" novalidate>
@@ -44,25 +44,25 @@
 
       <div id="app-content" hidden>
       <section class="intro" id="top" aria-labelledby="page-title">
-        <p class="eyebrow">Do briefing ao código</p>
-        <h1 id="page-title">Um briefing.<br /><em>Nove modelos prontos.</em></h1>
-        <p class="lede">Compile sua ideia em uma instrução clara, segura e adaptada ao modelo de programação escolhido.</p>
+        <p class="eyebrow">Do pedido ao prompt</p>
+        <h1 id="page-title">Sua ideia.<br /><em>Um prompt otimizado.</em></h1>
+        <p class="lede">Descreva o que deseja construir ou resolver. O Prompt Expert prepara uma instrução para copiar e usar no modelo-alvo.</p>
       </section>
 
       <section class="workspace" aria-label="Gerador de prompts">
         <div class="field-head">
-          <label for="brief">O que você quer construir?</label>
+          <label for="brief">Descreva o que você quer construir ou resolver</label>
           <span>Escreva como você falaria com alguém</span>
         </div>
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
         <div class="controls controls-grid">
-          <label class="model-picker" for="generation-provider"><span>Provedor de geração</span><select id="generation-provider"><option value="">Carregando catálogo…</option></select></label>
-          <label class="model-picker" for="generation-model"><span>Modelo de geração</span><select id="generation-model" aria-describedby="generation-model-description"></select></label>
+          <label class="model-picker" for="generation-provider"><span>Provedor de geração</span><small>Integração usada para construir o prompt.</small><select id="generation-provider"><option value="">Carregando catálogo…</option></select></label>
+          <label class="model-picker" for="generation-model"><span>Modelo de geração</span><small>IA usada para gerar ou refinar o prompt.</small><select id="generation-model" aria-describedby="generation-model-description"></select></label>
           <label class="model-picker" for="task-type"><span>Tipo de tarefa</span><select id="task-type"><option value="cited">Tarefas citadas</option><option value="application">Aplicação completa</option><option value="refactor">Refatoração</option><option value="debug">Correção de bug</option><option value="agent">Agente autônomo</option><option value="fim">Fill-in-the-Middle</option></select></label>
-          <label class="model-picker" for="target-model"><span>Otimização para modelo</span><select id="target-model" aria-describedby="target-model-description"><option value="grok">Grok</option></select></label>
+          <label class="model-picker target-picker" for="target-model"><span>Otimização para modelo</span><small>Destino do prompt; não será executado aqui.</small><select id="target-model" aria-describedby="target-model-description"><option value="grok">Grok</option></select></label>
           <button id="generate" type="button">Gerar prompt <span aria-hidden="true">↗</span></button>
         </div>
-        <label class="local-strategy"><input id="local-generation" type="checkbox" /> Usar estratégia local, sem chamar uma IA externa</label>
+        <label class="local-strategy"><input id="local-generation" type="checkbox" checked /> Usar geração local gratuita, sem conta, chave ou IA externa</label>
         <p class="model-description" id="generation-model-description">Carregando modelos executáveis…</p>
         <p class="model-description" id="target-model-description">O alvo seleciona a metodologia e não será chamado.</p>
         <div class="provider-guidance" id="provider-guidance"><p><strong>Disponibilidade:</strong> <span id="execution-status">Verificando catálogo…</span></p><p><label for="credential-source-select"><strong>Origem da credencial:</strong></label> <select id="credential-source-select"></select></p><p><strong>Status da credencial:</strong> <span id="credential-state">—</span> <a id="credential-cta" href="#providers" hidden>APIs e provedores</a></p></div>
@@ -82,11 +82,12 @@
       <section class="result is-empty" id="result" aria-live="polite" aria-labelledby="result-title">
         <div class="result-head">
           <div>
-            <p class="eyebrow">Prompt estruturado</p>
-            <h2 id="result-title">Prompt pronto</h2>
+            <p class="eyebrow">Resultado</p>
+            <h2 id="result-title">Prompt otimizado</h2>
+            <p class="source result-meta"><span>Gerado por: <strong id="result-generated-by">—</strong></span><span>Otimizado para: <strong id="result-target">—</strong></span><span>Tipo: <strong id="result-task-type">—</strong></span></p>
             <p class="source" id="source"></p>
           </div>
-          <button id="copy" class="copy" type="button" disabled>Copiar</button>
+          <button id="copy" class="copy" type="button" disabled>Copiar prompt</button>
         </div>
         <pre id="output">Seu prompt aparecerá aqui.</pre>
       </section>

@@ -16,7 +16,7 @@ export function generationModelsForProvider(providers, providerSlug) {
   }));
 }
 
-export function generationUiState({ provider, credential, credentialSource: selectedSource }) {
+export function generationUiState({ provider, credential, credentialSource: selectedSource, authenticated = true }) {
   if (!provider) return { executable: false, availability: 'Catálogo indisponível', credentialSource: '', credentialStatus: '' };
   const supported = Boolean(provider.generation?.generationSupported);
   const credentialSource = selectedSource || provider.generation?.credentialSources?.[0];
@@ -27,10 +27,16 @@ export function generationUiState({ provider, credential, credentialSource: sele
     credentialStatus: credential ? 'Chave configurada; adapter ainda indisponível' : 'Adapter ainda não implementado',
   };
   if (credentialSource === 'platform') return {
-    executable: true,
-    availability: 'Disponível',
+    executable: authenticated,
+    availability: authenticated ? 'Disponível' : 'Disponível após entrar',
     credentialSource: 'Chave da plataforma',
-    credentialStatus: 'Nenhuma chave pessoal necessária',
+    credentialStatus: authenticated ? 'Nenhuma chave pessoal necessária' : 'Entre para usar a geração da plataforma',
+  };
+  if (!authenticated) return {
+    executable: false,
+    availability: 'Disponível com BYOK',
+    credentialSource: 'Sua chave',
+    credentialStatus: 'Entrar para configurar sua chave',
   };
   return {
     executable: Boolean(credential),

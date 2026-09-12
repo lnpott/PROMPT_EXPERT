@@ -23,6 +23,9 @@ const result = document.querySelector('#result');
 const output = document.querySelector('#output');
 const copy = document.querySelector('#copy');
 const source = document.querySelector('#source');
+const resultGeneratedBy = document.querySelector('#result-generated-by');
+const resultTarget = document.querySelector('#result-target');
+const resultTaskType = document.querySelector('#result-task-type');
 let profiles = publicProfiles();
 let generationProviders = [];
 let credentialMetadata = new Map();
@@ -75,7 +78,8 @@ const workspace = document.querySelector('.workspace');
 const providersPanel = document.querySelector('#providers');
 
 function currentRoute() {
-  return ['#app', '#providers', '#account', '#account-recovery'].includes(window.location.hash) ? window.location.hash : '#login';
+  if (window.location.hash === '#login') return '#account';
+  return ['#app', '#providers', '#account', '#account-recovery'].includes(window.location.hash) ? window.location.hash : '#app';
 }
 
 function renderRoute(state) {
@@ -84,27 +88,19 @@ function renderRoute(state) {
   const authenticated = Boolean(state.user) && !recovery;
   let route = currentRoute();
   if (recovery) route = '#account-recovery';
-  else if (!authenticated) route = '#login';
-  else if (route === '#login' || route === '#account-recovery') route = '#app';
+  else if (route === '#account-recovery') route = '#account';
   if (window.location.hash !== route) history.replaceState(null, '', route);
-  const generatorRoute = authenticated && route === '#app';
-  const providersRoute = authenticated && route === '#providers';
-  const accountRoute = authenticated && route === '#account';
+  const generatorRoute = route === '#app';
+  const providersRoute = route === '#providers';
+  const accountRoute = route === '#account';
   document.querySelector('#app-content').hidden = !(generatorRoute || providersRoute);
-  document.querySelector('#account').hidden = !(route === '#login' || route === '#account-recovery' || accountRoute);
+  document.querySelector('#account').hidden = !(route === '#account-recovery' || accountRoute);
   intro.hidden = !generatorRoute;
   workspace.hidden = !generatorRoute;
   result.hidden = !generatorRoute;
   providersPanel.hidden = !providersRoute;
   if (!authenticated) {
-    localGeneration.checked = false;
-    generationModel.replaceChildren();
     credentialMetadata = new Map();
-    brief.value = '';
-    output.textContent = 'Seu prompt aparecerá aqui.';
-    source.textContent = '';
-    copy.disabled = true;
-    result.classList.add('is-empty');
     updateGenerationModels();
   }
 }
@@ -175,11 +171,17 @@ function updateGenerationModels() {
   const previousSource = credentialSourceSelect.value;
   credentialSourceSelect.replaceChildren(...sources.map((source) => { const option=document.createElement('option'); option.value=source; option.textContent=source==='platform'?'Chave da plataforma':source==='byok'?'Sua chave':'Nenhuma'; return option; }));
   if (sources.includes(previousSource)) credentialSourceSelect.value = previousSource;
-  const state = local ? { executable: true, availability: 'Disponível', credentialSource: 'Nenhuma', credentialStatus: 'Execução local' } : generationUiState({ provider, credential, credentialSource: credentialSourceSelect.value });
+  const authenticated = Boolean(authController.getSnapshot().user);
+  const state = local ? { executable: true, availability: 'Disponível para todos', credentialSource: 'Nenhuma', credentialStatus: 'Sem conta ou chave' } : generationUiState({ provider, credential, credentialSource: credentialSourceSelect.value, authenticated });
   generate.disabled = generationBusy || models.length === 0 || !state.executable;
   executionStatus.textContent = state.availability;
   credentialState.textContent = state.credentialStatus;
-  credentialCta.hidden = local || state.credentialSource !== 'Sua chave' || Boolean(credential);
+  const needsAuthentication = !local && !authenticated
+    && ['Sua chave', 'Chave da plataforma'].includes(state.credentialSource);
+  credentialCta.hidden = local || state.executable
+    || (!needsAuthentication && state.credentialSource !== 'Sua chave');
+  credentialCta.href = needsAuthentication ? '#account' : '#providers';
+  credentialCta.textContent = needsAuthentication ? 'Entrar para configurar sua chave' : 'APIs e provedores';
   generationProvider.disabled = local || generationBusy;
   updateGenerationDescription();
 }
@@ -218,8 +220,11 @@ generate.addEventListener('click', async () => {
   const provider = providerBySlug(generationProviders, generationProvider.value);
   const selectedCredentialSource = localGeneration.checked ? LOCAL_GENERATION_OPTION.credentialSource : credentialSourceSelect.value;
   if (!localGeneration.checked && selectedCredentialSource === 'byok' && !credentialMetadata.has(generationProvider.value)) {
-    output.textContent = `Configure sua API em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`;
-    source.textContent = 'Credencial BYOK não configurada';
+    const authenticated = Boolean(authController.getSnapshot().user);
+    output.textContent = authenticated
+      ? `Configure sua chave primeiro em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`
+      : `Entre para configurar sua chave e usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}. Você pode voltar à geração local sem recarregar a página.`;
+    source.textContent = authenticated ? 'Credencial BYOK não configurada' : 'BYOK exige conta e chave';
     result.hidden = false;
     result.classList.remove('is-empty');
     copy.disabled = true;
@@ -252,11 +257,14 @@ generate.addEventListener('click', async () => {
     } else {
       output.textContent = payload.prompt;
       source.textContent = payload.credentialSource === 'byok' ? `${payload.generationProvider} · sua chave · ${payload.generationModel}` : payload.source === 'gemini' ? `Google Gemini · chave da plataforma · ${payload.generationModel}` : payload.source === 'local-fallback' ? 'Google Gemini · fallback local seguro' : 'Estratégia local · sem chave necessária';
+      resultGeneratedBy.textContent = payload.source === 'local' ? 'Compilador local' : payload.generationModel;
+      resultTarget.textContent = targetModel.selectedOptions[0]?.textContent || payload.targetModel;
+      resultTaskType.textContent = taskType.selectedOptions[0]?.textContent || taskType.value;
     }
 
     result.classList.remove('is-empty');
     copy.disabled = false;
-    copy.textContent = 'Copiar';
+    copy.textContent = 'Copiar prompt';
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (error) {
     output.textContent = error.message;
@@ -273,7 +281,7 @@ copy.addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(output.textContent);
     copy.textContent = 'Copiado';
-    window.setTimeout(() => { copy.textContent = 'Copiar'; }, 1800);
+    window.setTimeout(() => { copy.textContent = 'Copiar prompt'; }, 1800);
   } catch {
     copy.textContent = 'Selecione e copie';
     window.getSelection()?.selectAllChildren(output);
