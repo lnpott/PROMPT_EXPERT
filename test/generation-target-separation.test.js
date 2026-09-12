@@ -4,7 +4,7 @@ import test from 'node:test';
 
 import generate from '../api/generate.js';
 import { publicProfiles } from '../api/model-profiles.js';
-import { generationModelsForProvider } from '../src/generation/provider-options.js';
+import { generationModelSelection, generationModelsForProvider } from '../src/generation/provider-options.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
@@ -42,13 +42,21 @@ test('changing provider rebuilds generation choices and cannot preserve a stale 
   assert.match(main, /generationModel\.replaceChildren/);
 });
 
+test('model reconciliation preserves a valid manual choice only for the same provider', () => {
+  const models = [{ modelId: 'first' }, { modelId: 'manual' }];
+  assert.equal(generationModelSelection(models, 'manual', false), 'manual');
+  assert.equal(generationModelSelection(models, 'stale', false), 'first');
+  assert.equal(generationModelSelection(models, 'manual', true), 'first');
+  assert.equal(generationModelSelection([], 'manual', true), '');
+});
+
 test('optimization targets are methodological profiles independent from executors', () => {
   const targetIds = publicProfiles().map(({ slug }) => slug);
   assert.ok(targetIds.includes('claude'));
   assert.ok(targetIds.includes('deepseek'));
   assert.equal(generationModelsForProvider([], 'google-gemini').length, 0);
   assert.match(main, /option\.value = profile\.slug/);
-  assert.match(html, /Otimização para modelo/);
+  assert.match(html, /Otimizado para/);
 });
 
 test('a local executor can generate for a cross-family Claude target without credentials', async () => {

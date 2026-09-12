@@ -24,8 +24,9 @@ function eligible(item, taskType) {
 }
 
 export function selectMethodologyRules(profile, taskType = 'cited', modelRuleIds = []) {
-  const modelRules = (profile.modelRules || []).filter((rule) => modelRuleIds.includes(rule.id));
-  const candidates = [...modelRules, ...profile.targetRules, ...corpus.generalRules]
+  const legacyModelRules = (profile.modelRules || []).filter((rule) => modelRuleIds.includes(rule.id));
+  const inheritedRules = profile.methodologyRules || [...legacyModelRules, ...(profile.targetRules || [])];
+  const candidates = [...inheritedRules, ...corpus.generalRules]
     .filter((rule) => eligible(rule, taskType))
     .sort((left, right) => (precedence.get(left.level) - precedence.get(right.level))
       || (left.priority - right.priority) || left.id.localeCompare(right.id));
@@ -40,33 +41,55 @@ export function selectMethodologyRules(profile, taskType = 'cited', modelRuleIds
 }
 
 export function selectMethodologyExample(profile, taskType = 'cited') {
-  const maximum = corpus.runtimePolicy.examples.maximum;
-  if (maximum < 1) return null;
-  const match = corpus.examples.find((example) => example.target === profile.slug
-    && example.taskType === taskType && eligible(example, taskType));
-  if (!match) return null;
-  return match.expectedOptimizedPrompt.length <= corpus.runtimePolicy.examples.maximumCharacters ? match : null;
+  if (corpus.runtimePolicy.examples.maximum < 1) return null;
+  for (const target of profile.methodologyPath || [profile.slug]) {
+    const match = corpus.examples.find((example) => example.target === target
+      && example.taskType === taskType && eligible(example, taskType));
+    if (match && match.expectedOptimizedPrompt.length <= corpus.runtimePolicy.examples.maximumCharacters) {
+      return { id: match.id, target: match.target, taskType: match.taskType, sourceId: match.sourceId };
+    }
+  }
+  return null;
 }
 
-export const modelProfiles = corpus.targets.map((target) => {
-  const profile = {
-    slug: target.slug,
-    displayName: target.displayName,
-    provider: target.provider,
-    guidance: target.guidance,
-    format: target.format,
-    targetRules: target.rules,
-    modelRules: target.modelRules || [],
+const definitions = [
+  ...corpus.targets.map((target) => ({ ...target, level: 'family' })),
+  ...(corpus.specificTargets || []),
+];
+const definitionsBySlug = new Map(definitions.map((target) => [target.slug, target]));
+
+function resolveDefinition(slug, seen = new Set()) {
+  const definition = definitionsBySlug.get(slug);
+  if (!definition || seen.has(slug)) return null;
+  seen.add(slug);
+  const parent = definition.parentSlug ? resolveDefinition(definition.parentSlug, seen) : null;
+  if (definition.parentSlug && !parent) return null;
+  const ownRules = (definition.rules || []).map((rule) => ({ ...rule, level: definition.level }));
+  return {
+    slug: definition.slug,
+    displayName: definition.displayName,
+    provider: definition.provider || parent.provider,
+    guidance: definition.guidance || parent.guidance,
+    format: definition.format || parent.format,
+    familySlug: parent?.familySlug || definition.slug,
+    parentSlug: definition.parentSlug || null,
+    methodologyPath: [definition.slug, ...(parent?.methodologyPath || [])],
+    methodologyRules: [...ownRules, ...(parent?.methodologyRules || [])],
+    ownRules,
+    public: definition.public !== false,
   };
-  return { ...profile, rules: selectMethodologyRules(profile).map(({ text }) => text) };
-});
+}
+
+export const modelProfiles = definitions.map(({ slug }) => resolveDefinition(slug)).filter(Boolean);
 
 export function findProfile(slug) {
   return modelProfiles.find((profile) => profile.slug === slug);
 }
 
 export function publicProfiles() {
-  return modelProfiles.map(({ rules, targetRules, modelRules, ...profile }) => profile);
+  return modelProfiles.filter((profile) => profile.public).map(({
+    methodologyRules, ownRules, public: isPublic, ...profile
+  }) => ({ ...profile, hasOwnMethodology: ownRules.length > 0 }));
 }
 
 export function compilePrompt({ brief, profile, taskType = 'cited', includeExample = true }) {
@@ -74,7 +97,7 @@ export function compilePrompt({ brief, profile, taskType = 'cited', includeExamp
   const rules = selectedRules.map(({ text }) => `- ${text}`).join('\n');
   const example = includeExample ? selectMethodologyExample(profile, taskType) : null;
   const exampleSection = example
-    ? `\n\n## Exemplo revisado para este target e tipo de tarefa\nUse somente como padrão de estrutura; não copie fatos nem requisitos do exemplo.\n\n${example}`
+    ? `\n\n## Exemplo revisado: estrutura compatível\nReferência ${example.id}: use apenas a organização em objetivo, contexto, entrega e critérios de aceite. O briefing acima é a única autoridade para linguagem, framework, banco, arquitetura, ferramentas, bibliotecas e requisitos.`
     : '';
   return `# Prompt para ${profile.displayName}
 
@@ -86,6 +109,7 @@ ${brief}
 
 ## Contexto de execução
 - Modelo de destino: ${profile.displayName} (${profile.provider})
+- Família metodológica: ${profile.familySlug}
 - Tipo de tarefa: ${taskTypes[taskType] || taskTypes.cited}
 - Formato preferencial: ${profile.format}
 - Orientação específica: ${profile.guidance}

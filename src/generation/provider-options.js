@@ -18,6 +18,11 @@ export function generationModelsForProvider(providers, providerSlug) {
   }));
 }
 
+export function generationModelSelection(models, previousModelId, providerChanged = false) {
+  if (!providerChanged && models.some(({ modelId }) => modelId === previousModelId)) return previousModelId;
+  return models[0]?.modelId || '';
+}
+
 export function generationUiState({ provider, credential, credentialSource: selectedSource, authenticated = true }) {
   if (!provider) return { executable: false, availability: 'Catálogo indisponível', credentialSource: '', credentialStatus: '' };
   const supported = Boolean(provider.generation?.generationSupported);

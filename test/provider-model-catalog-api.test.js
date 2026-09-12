@@ -53,7 +53,7 @@ test('allowlist helpers safely represent unknown provider and pricing fields as 
   assert.equal(allowlistedModel({ model_id: 'minimal' }).official_url, null);
 });
 
-test('Google Gemini is exposed as provider with the real platform model allowlist', async () => {
+test('Google Gemini exposes only models returned by its catalog relationship', async () => {
   globalThis.fetch = (url) => url.includes('ai_models')
     ? jsonResponse([{ ...model, model_id: 'gemini-3.8-flash', api_providers: { slug: 'google-gemini' } }])
     : jsonResponse([{ ...provider, slug: 'google-gemini', display_name: 'Google Gemini' }]);
@@ -62,7 +62,7 @@ test('Google Gemini is exposed as provider with the real platform model allowlis
   assert.equal(result.body.providers[0].display_name, 'Google Gemini');
   assert.equal(result.body.providers[0].generation.generationSupported, true);
   assert.deepEqual(result.body.providers[0].generation.credentialSources, ['platform', 'byok']);
-  assert.ok(result.body.providers[0].models.some(({ model_id }) => model_id === 'gemini-3.5-flash-lite'));
+  assert.deepEqual(result.body.providers[0].models.map(({ model_id }) => model_id), ['gemini-3.8-flash']);
 });
 
 test('all catalog mutation methods are blocked before database access', async () => {
