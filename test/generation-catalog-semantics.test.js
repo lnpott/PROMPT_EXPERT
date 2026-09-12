@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import generate from '../api/generate.js';
+import generate from './helpers/authenticated-generate.js';
 import { generationCapability, resolveGenerationRoute } from '../server/providers/generation-registry.js';
 import { generationModelsForProvider, generationUiState } from '../src/generation/provider-options.js';
 
@@ -59,29 +59,29 @@ test('provider without adapter remains visible with models but cannot execute', 
     executable: false,
     availability: 'Execução ainda não disponível',
     credentialSource: 'Nenhuma origem de credencial executável',
-    credentialStatus: 'Chave configurada; adapter ainda indisponível',
+    credentialStatus: 'Chave cadastrada; execução indisponível',
   });
 });
 
 test('adapter availability and credential presence remain independent', () => {
   const openai = provider('openai', true, ['byok']);
   assert.equal(generationUiState({ provider: openai }).executable, false);
-  assert.equal(generationUiState({ provider: openai }).credentialStatus, 'Configure sua chave');
+  assert.equal(generationUiState({ provider: openai }).credentialStatus, 'Sem chave cadastrada');
   const configured = generationUiState({ provider: openai, credential: { validationStatus: 'untested' } });
   assert.equal(configured.executable, true);
-  assert.equal(configured.credentialStatus, 'Chave configurada · Ainda não testada');
+  assert.equal(configured.credentialStatus, 'Chave cadastrada · Ainda não testada');
   assert.doesNotMatch(configured.credentialStatus, /untested|validada/i);
   assert.equal(
     generationUiState({ provider: openai, credential: { validationStatus: 'valid' } }).credentialStatus,
-    'Chave configurada · Validada no provedor',
+    'Chave cadastrada · Validada no provedor',
   );
   assert.equal(
     generationUiState({ provider: openai, credential: { validationStatus: 'invalid' } }).credentialStatus,
-    'Chave configurada · Inválida',
+    'Chave cadastrada · Inválida',
   );
   assert.equal(
     generationUiState({ provider: openai, credential: { validationStatus: 'error' } }).credentialStatus,
-    'Chave configurada · Erro na última validação',
+    'Chave cadastrada · Erro na última validação',
   );
 });
 

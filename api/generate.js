@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import { compilerApiKey, findCompilerModel } from './compiler-models.js';
-import { compilePrompt, resolveMethodologyPackage, taskTypes } from './model-profiles.js';
+import { compilePrompt, methodologyTaskType, resolveMethodologyPackage } from './model-profiles.js';
 import { loadCanonicalMethodology } from '../server/canonical-methodology.js';
 import { openRouterCredential, ownedCredential } from '../server/credential-service.js';
-import { userDatabaseRequest } from '../server/security/supabase-user.js';
+import { authenticateUser, userDatabaseRequest } from '../server/security/supabase-user.js';
 import { generateWithOpenRouter, OpenRouterError } from '../server/providers/openrouter.js';
 import { DirectProviderError } from '../server/providers/openai-compatible.js';
 import { directProvider, generateWithDirectProvider } from '../server/providers/direct-providers.js';
@@ -89,7 +89,11 @@ function clientIsLimited(request) {
   return recent.length > RATE_LIMIT;
 }
 
-export default async function handler(request, response) {
+export function createGenerateHandler(authenticate = authenticateUser) {
+  return (request, response) => handleGenerate(request, response, authenticate);
+}
+
+async function handleGenerate(request, response, authenticate) {
   const startedAt = Date.now();
   const requestId = randomUUID();
   response.setHeader('X-Request-Id', requestId);
@@ -97,6 +101,12 @@ export default async function handler(request, response) {
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST');
     return sendJson(response, 405, { error: 'Método não permitido.' });
+  }
+
+  try {
+    await authenticate(request);
+  } catch {
+    return sendJson(response, 401, { error: 'Entre em sua conta para gerar prompts.', code: 'UNAUTHENTICATED' });
   }
 
   const brief = typeof request.body?.brief === 'string' ? request.body.brief.trim() : '';
@@ -107,12 +117,13 @@ export default async function handler(request, response) {
   const credentialSource = typeof request.body?.credentialSource === 'string' ? request.body.credentialSource : '';
   const route = resolveGenerationRoute(generationProvider, credentialSource);
 
+  if (!methodologyTaskType(taskType)) return sendJson(response, 400, { error: 'Tipo de tarefa desconhecido.', code: 'task_type_invalid' });
   const canonical = await loadCanonicalMethodology();
   const methodologyPackage = resolveMethodologyPackage(targetModel, taskType, canonical.corpus);
   const profile = methodologyPackage?.profile;
   if (!profile) return sendJson(response, 400, { error: 'O modelo-alvo de otimização é inválido ou não possui metodologia.', code: 'target_model_invalid' });
   if (!route) return sendJson(response, 400, { error: 'O provedor ou a origem da credencial não possui execução disponível.', code: 'generation_route_unsupported' });
-  if (!Object.hasOwn(taskTypes, taskType) || brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.', code: 'invalid_request' });
+  if (brief.length < 3 || brief.length > MAX_BRIEF_LENGTH) return sendJson(response, 400, { error: 'Descreva o que deseja construir em até 6.000 caracteres.', code: 'invalid_request' });
   const canonicalProvider = route.providerSlug;
   const compiler = route.adapter === 'gemini' ? findCompilerModel(generationModel) : null;
   if (route.adapter === 'gemini' && !compiler) return sendJson(response, 400, { error: 'O modelo de geração do Google Gemini é inválido.', code: 'generation_model_invalid' });
@@ -254,3 +265,5 @@ export default async function handler(request, response) {
     return sendJson(response, 200, { prompt: localPrompt, source: 'local-fallback', generationProvider: canonicalProvider, credentialSource: 'platform', generationModel: compiler.slug, targetModel, requestId });
   }
 }
+
+export default createGenerateHandler();

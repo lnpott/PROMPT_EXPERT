@@ -12,7 +12,7 @@ export function generationModelsForProvider(providers, providerSlug) {
   const provider = providerBySlug(providers, providerSlug);
   return (provider?.models || []).map((model) => ({
     modelId: model.model_id,
-    displayName: model.display_name,
+    displayName: model.display_name && model.display_name.includes(model.model_id) ? model.display_name : `${model.display_name || model.model_id} (${model.model_id})`,
     description: model.description,
     generationSupported: Boolean(provider.generation?.generationSupported),
   }));
@@ -31,7 +31,7 @@ export function generationUiState({ provider, credential, credentialSource: sele
     executable: false,
     availability: 'Execução ainda não disponível',
     credentialSource: 'Nenhuma origem de credencial executável',
-    credentialStatus: credential ? 'Chave configurada; adapter ainda indisponível' : 'Adapter ainda não implementado',
+    credentialStatus: credential ? 'Chave cadastrada; execução indisponível' : 'Sem chave cadastrada',
   };
   if (credentialSource === 'platform') return {
     executable: authenticated,
@@ -50,8 +50,8 @@ export function generationUiState({ provider, credential, credentialSource: sele
     availability: 'Disponível com BYOK',
     credentialSource: 'Sua chave',
     credentialStatus: credential
-      ? `Chave configurada · ${STATUS_LABELS[credential.validationStatus] || STATUS_LABELS.untested}`
-      : 'Configure sua chave',
+      ? `Chave cadastrada · ${STATUS_LABELS[credential.validationStatus] || STATUS_LABELS.untested}`
+      : 'Sem chave cadastrada',
   };
 }
 
@@ -66,7 +66,7 @@ export function generationResultLabels(payload) {
   };
   if (payload.source === 'local') return {
     generatedBy: 'Compilador local',
-    sourceText: 'Compilador local · sem conta, chave ou chamada externa',
+    sourceText: 'Compilador local · sem chave ou chamada externa',
   };
   if (payload.credentialSource === 'byok') return {
     generatedBy: payload.generationModel,

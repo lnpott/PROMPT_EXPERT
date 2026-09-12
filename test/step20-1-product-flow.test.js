@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import generate from '../api/generate.js';
+import generate from './helpers/authenticated-generate.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
@@ -28,11 +28,10 @@ test('anonymous product shell defaults to local and identifies the optimized pro
   assert.match(main, /currentRoute[\s\S]*: '#app'/);
 });
 
-test('catalog selection is not hardcoded to Gemini and local is opt-in after authentication', () => {
+test('catalog selection is not hardcoded to Gemini and local remains separate', () => {
   assert.doesNotMatch(main, /generationProvider\.value = 'google-gemini'/);
-  assert.match(main, /localGenerationTouched/);
-  assert.match(main, /preferLocal = !authenticated/);
-  assert.match(main, /applyLocalGenerationPreference\(authenticated\)/);
+  assert.match(main, /generate\.disabled = !authenticated/);
+  assert.match(main, /LOCAL_GENERATION_OPTION/);
 });
 
 test('local target generation needs neither account nor target credential', async () => {
@@ -46,7 +45,7 @@ test('local target generation needs neither account nor target credential', asyn
 });
 
 test('versioned canonical corpus and operational catalog gates remain intact', () => {
-  assert.equal(createHash('sha256').update(corpus).digest('hex'), '07d86220011b7056fd7d8b166c30f5cadd38a6d4d6e956c0fb1cbe60f3cf392d');
+  assert.equal(createHash('sha256').update(corpus).digest('hex'), '1fcfffb0b42d6e7d6815d3b05b9c9e1d69e12d71cde52f4653f2f4a31c26e114');
   const migrations = readFileSync(new URL('../supabase/migrations/20260912010000_replace_deepseek_legacy_model.sql', import.meta.url), 'utf8');
   const alibaba = readFileSync(new URL('../supabase/rollout/activate_alibaba_us_generation.sql', import.meta.url), 'utf8');
   assert.match(migrations, /deepseek-flash/);

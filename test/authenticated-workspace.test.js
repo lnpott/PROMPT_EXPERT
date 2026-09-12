@@ -15,23 +15,23 @@ test('initial session loading prevents private-content flash', () => {
   assert.match(html, /id="app-content" hidden/); assert.match(html, /id="session-loading"/);
 });
 
-test('public core remains available while authenticated state unlocks personal features', () => {
+test('visitor sees authentication and a valid session opens the workspace', () => {
   const e = elements(); renderAccountState(e, { initialized: true, configured: true, user: null, recoverySession: false });
-  assert.equal(e.accountPanel.hidden, false); assert.equal(e.appContent.hidden, false);
+  assert.equal(e.accountPanel.hidden, false); assert.equal(e.appContent.hidden, true);
   renderAccountState(e, { initialized: true, configured: true, user: { email: 'user@example.test' }, recoverySession: false });
   assert.equal(e.accountPanel.hidden, true); assert.equal(e.appContent.hidden, false); assert.equal(e.accountNavigation.hidden, false); assert.equal(e.accountStatus.textContent, 'user@example.test');
 });
 
-test('logout keeps public core available while recovery remains prioritized', () => {
+test('logout closes the workspace while recovery remains prioritized', () => {
   const e = elements(); renderAccountState(e, { initialized: true, configured: true, user: { email: 'u@test' }, recoverySession: true });
   assert.equal(e.appContent.hidden, true); assert.equal(e.recoveryPanel.hidden, false); assert.equal(e.accountNavigation.hidden, true);
   renderAccountState(e, { initialized: true, configured: true, user: null, recoverySession: false });
-  assert.equal(e.appContent.hidden, false); assert.equal(e.signedOut.hidden, false);
+  assert.equal(e.appContent.hidden, true); assert.equal(e.signedOut.hidden, false);
 });
 
-test('logout preserves the public local draft and in-flight generation locks controls', () => {
-  assert.match(main, /localGenerationTouched/);
-  assert.match(main, /preferLocal = !authenticated/);
+test('logout aborts in-flight generation and generation locks controls', () => {
+  assert.match(main, /activeGeneration\?\.abort\(\)/);
+  assert.match(main, /if \(!session\.initialized \|\| !session\.user/);
   assert.doesNotMatch(main, /localGeneration\.checked = false/);
   assert.match(main, /generationBusy \|\| models\.length === 0 \|\| !state\.executable/);
   assert.match(main, /for \(const control of \[brief, generationModel, targetModel, taskType, localGeneration\]\) control\.disabled = busy/);
@@ -40,7 +40,7 @@ test('logout preserves the public local draft and in-flight generation locks con
 test('hash navigation is session-derived and has account, app, providers and recovery states', () => {
   assert.match(main, /\['#app', '#providers', '#account', '#account-recovery'\]/);
   assert.match(main, /if \(recovery\) route = '#account-recovery'/);
-  assert.doesNotMatch(main, /else if \(!authenticated\) route = '#login'/);
+  assert.match(main, /else if \(!authenticated\) route = '#account'/);
 });
 
 test('each provider receives only its own catalog models', () => {
@@ -60,16 +60,16 @@ test('provider changes replace stale generation models while targets remain inde
 
 test('missing BYOK credential has a providers CTA and no fallback', () => {
   const provider = { generation: { generationSupported: true, credentialSources: ['byok'] } };
-  assert.equal(generationUiState({ provider }).credentialStatus, 'Configure sua chave');
+  assert.equal(generationUiState({ provider }).credentialStatus, 'Sem chave cadastrada');
   assert.match(html, /APIs e provedores/);
   assert.doesNotMatch(main, /response\.status === 404|compilePrompt/);
 });
 
-test('logged-out BYOK is blocked without hiding or redirecting the public generator', () => {
+test('logged-out BYOK is blocked and the route remains at authentication', () => {
   const provider = { generation: { generationSupported: true, credentialSources: ['byok'] } };
   const state = generationUiState({ provider, authenticated: false });
   assert.equal(state.executable, false);
   assert.equal(state.credentialStatus, 'Entrar para configurar sua chave');
-  assert.match(main, /Você pode voltar à geração local sem recarregar a página/);
-  assert.match(main, /credentialCta\.href = needsAuthentication \? '#account' : '#providers'/);
+  assert.match(main, /else if \(!authenticated\) route = '#account'/);
+  assert.match(main, /generate\.disabled = !authenticated/);
 });

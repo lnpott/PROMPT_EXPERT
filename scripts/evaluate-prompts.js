@@ -3,9 +3,11 @@ import { compilePrompt, modelProfiles, taskTypes } from '../api/model-profiles.j
 const fixtures = [
   { id: 'accessible-form', brief: 'Crie um formulário de cadastro acessível com validação, estados de erro e testes.', taskType: 'cited' },
   { id: 'secure-api', brief: 'Implemente uma API REST com autenticação, limites de requisição e testes de autorização.', taskType: 'application' },
-  { id: 'bug-fix', brief: 'Corrija o envio duplicado de pedidos sem alterar o contrato público e adicione um teste de regressão.', taskType: 'debug' },
-  { id: 'refactor', brief: 'Separe o módulo de pagamentos em camadas mantendo compatibilidade e cobertura de testes.', taskType: 'refactor' },
+  { id: 'bug-fix', brief: 'Corrija o envio duplicado de pedidos sem alterar o contrato público e adicione um teste de regressão.', taskType: 'bug_fix' },
+  { id: 'refactor-full', brief: 'Refatore a aplicação inteira mantendo compatibilidade e cobertura de testes.', taskType: 'refactor_full' },
+  { id: 'refactor-module', brief: 'Separe o módulo de pagamentos em camadas mantendo compatibilidade e cobertura de testes.', taskType: 'refactor_module' },
   { id: 'agent', brief: 'Inspecione o repositório, implemente a tarefa descrita e reporte os comandos de validação executados.', taskType: 'agent' },
+  { id: 'debug', brief: 'Diagnostique a falha intermitente e identifique a causa antes de propor a correção.', taskType: 'debug' },
   { id: 'fim', brief: 'Complete o trecho entre o prefixo e o sufixo preservando tipos e estilo existentes.', taskType: 'fim' },
 ];
 

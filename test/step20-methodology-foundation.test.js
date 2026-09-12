@@ -98,7 +98,6 @@ test('runtime status policy is fail-closed', () => {
   assert.ok(!allowed.has('CONFLICTING'));
 });
 
-test('unknown rule scope receives only the safe local fallback', () => {
-  const selected = selectMethodologyRules({ targetRules: [], modelRules: [] }, 'unsupported-task');
-  assert.deepEqual(selected.map(({ id }) => id), ['safe-local-fallback']);
+test('unknown task type fails explicitly', () => {
+  assert.throws(() => selectMethodologyRules({ targetRules: [], modelRules: [] }, 'unsupported-task'), /unknown_task_type/);
 });

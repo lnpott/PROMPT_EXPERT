@@ -7,11 +7,10 @@ export function renderAccountState(elements, state) {
   const recovery = authenticated && state.recoverySession;
   const loading = state.initialized === false;
   setHidden(elements.sessionLoading, !loading);
+  setHidden(elements.topbar, loading);
   setHidden(elements.accountPanel, loading || (authenticated && !recovery));
-  // The public compiler is part of the product core. Authentication gates
-  // personal areas (account/providers), not the generator shell.
-  setHidden(elements.appContent, loading || recovery);
-  setHidden(elements.accountNavigation, loading || recovery);
+  setHidden(elements.appContent, loading || !authenticated || recovery);
+  setHidden(elements.accountNavigation, loading || !authenticated || recovery);
   if (loading) return;
   setHidden(elements.signedOut, authenticated);
   setHidden(elements.signedIn, !authenticated || recovery);
@@ -143,7 +142,7 @@ export function initializeAuthUI(controller, elements, request = fetch) {
   });
 
   controller.initialize().catch(() => {
-    elements.feedback.textContent = 'Não foi possível restaurar a sessão. O compilador local continua disponível.';
+    elements.feedback.textContent = 'Não foi possível restaurar a sessão. Tente entrar novamente.';
   });
 
   return () => {
