@@ -1,3 +1,5 @@
+import { STATUS_LABELS } from '../byok/credentials.js';
+
 export function executableProviders(providers) {
   return providers.filter((provider) => provider?.slug && provider?.display_name);
 }
@@ -42,7 +44,9 @@ export function generationUiState({ provider, credential, credentialSource: sele
     executable: Boolean(credential),
     availability: 'Disponível com BYOK',
     credentialSource: 'Sua chave',
-    credentialStatus: credential ? `Chave configurada · status ${credential.validationStatus || 'untested'}` : 'Configure sua chave',
+    credentialStatus: credential
+      ? `Chave configurada · ${STATUS_LABELS[credential.validationStatus] || STATUS_LABELS.untested}`
+      : 'Configure sua chave',
   };
 }
 

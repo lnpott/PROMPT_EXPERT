@@ -30,6 +30,7 @@ let profiles = publicProfiles();
 let generationProviders = [];
 let credentialMetadata = new Map();
 let generationBusy = false;
+let localGenerationTouched = false;
 
 const authController = createAuthController(createSupabaseBrowserClient());
 
@@ -99,14 +100,19 @@ function renderRoute(state) {
   workspace.hidden = !generatorRoute;
   result.hidden = !generatorRoute;
   providersPanel.hidden = !providersRoute;
-  if (!authenticated) {
-    credentialMetadata = new Map();
-    updateGenerationModels();
-  }
+  if (!authenticated) credentialMetadata = new Map();
+  applyLocalGenerationPreference(authenticated);
+  updateGenerationModels();
 }
 
 authController.subscribe(renderRoute);
 window.addEventListener('hashchange', () => renderRoute(authController.getSnapshot()));
+
+function applyLocalGenerationPreference(authenticated) {
+  if (generationBusy || localGenerationTouched) return;
+  const preferLocal = !authenticated;
+  if (localGeneration.checked !== preferLocal) localGeneration.checked = preferLocal;
+}
 
 function updateTargetDescription() {
   const profile = profiles.find((item) => item.slug === targetModel.value);
@@ -187,7 +193,10 @@ function updateGenerationModels() {
 }
 generationProvider.addEventListener('change', updateGenerationModels);
 credentialSourceSelect.addEventListener('change', updateGenerationModels);
-localGeneration.addEventListener('change', updateGenerationModels);
+localGeneration.addEventListener('change', () => {
+  localGenerationTouched = true;
+  updateGenerationModels();
+});
 fetch('/api/providers').then((response) => response.ok ? response.json() : null).then((payload) => {
   generationProviders = executableProviders(payload?.providers || []);
   generationProvider.replaceChildren(...generationProviders.map((provider) => {
@@ -196,7 +205,6 @@ fetch('/api/providers').then((response) => response.ok ? response.json() : null)
     option.textContent = `${provider.display_name}${provider.generation?.generationSupported ? '' : ' · Em breve'}`;
     return option;
   }));
-  if (generationProviders.some((provider) => provider.slug === 'google-gemini')) generationProvider.value = 'google-gemini';
   updateGenerationModels();
 }).catch(() => {});
 loadProfiles();
