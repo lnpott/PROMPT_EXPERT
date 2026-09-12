@@ -32,7 +32,7 @@ function engine(sourceCorpus = corpus) {
       else if (rule.platforms && !rule.platforms.includes(platform)) rejected.push({ rule, reason: 'platform_mismatch' });
     }
     for (const rule of ordered) {
-      if (rule.conflictGroup && conflicts.has(rule.conflictGroup)) rejected.push({ rule, reason: 'superseded' });
+      if (rule.conflictGroup && conflicts.has(rule.conflictGroup)) rejected.push({ rule, reason: 'superseded_by_higher_precedence' });
       else { selected.push(rule); if (rule.conflictGroup) conflicts.add(rule.conflictGroup); }
     }
     if (!selected.length) selected.push(fallbackRule);
