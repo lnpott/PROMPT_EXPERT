@@ -5,3 +5,9 @@ normal Supabase migration sequence. They are reviewed rollout proposals that
 must be copied into a new migration only after explicit authorization.
 
 Do not run these files against a remote project as part of `supabase db push`.
+
+Current proposals:
+
+- `activate_alibaba_us_generation.sql`: regional activation gate for Alibaba/Qwen.
+- `replace_deepseek_legacy_model.sql`: replaces a retired legacy alias with
+  the official current DeepSeek Flash alias.

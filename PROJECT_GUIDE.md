@@ -1,6 +1,8 @@
 # PROMPT_EXPERT — Guia vivo do projeto
 
-> Atualização de planejamento: 7 de setembro de 2026 — ciclo de contas, cofre BYOK e múltiplos provedores.
+> Estado revisado em 12 de setembro de 2026 — account-first, cofre BYOK,
+> geração multi-provider e catálogo operacional auditado. As seções datadas
+> abaixo preservam o histórico e não substituem este estado presente.
 
 ## Propósito
 
@@ -21,6 +23,14 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Qualquer recuperação de acesso deve preservar a regra de que segredos salvos não são recuperados por terceiros nem reaparecem após um reset destrutivo do cofre.
 
 ## Estado atual
+
+O contrato atual separa `generationProvider`, `generationModel`,
+`credentialSource`, `taskType` e `targetModel`. Google Gemini aceita
+Plataforma ou BYOK; OpenRouter, OpenAI, xAI, Anthropic, DeepSeek, Mistral,
+GroqCloud e Kimi usam BYOK; local é uma estratégia separada. Alibaba/Qwen
+permanece inativo e sujeito a autorização de rollout. O catálogo definitivo e
+suas ressalvas estão na seção do Passo 19.1; bullets antigos abaixo descrevem o
+estado existente quando cada marco foi registrado.
 
 ### Implementado
 
@@ -872,3 +882,68 @@ Todos os 12 registros de `ai_models` versionados têm defaults `is_active=true`,
 - **Classificação Anthropic:** falha de leitura do catálogo agora produz `provider_unavailable`/503; somente uma consulta bem-sucedida sem o modelo solicitado produz `provider_model_unavailable`/404.
 - **Gate Alibaba:** um comentário não impede `supabase db push`. Por isso, o SQL de ativação foi removido da sequência ordenada e colocado em `supabase/rollout`, que não é executado automaticamente. Após autorização, a proposta deve ser revisada e copiada para uma nova migration; ela não deve ser executada diretamente.
 - **Escopo remoto e rollback:** não houve alteração de Supabase, Vercel, Auth, RLS, secrets, vault ou catálogo remoto. Rollback local consiste em reverter a meta-instrução e a reorganização da proposta, sem qualquer estado remoto a desfazer.
+
+#### Auditoria definitiva do catálogo — Passo 19.1 — 2026-09-12
+
+- **Escopo e fonte:** foram auditados os 16 IDs distintos presentes no seed de `ai_models` e/ou na allowlist Gemini do runtime. O artefato legível por máquina `docs/model-catalog-audit-2026-09-12.json` registra status, ID oficial, depreciação, compatibilidade de endpoint e URL primária por item. A conferência usou somente documentação oficial atual e, para OpenRouter, também o catálogo público oficial `GET /api/v1/models`.
+- **Resultado:** 14 IDs são `CONFIRMED`, um é `RENAMED` e um é `REGIONAL`; não há `DEPRECATED` como status primário, `INVALID` ou `UNVERIFIED`. `deepseek-v4-flash` é um alias legado ainda aceito, mas o modelo correspondente foi retirado e a documentação manda usar `deepseek-flash`; por isso ele é `RENAMED` e possui `deprecated=true`. `qwen3.7-plus` é oficial e compatível, mas classificado `REGIONAL` porque a ativação proposta fixa US/Virginia.
+- **Gemini Plataforma:** `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.8-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite` possuem páginas oficiais individuais, versões estáveis documentadas e suporte ao fluxo GenerateContent. Nenhum ID histórico inexistente permaneceu na allowlist.
+- **Consistência executor/catálogo:** todos os dez providers presentes no seed possuem entrada no generation registry; os nove providers ativos do Supabase Production são expostos por `/api/providers`. Todos os modelos expostos possuem adapter e endpoint compatível. A única divergência material é o alias DeepSeek retirado, ainda exposto até autorização do rollout de substituição. Alibaba possui adapter, porém permanece fora da API pública porque seu provider está inativo.
+- **Correção local e gate remoto:** `supabase/rollout/replace_deepseek_legacy_model.sql` propõe a substituição inequívoca `deepseek-v4-flash` → `deepseek-flash`, sem fallback e sem alterar migrations aplicadas. Não foi executado. Após autorização, a proposta deve ser revisada, receber precondition contra colisão e ser copiada para uma nova migration. Até lá, Production continua aceitando/expondo o alias legado documentado.
+
+##### Providers e execução
+
+| Provider | Adapter | credentialSource | Modelos confirmados | Problema | Estado remoto |
+| --- | --- | --- | --- | --- | --- |
+| OpenRouter | Próprio | BYOK | `openrouter/free` | Nenhum | Ativo |
+| Google Gemini | Próprio | Plataforma, BYOK | 5 IDs da allowlist | Catálogo da API substitui a única linha Gemini do banco pela allowlist | Ativo |
+| xAI | OpenAI-compatible | BYOK | `grok-4.6`, `grok-code-fast-1` | Nenhum | Ativo |
+| OpenAI | OpenAI-compatible | BYOK | `gpt-5.6-sol` | Nenhum | Ativo |
+| Anthropic | Messages nativo | BYOK | `claude-sonnet-5` | Nenhum | Ativo |
+| DeepSeek | OpenAI-compatible | BYOK | `deepseek-flash` | Runtime ainda expõe alias legado `deepseek-v4-flash` | Ativo; correção pendente |
+| Mistral | OpenAI-compatible | BYOK | `mistral-small-latest` | Nenhum | Ativo |
+| GroqCloud | OpenAI-compatible | BYOK | `openai/gpt-oss-120b` | Nenhum | Ativo |
+| Kimi | OpenAI-compatible | BYOK | `kimi-k3`, `kimi-k2.7-code-highspeed` | Nenhum | Ativo |
+| Alibaba/Qwen | OpenAI-compatible | BYOK | `qwen3.7-plus` regional | Região precisa de aceite explícito | Inativo |
+
+##### Model IDs auditados
+
+| Provider | model_id atual | Encontrado oficialmente? | Status | ID oficial atual | Deprecated? | Endpoint compatível? | Fonte oficial | Alteração necessária |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| OpenRouter | `openrouter/free` | Sim | CONFIRMED | `openrouter/free` | Não | Chat Completions | [Free Models Router](https://openrouter.ai/docs/guides/routing/routers/free-router) | Nenhuma |
+| Google Gemini | `gemini-3.5-flash-lite` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite) | Nenhuma |
+| Google Gemini | `gemini-3.5-flash` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash) | Nenhuma |
+| Google Gemini | `gemini-3.8-flash` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) | Nenhuma |
+| Google Gemini | `gemini-3.7-flash` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash) | Nenhuma |
+| Google Gemini | `gemini-3.1-flash-lite` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite) | Nenhuma |
+| xAI | `grok-4.6` | Sim | CONFIRMED | igual | Não | Chat Completions | [Models](https://docs.x.ai/developers/models/grok-4.6) | Nenhuma |
+| xAI | `grok-code-fast-1` | Sim | CONFIRMED | igual | Não | Chat Completions | [Models](https://docs.x.ai/developers/models) | Nenhuma |
+| OpenAI | `gpt-5.6-sol` | Sim | CONFIRMED | igual | Não | Chat Completions | [Model](https://developers.openai.com/api/docs/models/gpt-5.6-sol) | Nenhuma |
+| Anthropic | `claude-sonnet-5` | Sim | CONFIRMED | igual | Não | Messages | [Models overview](https://platform.claude.com/docs/en/models/overview) | Nenhuma |
+| DeepSeek | `deepseek-v4-flash` | Sim, como alias legado | RENAMED | `deepseek-flash` | Sim; modelo retirado | Chat Completions | [Pricing/model aliases](https://api-docs.deepseek.com/quick_start/pricing/) | Aplicar rollout autorizado |
+| Mistral | `mistral-small-latest` | Sim | CONFIRMED | igual | Não | Chat Completions | [API reference](https://docs.mistral.ai/api/) | Nenhuma |
+| GroqCloud | `openai/gpt-oss-120b` | Sim | CONFIRMED | igual | Não | Chat Completions | [Model](https://console.groq.com/docs/model/openai/gpt-oss-120b) | Nenhuma |
+| Kimi | `kimi-k3` | Sim | CONFIRMED | igual | Não | Chat Completions | [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) | Nenhuma |
+| Kimi | `kimi-k2.7-code-highspeed` | Sim | CONFIRMED | igual | Não | Chat Completions | [Overview](https://platform.kimi.ai/docs/overview) | Nenhuma |
+| Alibaba/Qwen | `qwen3.7-plus` | Sim | REGIONAL | igual | Não | Chat Completions | [Models](https://www.alibabacloud.com/help/en/model-studio/models) | Manter inativo até autorização regional |
+
+##### Cobertura metodológica
+
+O runtime local oferece os nove targets abaixo. Apenas Grok também existe no Supabase Production, com cinco `prompt_rules` ativos. `prompt_rules` não possui campo de verificação nem vínculo com `canonical_prompt_rules`; portanto “verified rules” não pode ser inferido e é registrado como zero formalmente verificável. As 12 regras canônicas versionadas permanecem inativas/`supplied_unverified` e não são regras de profile. `prompt_examples` possui zero registros remotos e nenhum seed.
+
+| targetModel/profile | prompt_rules total | active | verified | prompt_examples | cobertura estimada | lacunas |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| `grok` | 5 local + 5 remotas | 5 remotas | 0 formalmente vinculadas | 0 | Base local e remota | Sem proveniência por regra de profile |
+| `openai` | 6 locais | 6 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `claude` | 6 locais | 6 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `gemini` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `deepseek` | 6 locais | 6 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `qwen` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `codestral` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `kimi` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `llama` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+
+- **Prompt examples:** quantidade real remota e versionada: zero; ativos: zero; verificados: zero; targets cobertos: zero; proveniência: inexistente. Não há corpus suficiente para integração futura.
+- **Drift read-only:** o repositório contém dez providers/12 linhas de `ai_models`; o Supabase público retorna nove providers ativos/11 modelos porque Alibaba está inativo; a Production API retorna esses mesmos nove providers e substitui o único modelo Gemini do banco pela allowlist de cinco IDs, totalizando 15 opções. Esse desvio Gemini é intencional e documentado; o drift DeepSeek requer rollout. Nenhum write foi realizado.
+- **Alibaba:** endpoint proposto `https://dashscope-us.aliyuncs.com/compatible-mode/v1`, região US/Virginia, modelo `qwen3.7-plus`, bearer e Chat Completions são confirmados pelas páginas oficiais de [compatibilidade](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope) e [modelos](https://www.alibabacloud.com/help/en/model-studio/models). Rollback e gate estão preservados fora de migrations. Classificação: **READY_FOR_AUTHORIZATION**, condicionada à aceitação explícita de região, residência/latência e aplicação de uma nova migration revisada.
+- **Próxima prioridade:** autorizar e aplicar primeiro a correção DeepSeek; depois decidir o rollout regional Alibaba. Em seguida, modelar proveniência verificável para `prompt_rules` e criar um corpus revisado de `prompt_examples`, antes de integrar exemplos ao compilador.
