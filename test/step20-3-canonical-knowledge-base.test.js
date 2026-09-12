@@ -11,10 +11,10 @@ test('canonical release import is primary and validated independently from ai_mo
   clearCanonicalMethodologyCache();
   const release = await loadCanonicalMethodology({ fetchImpl: async (url) => {
     assert.match(url, /methodology_releases/); assert.doesNotMatch(url, /ai_models/);
-    return { ok: true, json: async () => [{ version: '2.0.0', payload: corpus, content_sha256: 'bdc5581868d28cd0c9db6d284b9f33baa7cc01a670cf69ee3ccd9aed34639623' }] };
+    return { ok: true, json: async () => [{ version: '2.1.0', payload: corpus, content_sha256: 'f7b019502b7f418fc8d717bff23c79615fa4845afe600c30b42c7b7ffbf47e40' }] };
   }, allowLocalFallback: false });
   assert.equal(release.origin, 'supabase');
-  assert.equal(release.corpus.corpusVersion, '2.0.0');
+  assert.equal(release.corpus.corpusVersion, '2.1.0');
   clearCanonicalMethodologyCache();
 });
 
@@ -32,8 +32,8 @@ test('decision trace explains selected and rejected rules with source and inheri
   );
   const pkg = resolveMethodologyPackage('claude-sonnet-5', 'debug', custom);
   assert.ok(pkg.trace.selected.every((item) => item.ruleId && item.source && item.provenance && item.inheritanceLevel && item.reason));
-  assert.ok(pkg.trace.selected.some(({ reason }) => reason === 'eligible_inherited_rule'));
-  assert.deepEqual(pkg.trace.rejected.find(({ ruleId }) => ruleId === 'reject-me').reason, 'status:UNVERIFIED');
+  assert.ok(pkg.trace.selected.some(({ reason }) => reason === 'selected_inherited'));
+  assert.deepEqual(pkg.trace.rejected.find(({ ruleId }) => ruleId === 'reject-me').reason, 'status_unverified');
 });
 
 test('prompt compiler excludes API/platform/cache rules from prompt instructions', () => {

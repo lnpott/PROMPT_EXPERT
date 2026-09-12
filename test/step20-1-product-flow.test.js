@@ -45,8 +45,8 @@ test('local target generation needs neither account nor target credential', asyn
   assert.notEqual(claude.body.prompt, openai.body.prompt);
 });
 
-test('step 20 corpus is unchanged and operational catalog gates remain intact', () => {
-  assert.equal(createHash('sha256').update(corpus).digest('hex'), '184e3de0c14167aa716bef129e0d35624e361a6e79f25ce42148a8f1375dcb4c');
+test('versioned canonical corpus and operational catalog gates remain intact', () => {
+  assert.equal(createHash('sha256').update(corpus).digest('hex'), '07d86220011b7056fd7d8b166c30f5cadd38a6d4d6e956c0fb1cbe60f3cf392d');
   const migrations = readFileSync(new URL('../supabase/migrations/20260912010000_replace_deepseek_legacy_model.sql', import.meta.url), 'utf8');
   const alibaba = readFileSync(new URL('../supabase/rollout/activate_alibaba_us_generation.sql', import.meta.url), 'utf8');
   assert.match(migrations, /deepseek-flash/);

@@ -9,28 +9,30 @@ function engine(sourceCorpus = corpus) {
   const definitions = [...sourceCorpus.targets.map((target) => ({ ...target, level: 'family' })), ...(sourceCorpus.specificTargets || [])];
   const bySlug = new Map(definitions.map((target) => [target.slug, target]));
   const sources = new Map(sourceCorpus.sources.map((source) => [source.id, source]));
-  const eligible = (item, taskType) => item.active === true && allowed.has(item.status) && (!item.taskTypes || item.taskTypes.includes(taskType));
+  const eligible = (item, taskType, platform = '') => item.active === true && allowed.has(item.status)
+    && (!item.taskTypes || item.taskTypes.includes(taskType)) && (!item.platforms || item.platforms.includes(platform));
   function resolve(slug, seen = new Set()) {
     const definition = bySlug.get(slug);
     if (!definition || seen.has(slug)) return null;
     seen.add(slug);
     const parent = definition.parentSlug ? resolve(definition.parentSlug, seen) : null;
     if (definition.parentSlug && !parent) return null;
-    const ownRules = (definition.rules || []).map((rule) => ({ ...rule, level: definition.level }));
+    const ownRules = (definition.rules || []).map((rule) => ({ ...rule, level: definition.level, targetSlug: definition.slug }));
     return { slug: definition.slug, displayName: definition.displayName, provider: definition.provider || parent.provider, guidance: definition.guidance || parent.guidance, format: definition.format || parent.format, familySlug: parent?.familySlug || definition.slug, parentSlug: definition.parentSlug || null, methodologyPath: [definition.slug, ...(parent?.methodologyPath || [])], methodologyRules: [...ownRules, ...(parent?.methodologyRules || [])], ownRules, public: definition.public !== false };
   }
-  function select(profile, taskType = 'cited') {
+  function select(profile, taskType = 'cited', platform = '') {
     const all = [...(profile.methodologyRules || []), ...sourceCorpus.generalRules];
-    const ordered = all.filter((rule) => eligible(rule, taskType)).sort((a, b) => (precedence.get(a.level) - precedence.get(b.level)) || (a.priority - b.priority) || a.id.localeCompare(b.id));
+    const ordered = all.filter((rule) => eligible(rule, taskType, platform)).sort((a, b) => (precedence.get(a.level) - precedence.get(b.level)) || (a.priority - b.priority) || a.id.localeCompare(b.id));
     const conflicts = new Set();
     const selected = [], rejected = [];
     for (const rule of all) {
-      if (!rule.active) rejected.push({ rule, reason: 'inactive' });
-      else if (!allowed.has(rule.status)) rejected.push({ rule, reason: `status:${rule.status}` });
+      if (!allowed.has(rule.status)) rejected.push({ rule, reason: `status_${rule.status.toLowerCase()}` });
+      else if (!rule.active) rejected.push({ rule, reason: 'inactive' });
       else if (rule.taskTypes && !rule.taskTypes.includes(taskType)) rejected.push({ rule, reason: 'task_type_mismatch' });
+      else if (rule.platforms && !rule.platforms.includes(platform)) rejected.push({ rule, reason: 'platform_mismatch' });
     }
     for (const rule of ordered) {
-      if (rule.conflictGroup && conflicts.has(rule.conflictGroup)) rejected.push({ rule, reason: 'superseded_by_higher_precedence' });
+      if (rule.conflictGroup && conflicts.has(rule.conflictGroup)) rejected.push({ rule, reason: 'superseded' });
       else { selected.push(rule); if (rule.conflictGroup) conflicts.add(rule.conflictGroup); }
     }
     if (!selected.length) selected.push(fallbackRule);
@@ -39,11 +41,11 @@ function engine(sourceCorpus = corpus) {
   return { definitions, sources, resolve, select, eligible };
 }
 
-export function resolveMethodologyPackage(targetModel, taskType = 'cited', sourceCorpus = corpus) {
+export function resolveMethodologyPackage(targetModel, taskType = 'cited', sourceCorpus = corpus, { platform = '' } = {}) {
   const runtime = engine(sourceCorpus);
   const profile = runtime.resolve(targetModel);
   if (!profile) return null;
-  const { selected, rejected } = runtime.select(profile, taskType);
+  const { selected, rejected } = runtime.select(profile, taskType, platform);
   let example = null;
   if (sourceCorpus.runtimePolicy.examples.maximum > 0) for (const target of profile.methodologyPath) {
     const match = sourceCorpus.examples.find((item) => item.target === target && item.taskType === taskType && runtime.eligible(item, taskType));
@@ -51,8 +53,9 @@ export function resolveMethodologyPackage(targetModel, taskType = 'cited', sourc
   }
   const trace = {
     target: targetModel, family: profile.familySlug, taskType,
-    selected: selected.map((rule) => ({ ruleId: rule.id, source: runtime.sources.get(rule.sourceId) || null, provenance: rule.status, target: rule.level === 'general' ? 'general' : profile.methodologyPath.find((slug) => slug === targetModel) || profile.familySlug, inheritanceLevel: rule.level, taskType, reason: rule.level === 'general' ? 'eligible_general_rule' : rule.level === profile.ownRules?.[0]?.level ? 'eligible_own_rule' : 'eligible_inherited_rule' })),
-    rejected: rejected.map(({ rule, reason }) => ({ ruleId: rule.id, provenance: rule.status, inheritanceLevel: rule.level, reason })),
+    platform,
+    selected: selected.map((rule) => ({ ruleId: rule.id, source: runtime.sources.get(rule.sourceId) || null, provenance: rule.status, target: rule.targetSlug || 'general', inheritanceLevel: rule.level, taskType, ruleType: rule.ruleType, effect: rule.effect || 'prompt', reason: rule.level === 'general' ? 'selected_general' : rule.targetSlug === targetModel ? 'selected_own' : 'selected_inherited' })),
+    rejected: rejected.map(({ rule, reason }) => ({ ruleId: rule.id, source: runtime.sources.get(rule.sourceId) || null, provenance: rule.status, target: rule.targetSlug || 'general', inheritanceLevel: rule.level, taskType, ruleType: rule.ruleType, effect: rule.effect || 'prompt', reason })),
     example,
   };
   return { profile, rules: selected, rejected, example, trace };

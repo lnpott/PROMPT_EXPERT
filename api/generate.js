@@ -218,6 +218,7 @@ export default async function handler(request, response) {
       output_contract: profile.format,
     };
     const rules = methodologyPackage.rules
+      .filter((rule) => !['API_PARAMETER', 'API_CONSTRAINT', 'CACHE', 'PLATFORM'].includes(rule.ruleType))
       .map((rule) => ({ rule_text: rule.text, priority: rule.priority }));
     const { response: geminiResponse, attempts } = await requestGemini(
       `https://generativelanguage.googleapis.com/v1beta/models/${compiler.slug}:generateContent`,
