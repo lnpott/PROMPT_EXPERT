@@ -1,5 +1,5 @@
 import './style.css';
-import { publicProfiles } from '../api/model-profiles.js';
+import { fimAvailableForTarget, publicProfiles } from '../api/model-profiles.js';
 import { createAuthController } from './auth/session.js';
 import { initializeAuthUI } from './auth/ui.js';
 import { initializeCredentialManager } from './byok/credentials.js';
@@ -33,13 +33,16 @@ let profiles = publicProfiles();
 let generationProviders = [];
 let credentialMetadata = new Map();
 let generationBusy = false;
-let localGenerationTouched = false;
 let renderedGenerationProvider = null;
+let activeGeneration = null;
+let resolvedSessionSeen = false;
+let previousAuthenticated = false;
 
 const authController = createAuthController(createSupabaseBrowserClient());
 
 initializeAuthUI(authController, {
   sessionLoading: document.querySelector('#session-loading'),
+  topbar: document.querySelector('#topbar'),
   accountPanel: document.querySelector('#account'),
   appContent: document.querySelector('#app-content'),
   accountNavigation: document.querySelector('#account-navigation'),
@@ -89,34 +92,42 @@ function renderRoute(state) {
   const authenticated = Boolean(state.user) && !recovery;
   let route = currentRoute();
   if (recovery) route = '#account-recovery';
+  else if (!authenticated) route = '#account';
+  else if (resolvedSessionSeen && !previousAuthenticated && route === '#account') route = '#app';
   else if (route === '#account-recovery') route = '#account';
+  resolvedSessionSeen = true;
+  previousAuthenticated = authenticated;
   if (window.location.hash !== route) history.replaceState(null, '', route);
   const generatorRoute = route === '#app';
   const providersRoute = route === '#providers';
   const accountRoute = route === '#account';
-  document.querySelector('#app-content').hidden = !(generatorRoute || providersRoute);
+  document.querySelector('#app-content').hidden = !authenticated || !(generatorRoute || providersRoute);
   document.querySelector('#account').hidden = !(route === '#account-recovery' || accountRoute);
   intro.hidden = !generatorRoute;
   workspace.hidden = !generatorRoute;
   result.hidden = !generatorRoute;
   providersPanel.hidden = !providersRoute;
-  if (!authenticated) credentialMetadata = new Map();
-  applyLocalGenerationPreference(authenticated);
+  if (!authenticated) {
+    activeGeneration?.abort();
+    credentialMetadata = new Map();
+    output.textContent = 'Seu prompt aparecerá aqui.';
+    result.classList.add('is-empty');
+    copy.disabled = true;
+  }
   updateGenerationModels();
 }
 
 authController.subscribe(renderRoute);
 window.addEventListener('hashchange', () => renderRoute(authController.getSnapshot()));
 
-function applyLocalGenerationPreference(authenticated) {
-  if (generationBusy || localGenerationTouched) return;
-  const preferLocal = !authenticated;
-  if (localGeneration.checked !== preferLocal) localGeneration.checked = preferLocal;
-}
-
 function updateTargetDescription() {
   const profile = profiles.find((item) => item.slug === targetModel.value);
   targetModelDescription.textContent = profile ? `${profile.provider} · ${profile.guidance}` : 'Perfil especializado selecionado.';
+  const fimOption = taskType.querySelector('option[value="fim"]');
+  const available = fimAvailableForTarget(targetModel.value);
+  fimOption.hidden = !available;
+  fimOption.disabled = !available;
+  if (!available && taskType.value === 'fim') taskType.value = 'cited';
 }
 
 function updateGenerationDescription() {
@@ -135,6 +146,7 @@ async function loadProfiles() {
       if (!groups.has(profile.provider)) groups.set(profile.provider, []);
       groups.get(profile.provider).push(profile);
     }
+    const previousTarget = targetModel.value;
     targetModel.replaceChildren(...[...groups].map(([provider, entries]) => {
       const group = document.createElement('optgroup');
       group.label = provider;
@@ -146,6 +158,7 @@ async function loadProfiles() {
       }));
       return group;
     }));
+    if (profiles.some((profile) => profile.slug === previousTarget)) targetModel.value = previousTarget;
     updateTargetDescription();
   };
 
@@ -184,16 +197,13 @@ function updateGenerationModels() {
   credentialSourceSelect.replaceChildren(...sources.map((source) => { const option=document.createElement('option'); option.value=source; option.textContent=source==='platform'?'Chave da plataforma':source==='byok'?'Sua chave':'Nenhuma'; return option; }));
   if (sources.includes(previousSource)) credentialSourceSelect.value = previousSource;
   const authenticated = Boolean(authController.getSnapshot().user);
-  const state = local ? { executable: true, availability: 'Disponível para todos', credentialSource: 'Nenhuma', credentialStatus: 'Sem conta ou chave' } : generationUiState({ provider, credential, credentialSource: credentialSourceSelect.value, authenticated });
-  generate.disabled = generationBusy || models.length === 0 || !state.executable;
+  const state = local ? { executable: true, availability: 'Disponível na sua conta', credentialSource: 'Nenhuma', credentialStatus: 'Nenhuma chave necessária' } : generationUiState({ provider, credential, credentialSource: credentialSourceSelect.value, authenticated });
+  generate.disabled = !authenticated || generationBusy || models.length === 0 || !state.executable;
   executionStatus.textContent = state.availability;
   credentialState.textContent = state.credentialStatus;
-  const needsAuthentication = !local && !authenticated
-    && ['Sua chave', 'Chave da plataforma'].includes(state.credentialSource);
-  credentialCta.hidden = local || state.executable
-    || (!needsAuthentication && state.credentialSource !== 'Sua chave');
-  credentialCta.href = needsAuthentication ? '#account' : '#providers';
-  credentialCta.textContent = needsAuthentication ? 'Entrar para configurar sua chave' : 'APIs e provedores';
+  credentialCta.hidden = local || state.executable || state.credentialSource !== 'Sua chave';
+  credentialCta.href = '#providers';
+  credentialCta.textContent = 'APIs e provedores';
   generationProvider.disabled = local || generationBusy;
   credentialSourceSelect.disabled = local || generationBusy;
   updateGenerationDescription();
@@ -201,7 +211,6 @@ function updateGenerationModels() {
 generationProvider.addEventListener('change', updateGenerationModels);
 credentialSourceSelect.addEventListener('change', updateGenerationModels);
 localGeneration.addEventListener('change', () => {
-  localGenerationTouched = true;
   updateGenerationModels();
 });
 fetch('/api/providers').then((response) => response.ok ? response.json() : null).then((payload) => {
@@ -215,7 +224,7 @@ fetch('/api/providers').then((response) => response.ok ? response.json() : null)
   updateGenerationModels();
 }).catch(() => {
   generationProvider.replaceChildren(Object.assign(document.createElement('option'), { value: '', textContent: 'Catálogo temporariamente indisponível' }));
-  executionStatus.textContent = localGeneration.checked ? 'Disponível para todos' : 'Catálogo temporariamente indisponível';
+  executionStatus.textContent = localGeneration.checked ? 'Disponível na sua conta' : 'Catálogo temporariamente indisponível';
   updateGenerationModels();
 });
 loadProfiles();
@@ -242,6 +251,8 @@ function showGenerationError(message, detail, generatedBy) {
 }
 
 generate.addEventListener('click', async () => {
+  const session = authController.getSnapshot();
+  if (!session.initialized || !session.user || session.recoverySession || !authController.getAccessToken()) return;
   const request = brief.value.trim();
 
   if (!request) {
@@ -254,11 +265,8 @@ generate.addEventListener('click', async () => {
   const provider = providerBySlug(generationProviders, generationProvider.value);
   const selectedCredentialSource = localGeneration.checked ? LOCAL_GENERATION_OPTION.credentialSource : credentialSourceSelect.value;
   if (!localGeneration.checked && selectedCredentialSource === 'byok' && !credentialMetadata.has(generationProvider.value)) {
-    const authenticated = Boolean(authController.getSnapshot().user);
-    showGenerationError(authenticated
-      ? `Configure sua chave primeiro em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`
-      : `Entre para configurar sua chave e usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}. Você pode voltar à geração local sem recarregar a página.`,
-    authenticated ? 'Credencial BYOK não configurada' : 'BYOK exige conta e chave', generationModel.selectedOptions[0]?.textContent || 'IA externa');
+    showGenerationError(`Configure sua chave primeiro em APIs e provedores para usar ${generationProvider.selectedOptions[0]?.textContent || 'este provider'}.`,
+    'Credencial BYOK não configurada', generationModel.selectedOptions[0]?.textContent || 'IA externa');
     return;
   }
   if (!generationModel.value) {
@@ -272,13 +280,17 @@ generate.addEventListener('click', async () => {
 
   try {
     const selectedProvider = localGeneration.checked ? LOCAL_GENERATION_OPTION.provider : generationProvider.value;
-    const accessToken = selectedCredentialSource === 'byok' ? authController.getAccessToken() : null;
+    const accessToken = authController.getAccessToken();
+    const generationRequest = new AbortController();
+    activeGeneration = generationRequest;
     const response = await fetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: generationRequest.signal,
       body: JSON.stringify({ brief: request, generationProvider: selectedProvider, generationModel: generationModel.value, credentialSource: selectedCredentialSource, taskType: taskType.value, targetModel: targetModel.value }),
     });
     const payload = await response.json().catch(() => ({}));
+    if (generationRequest.signal.aborted || !authController.getSnapshot().user) return;
 
     if (!response.ok) {
       throw new Error(payload.error || 'Não foi possível gerar o prompt.');
@@ -296,9 +308,11 @@ generate.addEventListener('click', async () => {
     copy.textContent = 'Copiar prompt';
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (error) {
+    if (error.name === 'AbortError') return;
     showGenerationError(error.message, 'A execução falhou sem alterar seu briefing ou suas escolhas.', localGeneration.checked ? 'Compilador local' : generationModel.selectedOptions[0]?.textContent || 'IA externa');
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } finally {
+    activeGeneration = null;
     setGenerationBusy(false);
     generate.innerHTML = 'Gerar prompt <span aria-hidden="true">↗</span>';
   }

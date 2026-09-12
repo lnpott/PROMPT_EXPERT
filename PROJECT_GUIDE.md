@@ -1,6 +1,6 @@
 # PROMPT_EXPERT - Guia vivo do projeto
 
-> Estado consolidado em 12 de setembro de 2026, após o merge do PR #38.
+> Estado consolidado em 12 de setembro de 2026, após o Passo 21 P0 na branch `step-21-p0-functional-corrections` (PR ainda não mesclado).
 > Este arquivo é a referência operacional atual do projeto. Decisões históricas detalhadas continuam preservadas no histórico do Git e nos artefatos versionados em `docs/`.
 
 ## Propósito
@@ -83,13 +83,13 @@ A interface deve identificar cada modelo de forma inequívoca.
 - Não inventar números de versão para IDs que não possuem versão pública.
 - `deepseek-flash`, por exemplo, deve ser tratado pelo ID canônico disponível. Uma versão numérica só deve aparecer se for confirmada pelo fornecedor e representada no catálogo.
 
-## Decisões de produto tomadas após o PR #38
+## Decisões de produto implementadas no Passo 21
 
-As decisões abaixo substituem, como direção futura, a experiência pública/anônima validada no PR #38. Elas ainda precisam ser implementadas em código e testes.
+As três decisões abaixo substituem a experiência pública/anônima validada no PR #38 e estão implementadas nesta branch.
 
 ### 1. Login obrigatório na entrada
 
-Nova decisão de produto: o PROMPT_EXPERT não deve mais abrir o gerador para um visitante sem sessão.
+O PROMPT_EXPERT só abre o workspace após a resolução de uma sessão Supabase válida.
 
 Fluxo pretendido:
 
@@ -100,21 +100,22 @@ abrir aplicação
     -> sessão válida: carregar workspace
 ```
 
-Requisitos:
+Comportamento implementado:
 
-- enquanto a sessão estiver sendo verificada, mostrar somente estado de carregamento apropriado;
-- sem sessão, não renderizar workspace, providers, modelos, credenciais ou gerador;
-- login obrigatório deve valer para navegação, UI e ações relevantes, e não apenas ocultar visualmente componentes;
-- preservar o fluxo de recuperação de senha já implementado;
-- não alterar o contrato criptográfico do cofre sem necessidade funcional.
+- enquanto a sessão é verificada, somente o indicador de carregamento aparece; o cabeçalho e o conteúdo começam ocultos no HTML;
+- sem sessão, a rota é `#account` e o workspace não é renderizado; `#app` e `#providers` não contornam o gate;
+- com sessão, o workspace é restaurado; após login a partir do gate, a rota abre `#app`;
+- logout ou entrada em `PASSWORD_RECOVERY` fecha o workspace e cancela uma geração em andamento;
+- o navegador envia o JWT em toda geração, inclusive a determinística; `/api/generate` valida a sessão antes de resolver metodologia ou executar provider e devolve 401 sem JWT válido;
+- cadastro, login, recuperação e reset destrutivo do vault foram preservados. O contrato criptográfico do cofre não mudou.
 
-Esta decisão substitui a regra histórica de "core local público sem conta" para a próxima implementação.
+O compilador local continua sendo uma estratégia técnica sem IA e sem chave, mas seu uso exige sessão.
 
 ### 2. Simplificar a experiência de credenciais
 
-Na interface normal, priorizar estados compreensíveis em vez de terminologia interna.
+Na interface normal, os estados da chave são descritos em linguagem humana; `credentialSource` continua separado no contrato de geração e aparece somente como escolha prática `Usar` quando uma geração externa tem mais de uma fonte de chave.
 
-Estados de UX esperados incluem, conforme o caso:
+Estados exibidos, conforme o caso:
 
 - `Sem chave cadastrada`;
 - `Chave cadastrada`;
@@ -123,7 +124,7 @@ Estados de UX esperados incluem, conforme o caso:
 - `Inválida`;
 - `Erro na última validação`.
 
-`credentialSource` continua existindo no contrato técnico quando necessário, mas "origem da credencial" não deve ocupar a experiência principal sem utilidade para o usuário.
+`Chave cadastrada` indica existência; o complemento indica o último estado de validação. `Ainda não testada` não implica validade. O painel conserva os controles explícitos de salvar, testar e remover. O nome amigável de cada modelo acompanha o ID canônico quando o nome sozinho não o contém; nenhuma versão foi inferida da apresentação.
 
 Não realizar validação paga ou chamada externa automaticamente apenas para renderizar a tela.
 
@@ -131,22 +132,22 @@ Não realizar validação paga ou chamada externa automaticamente apenas para re
 
 O tipo de tarefa não é decorativo. Ele participa da resolução metodológica por `targetModel + taskType` e pode alterar regras e exemplos usados na compilação.
 
-A próxima revisão deve trabalhar com uma taxonomia simples e útil. Direção aprovada:
+A taxonomia pública implementada usa oito IDs estáveis:
 
-- Tarefas citadas;
-- Aplicação completa;
-- Refatoração completa;
-- Refatoração de módulo;
-- Correção de bug;
-- Agente autônomo;
-- Depuração;
-- Fill-in-the-Middle.
+- `cited` — Tarefas citadas;
+- `application` — Aplicação completa;
+- `refactor_full` — Refatoração completa;
+- `refactor_module` — Refatoração de módulo;
+- `bug_fix` — Correção de bug;
+- `agent` — Agente autônomo;
+- `debug` — Depuração;
+- `fim` — Fill-in-the-Middle.
 
-A opção genérica `Refatoração` deve ser dividida em pelo menos `Refatoração completa` e `Refatoração de módulo`.
+O antigo ID `refactor` segue aceito na API para compatibilidade, mas não é exibido na UI. `refactor_full` e `refactor_module` herdam as regras `refactor` do corpus 2.1.0; `bug_fix` herda as regras `debug`. O trace preserva o tipo solicitado e registra o tipo metodológico herdado. A distinção de intenção entre correção e depuração está no tipo declarado ao compilador; não há regra metodológica nova ou diferença de proveniência alegada entre eles.
 
-A alteração não pode ser somente de rótulo. Os novos valores precisam chegar ao runtime e participar corretamente da seleção metodológica. Se ainda não existir metodologia distinta para os dois subtipos, o sistema deve herdar regras comuns sem fingir diferenças inexistentes.
+Os valores percorrem UI, request, validação de `/api/generate`, resolver, compiler e decision trace. Tipo desconhecido recebe erro explícito. `targetModel` permanece independente.
 
-Fill-in-the-Middle significa completar um trecho entre prefixo e sufixo já existentes. A UI pode ocultar ou despriorizar FIM quando ele não fizer sentido para o contexto selecionado.
+Fill-in-the-Middle significa completar um trecho entre prefixo e sufixo já existentes. A UI só disponibiliza FIM para o target Codestral, que possui a regra comprovada `codestral-fim-fields` no corpus 2.1.0; ao mudar para outro target, uma seleção FIM é descartada. A API ainda aceita pedidos explícitos `fim` para outros targets e aplica apenas as regras gerais disponíveis, sem alegar capacidade específica.
 
 ### 4. Refinamento iterativo do prompt
 
@@ -218,7 +219,7 @@ Esta evolução deve ter prioridade sobre benchmark de modelos, hardening não b
 
 ## Prioridade oficial a partir do PR #38
 
-### P0 - correções funcionais imediatas
+### P0 - correções funcionais imediatas (implementadas nesta branch)
 
 1. Implementar login obrigatório na entrada.
 2. Simplificar estados e microcopy de credenciais.
@@ -319,8 +320,14 @@ Se uma entrega não exigir mudança de planejamento, ainda assim deve registrar 
 - Alibaba/Qwen permanece sujeito ao estado e rollout explicitamente registrados no catálogo. Não ativar apenas para completar lista.
 - `ai_models` é catálogo de geração e não deve virar automaticamente catálogo metodológico.
 
-## Critério para o próximo PR funcional
+## Entrega do Passo 21 P0
 
-O próximo PR funcional deve priorizar as correções P0 desta guia, começando por autenticação obrigatória e revisão dos tipos de tarefa, sem misturar benchmark, hardening genérico ou expansão não solicitada.
+Estado anterior: na `main` inicial `29e1fb3f586782dcffe226ee010e2a4927b23543`, visitantes podiam abrir `#app`, executar o compilador local e enviar `/api/generate` sem JWT; a UI oferecia seis tipos, inclusive `refactor` genérico e FIM universal; a apresentação de credenciais enfatizava termos técnicos e distinguia mal existência de validação.
 
-Antes de implementar, o agente deve auditar a `main` pós-PR #38 e confirmar os pontos exatos de alteração. Depois da implementação, deve atualizar este guia novamente com o que realmente foi feito e o que permaneceu pendente.
+Áreas afetadas: `index.html`, `src/main.js`, `src/style.css`, `src/auth/ui.js`, `src/generation/provider-options.js`, `src/byok/credentials.js`, `api/generate.js`, `api/model-profiles.js`, testes de autenticação, catálogo, metodologia, fluxo de produto e este guia. Não houve alteração em migrations, RLS, crypto, vault, billing, catálogo remoto ou corpus 2.1.0. Production e Supabase remoto não foram alterados nesta entrega; push da branch e PR não equivalem a deploy.
+
+Validação local em 12/09/2026: testes focados do Passo 21 `8/8`; `npm test` `301/301`; `npm run evaluate` `192/192` casos de prompt e `24/24` casos metodológicos; `npm run build` concluído; `git diff --check` sem erros. Nenhuma chamada paga foi usada para QA. Os testes legados que exigiam o antigo modo público e um roadmap removido da `main` foram atualizados para o contrato atual; o checksum corrigido reflete o corpus 2.1.0 já presente no SHA inicial.
+
+Limitações: não há metodologia específica verificada para os dois subtipos de refatoração nem para distinguir regras de `bug_fix` e `debug`; ambos herdam as categorias comprovadas. FIM é despriorizado na UI fora de Codestral, mas a API preserva pedidos explícitos. A validação de chaves só ocorre mediante ação do usuário. A verificação visual com uma sessão real depende de credenciais de teste e não deve ser inferida do build.
+
+Pendências e próximo passo recomendado: revisar e mesclar manualmente o PR P0 após QA visual autenticado; em entrega separada, iniciar o refinamento iterativo P1. Não iniciar GitHub/contexto, upload, Vercel, benchmark ou expansão de providers neste PR.

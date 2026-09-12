@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
-import generate from '../api/generate.js';
+import generate from './helpers/authenticated-generate.js';
 import compilers from '../api/compilers.js';
 import health from '../api/health.js';
 import profiles from '../api/profiles.js';

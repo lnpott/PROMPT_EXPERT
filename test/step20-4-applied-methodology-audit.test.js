@@ -13,11 +13,12 @@ test('audit covers every public target across every real task type', () => {
   const profiles = publicProfiles(corpus);
   const audit = auditAll();
   assert.equal(profiles.length, 23);
-  assert.equal(Object.keys(taskTypes).length, 6);
+  assert.equal(Object.keys(taskTypes).length, 8);
   assert.equal(audit.length, profiles.length * Object.keys(taskTypes).length);
   for (const profile of profiles) for (const taskType of Object.keys(taskTypes)) {
     assert.ok(audit.some(({ target, taskType: task }) => target === profile.slug && task === taskType));
-    assert.ok(auditDoc.includes('| `' + profile.slug + '` | ' + taskType + ' |'));
+    const inheritedTask = ['refactor_full', 'refactor_module'].includes(taskType) ? 'refactor' : taskType === 'bug_fix' ? 'debug' : taskType;
+    assert.ok(auditDoc.includes('| `' + profile.slug + '` | ' + inheritedTask + ' |'));
   }
 });
 

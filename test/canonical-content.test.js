@@ -63,21 +63,12 @@ test('notebook audit preserves source inventory and editorial safeguards', () =>
   assert.match(audit, /duas cópias consecutivas/);
 });
 
-test('project guide defines ten auditable next steps', () => {
+test('project guide records current priorities and validation discipline', () => {
   const guide = readFileSync(guidePath, 'utf8');
-  const roadmap = guide.match(/## Próximos dez passos([\s\S]*?)### Protocolo obrigatório por passo/)?.[1] || '';
-  const roadmapRows = roadmap.match(/^\| \d+ \|/gm) || [];
-  const execution = guide.match(/### Registro de execução dos próximos passos([\s\S]*?)### Modelo de auditoria/)?.[1] || '';
-  const executionRows = execution.match(/^\| \d+ \|/gm) || [];
-
-  assert.equal(roadmapRows.length, 10);
-  assert.equal(executionRows.length, 10);
-  assert.match(guide, /Auditoria obrigatória/);
-  assert.match(guide, /Commit sugerido/);
-  assert.match(guide, /PR sugerido/);
-  assert.match(guide, /#### Auditoria do passo N/);
-  assert.match(guide, /Segurança, segredos e dados pessoais/);
-  assert.match(guide, /Rollback:/);
+  assert.match(guide, /## Propósito/);
+  assert.match(guide, /## Atualização obrigatória deste guia/);
+  assert.match(guide, /## Prioridade oficial/);
+  assert.match(guide, /Release ativa: `2\.1\.0`/);
 });
 
 test('primary source validation records all sources and unresolved claims', () => {

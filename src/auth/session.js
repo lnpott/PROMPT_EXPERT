@@ -74,6 +74,8 @@ export function createAuthController(client) {
 
       const { data, error } = await client.auth.getSession();
       if (error) {
+        currentUser = null;
+        currentAccessToken = null;
         initialized = true;
         notify();
         throw new Error('Não foi possível restaurar a sessão.');

@@ -45,7 +45,7 @@ export function priceSummary(model) {
 function modelCard(model) {
   const item = document.createElement('li');
   const title = document.createElement('strong');
-  title.textContent = model.display_name;
+  title.textContent = model.display_name && model.display_name.includes(model.model_id) ? model.display_name : `${model.display_name || model.model_id} (${model.model_id})`;
   const description = document.createElement('p');
   description.textContent = model.description || 'Descrição detalhada não publicada.';
   item.append(title, description);
@@ -110,7 +110,7 @@ export function renderCredentialProviders(elements, providers, credentials, hand
     identity.append(title);
     const state = document.createElement('span');
     state.className = credential ? 'credential-state configured' : 'credential-state';
-    state.textContent = credential ? 'Configurada' : 'Sem credencial';
+    state.textContent = credential ? 'Chave cadastrada' : 'Sem chave cadastrada';
     heading.append(identity, state);
 
     const detail = document.createElement('p');
@@ -133,7 +133,7 @@ export function renderCredentialProviders(elements, providers, credentials, hand
     highlights.className = 'model-highlights';
     for (const model of (provider.models || []).slice(0, 3)) {
       const item = document.createElement('li');
-      item.textContent = model.display_name;
+      item.textContent = model.display_name && model.display_name.includes(model.model_id) ? model.display_name : `${model.display_name || model.model_id} (${model.model_id})`;
       highlights.append(item);
     }
 

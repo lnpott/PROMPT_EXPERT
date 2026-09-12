@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import generate from '../api/generate.js';
+import generate from './helpers/authenticated-generate.js';
 import { publicProfiles } from '../api/model-profiles.js';
 import { generationModelSelection, generationModelsForProvider } from '../src/generation/provider-options.js';
 
@@ -25,7 +25,7 @@ test('generation catalog is provider-bound and uses stable model IDs rather than
     { slug: 'openai', models: [{ model_id: 'openai-api-id', display_name: 'Visual label' }] },
   ];
   assert.deepEqual(generationModelsForProvider(providers, 'deepseek'), [
-    { modelId: 'deepseek-api-id', displayName: 'Visual label', description: undefined, generationSupported: false },
+    { modelId: 'deepseek-api-id', displayName: 'Visual label (deepseek-api-id)', description: undefined, generationSupported: false },
   ]);
   assert.deepEqual(generationModelsForProvider(providers, 'openai').map(({ modelId }) => modelId), ['openai-api-id']);
   assert.deepEqual(generationModelsForProvider(providers, 'xai'), []);

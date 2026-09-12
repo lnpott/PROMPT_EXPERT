@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import generate from '../api/generate.js';
+import generate from './helpers/authenticated-generate.js';
 import { publicProfiles, taskTypes } from '../api/model-profiles.js';
 import { generationModelSelection, generationModelsForProvider, generationResultLabels, generationUiState } from '../src/generation/provider-options.js';
 
@@ -17,7 +17,7 @@ function responseHarness() {
 test('public product presents the official workflow in an accessible order', () => {
   const labels = ['brief', 'local-generation', 'generation-provider', 'generation-model', 'task-type', 'target-model', 'generate', 'result', 'copy'];
   for (let index = 1; index < labels.length; index += 1) assert.ok(html.indexOf(`id="${labels[index - 1]}"`) < html.indexOf(`id="${labels[index]}"`));
-  assert.match(html, /Compilação local determinística[\s\S]*Sem conta, sem chave e sem chamada externa\. Não usa IA\./);
+  assert.match(html, /Compilação local determinística[\s\S]*Sem chave ou chamada externa\. Não usa IA\./);
   assert.match(html, /Provedor de geração — IA chamada[\s\S]*Empresa cuja IA será realmente chamada/);
   assert.match(html, /Modelo de geração — específico[\s\S]*Modelo chamado para gerar ou refinar/);
   assert.match(html, /Modelo-alvo metodológico; não será chamado e não exige chave/);
@@ -48,7 +48,7 @@ test('provider model reconciliation remains provider-bound and preserves only va
 test('credential states distinguish login, absence, untested, valid, invalid and validation error', () => {
   const provider = { generation: { generationSupported: true, credentialSources: ['byok'] } };
   assert.equal(generationUiState({ provider, authenticated: false }).credentialStatus, 'Entrar para configurar sua chave');
-  assert.equal(generationUiState({ provider, authenticated: true }).credentialStatus, 'Configure sua chave');
+  assert.equal(generationUiState({ provider, authenticated: true }).credentialStatus, 'Sem chave cadastrada');
   for (const [validationStatus, label] of [['untested','Ainda não testada'],['valid','Validada no provedor'],['invalid','Inválida'],['error','Erro na última validação']]) {
     assert.match(generationUiState({ provider, authenticated: true, credential: { validationStatus } }).credentialStatus, new RegExp(label));
   }
@@ -58,7 +58,7 @@ test('credential states distinguish login, absence, untested, valid, invalid and
 });
 
 test('result metadata names the executor actually responsible for the returned prompt', () => {
-  assert.deepEqual(generationResultLabels({ source: 'local' }), { generatedBy: 'Compilador local', sourceText: 'Compilador local · sem conta, chave ou chamada externa' });
+  assert.deepEqual(generationResultLabels({ source: 'local' }), { generatedBy: 'Compilador local', sourceText: 'Compilador local · sem chave ou chamada externa' });
   assert.deepEqual(generationResultLabels({ source: 'local-fallback', generationModel: 'gemini-x' }), { generatedBy: 'Compilador local (fallback)', sourceText: 'Falha do Google Gemini · fallback local seguro' });
   assert.deepEqual(generationResultLabels({ source: 'deepseek', credentialSource: 'byok', generationProvider: 'deepseek', generationModel: 'deepseek-flash' }), { generatedBy: 'deepseek-flash', sourceText: 'deepseek · sua chave · deepseek-flash' });
   assert.match(main, /resultTarget\.textContent = targetModel\.selectedOptions/);
@@ -79,7 +79,7 @@ test('local deterministic execution works for every family and task without targ
 
 test('BYOK blocks before network and preserves visible work/state paths', () => {
   assert.match(main, /if \(!localGeneration\.checked && selectedCredentialSource === 'byok' && !credentialMetadata\.has/);
-  assert.match(main, /Entre para configurar sua chave[\s\S]*voltar à geração local sem recarregar a página/);
+  assert.match(main, /if \(!session\.initialized \|\| !session\.user/);
   assert.match(main, /Configure sua chave primeiro em APIs e provedores/);
   assert.match(main, /showGenerationError[\s\S]*updateResultMetadata/);
   assert.doesNotMatch(main, /brief\.value\s*=\s*['"]/);
