@@ -143,4 +143,4 @@ Somente 401/403 marcam a credencial como inválida. Falta de créditos, rate lim
 
 ## Providers BYOK do Passo 18B
 
-Google Gemini, Anthropic e Kimi usam exclusivamente credenciais do usuário armazenadas no cofre existente; Alibaba/Qwen possui adapter e migration local de ativação ainda não aplicada. Nenhuma variável de ambiente de provider BYOK deve ser criada. `GEMINI_API_KEY` continua exclusiva de `credentialSource=platform` e jamais deve ser copiada para o vault ou exposta ao frontend.
+Google Gemini, Anthropic e Kimi usam exclusivamente credenciais do usuário armazenadas no cofre existente; Alibaba/Qwen possui adapter e uma proposta de ativação em `supabase/rollout`, fora da sequência automática de migrations e ainda não aplicada. Nenhuma variável de ambiente de provider BYOK deve ser criada. `GEMINI_API_KEY` continua exclusiva de `credentialSource=platform` e jamais deve ser copiada para o vault ou exposta ao frontend.
