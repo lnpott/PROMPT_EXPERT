@@ -128,3 +128,19 @@ Confirme que a resposta tem `source: "gemini"`, um `requestId` e um `prompt` nã
 - Preview multi-modelo: `/api/health` retornou `generator: "gemini"`.
 - Preview multi-modelo: uma geração GPT/Codex retornou `source: "gemini"`, `requestId` e prompt não vazio.
 - Nenhum valor secreto foi lido, exibido ou persistido durante a verificação.
+
+## OpenRouter BYOK (Passo 17)
+
+A chave OpenRouter pertence ao usuário e deve ser cadastrada pela área autenticada; não existe variável `OPENROUTER_API_KEY` da plataforma. O navegador envia a chave somente ao endpoint do cofre na inclusão/substituição. Geração posterior envia apenas `provider: "openrouter"` e um `openRouterModel` proveniente do catálogo. A URL da API e o header de autorização são construídos exclusivamente pelo adapter server-side.
+
+O teste da credencial consulta `GET https://openrouter.ai/api/v1/key`. A geração consulta `POST https://openrouter.ai/api/v1/chat/completions`. Falhas OpenRouter são retornadas sem fallback pago ou local silencioso. Não altere `USER_CREDENTIALS_MASTER_KEY` ou sua versão para habilitar esta integração.
+
+## Providers BYOK diretos OpenAI-compatible (Passo 18A)
+
+OpenAI, xAI, DeepSeek, GroqCloud e Mistral reutilizam o cofre por usuário: não configure chaves desses providers em variáveis da aplicação. A validação usa o endpoint oficial `GET /models`; a geração usa `POST /chat/completions`. Bases HTTPS, paths, bearer, timeout e payload são definidos pelo registry server-side e não podem ser substituídos pelo navegador.
+
+Somente 401/403 marcam a credencial como inválida. Falta de créditos, rate limit, indisponibilidade, timeout, rede e resposta inválida são falhas operacionais. Uma falha BYOK não usa a chave Gemini da plataforma, OpenRouter, outro BYOK ou compilação local como fallback. As variáveis criptográficas existentes não devem ser alteradas.
+
+## Providers BYOK do Passo 18B
+
+Google Gemini, Anthropic e Kimi usam exclusivamente credenciais do usuário armazenadas no cofre existente; Alibaba/Qwen possui adapter e uma proposta de ativação em `supabase/rollout`, fora da sequência automática de migrations e ainda não aplicada. Nenhuma variável de ambiente de provider BYOK deve ser criada. `GEMINI_API_KEY` continua exclusiva de `credentialSource=platform` e jamais deve ser copiada para o vault ou exposta ao frontend.

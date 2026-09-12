@@ -132,7 +132,7 @@ test('missing public configuration keeps anonymous state available', async () =>
   assert.equal(createSupabaseBrowserClient({}), null);
   const controller = createAuthController(null);
   await controller.initialize();
-  assert.deepEqual(controller.getSnapshot(), { user: null, recoverySession: false, configured: false });
+  assert.deepEqual(controller.getSnapshot(), { user: null, recoverySession: false, configured: false, initialized: true });
 });
 
 test('invalid public URL preserves guest mode instead of breaking startup', () => {
@@ -167,14 +167,52 @@ test('credentials are validated without persisting or logging passwords', () => 
   });
 });
 
-test('guest compiler remains present while credential management stays isolated', () => {
+test('signup delegates normalized credentials directly to Supabase Auth', async () => {
+  const { client, calls } = createAuthMock();
+  const controller = createAuthController(client);
+  await controller.initialize();
+  const result = await controller.signUp(' person@example.test ', 'safe-password');
+  assert.deepEqual(calls.find((call) => call?.action === 'signUp')?.credentials, { email: 'person@example.test', password: 'safe-password' });
+  assert.deepEqual(result, { error: '', confirmationRequired: true });
+});
+
+test('signup network failures become safe connectivity guidance', async () => {
+  const { client } = createAuthMock();
+  client.auth.signUp = async () => { throw new TypeError('Failed to fetch'); };
+  const controller = createAuthController(client);
+  await controller.initialize();
+  const result = await controller.signUp('person@example.test', 'safe-password');
+  assert.match(result.error, /conexão, DNS ou bloqueio de rede/);
+  assert.equal(result.confirmationRequired, false);
+  assert.doesNotMatch(result.error, /Failed to fetch|supabase\.co|stack/i);
+});
+
+test('structured Auth errors are not mislabeled as network failures', async () => {
+  const { client } = createAuthMock();
+  client.auth.signUp = async () => ({ data: { session: null }, error: { code: 'signup_disabled', status: 422, message: 'Signups not allowed' } });
+  const controller = createAuthController(client);
+  await controller.initialize();
+  assert.deepEqual(await controller.signUp('person@example.test', 'safe-password'), {
+    error: 'A criação de contas está temporariamente desabilitada.', confirmationRequired: false,
+  });
+});
+
+test('auth connectivity handling introduces no local authority or privileged key', () => {
+  const session = readFileSync(new URL('../src/auth/session.js', import.meta.url), 'utf8');
+  const browserClient = readFileSync(new URL('../src/lib/supabase.js', import.meta.url), 'utf8');
+  assert.match(session, /client\.auth\.signUp\(credentials\)/);
+  assert.doesNotMatch(`${session}\n${browserClient}`, /service_role|localStorage\.setItem|indexedDB|fake session/i);
+});
+
+test('local compiler remains technically available while the workspace is account-gated', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const generate = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
 
-  assert.match(main, /compilePrompt/);
-  assert.match(main, /response\.status === 404/);
-  assert.match(html, /compilador local continua disponível sem conta/i);
+  assert.match(main, /LOCAL_GENERATION_OPTION/);
+  assert.match(main, /localGeneration\.checked/);
+  assert.match(html, /id="session-loading"/);
+  assert.match(html, /id="app-content" hidden/);
   assert.match(html, /chaves são enviadas somente ao backend/i);
   assert.doesNotMatch(generate, /user_api_credentials|USER_CREDENTIALS_MASTER_KEY|decryptCredential|\/api\/credentials/);
 });

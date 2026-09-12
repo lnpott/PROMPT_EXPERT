@@ -13,8 +13,15 @@ export function validateCredentials(email, password) {
 
 function authErrorMessage(error, action) {
   if (!error) return '';
+  const networkFailure = error instanceof TypeError
+    || error.name === 'AuthRetryableFetchError'
+    || (!error.status && /failed to fetch|fetch failed|network request failed/i.test(error.message || ''));
+  if (networkFailure) {
+    return 'Não foi possível conectar ao serviço de autenticação. Verifique sua conexão, DNS ou bloqueio de rede e tente novamente.';
+  }
   if (error.code === 'invalid_credentials') return 'Email ou senha incorretos.';
   if (error.code === 'email_not_confirmed') return 'Confirme seu email antes de entrar.';
+  if (error.code === 'signup_disabled') return 'A criação de contas está temporariamente desabilitada.';
   if (error.code === 'user_already_exists' || error.code === 'user_already_registered') {
     return 'Já existe uma conta para este email.';
   }
@@ -32,10 +39,11 @@ export function createAuthController(client) {
   let currentUser = null;
   let currentAccessToken = null;
   let recoverySession = false;
+  let initialized = false;
   const listeners = new Set();
   let subscription;
 
-  const snapshot = () => ({ user: currentUser, recoverySession, configured: Boolean(client) });
+  const snapshot = () => ({ user: currentUser, recoverySession, configured: Boolean(client), initialized });
   const notify = () => listeners.forEach((listener) => listener(snapshot()));
 
   return {
@@ -50,6 +58,7 @@ export function createAuthController(client) {
     },
     async initialize() {
       if (!client) {
+        initialized = true;
         notify();
         return snapshot();
       }
@@ -64,9 +73,14 @@ export function createAuthController(client) {
       subscription = listener.data.subscription;
 
       const { data, error } = await client.auth.getSession();
-      if (error) throw new Error('Não foi possível restaurar a sessão.');
+      if (error) {
+        initialized = true;
+        notify();
+        throw new Error('Não foi possível restaurar a sessão.');
+      }
       currentUser = data.session?.user || null;
       currentAccessToken = data.session?.access_token || null;
+      initialized = true;
       notify();
       return snapshot();
     },
@@ -74,18 +88,26 @@ export function createAuthController(client) {
       const credentials = validateCredentials(email, password);
       if (credentials.error) return { error: credentials.error };
       if (!client) return { error: 'Configure o Supabase para usar contas.' };
-      const { error } = await client.auth.signInWithPassword(credentials);
-      return { error: authErrorMessage(error, 'signin') };
+      try {
+        const { error } = await client.auth.signInWithPassword(credentials);
+        return { error: authErrorMessage(error, 'signin') };
+      } catch (error) {
+        return { error: authErrorMessage(error, 'signin') };
+      }
     },
     async signUp(email, password) {
       const credentials = validateCredentials(email, password);
       if (credentials.error) return { error: credentials.error };
       if (!client) return { error: 'Configure o Supabase para criar contas.' };
-      const { data, error } = await client.auth.signUp(credentials);
-      return {
-        error: authErrorMessage(error, 'signup'),
-        confirmationRequired: !error && !data.session,
-      };
+      try {
+        const { data, error } = await client.auth.signUp(credentials);
+        return {
+          error: authErrorMessage(error, 'signup'),
+          confirmationRequired: !error && !data.session,
+        };
+      } catch (error) {
+        return { error: authErrorMessage(error, 'signup'), confirmationRequired: false };
+      }
     },
     async signOut() {
       if (!client) return { error: '' };
@@ -96,8 +118,12 @@ export function createAuthController(client) {
       const normalizedEmail = typeof email === 'string' ? email.trim() : '';
       if (!normalizedEmail || !normalizedEmail.includes('@')) return { error: 'Informe um email válido.' };
       if (!client) return { error: 'Configure o Supabase para recuperar a conta.' };
-      const { error } = await client.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
-      return { error: authErrorMessage(error, 'recovery') };
+      try {
+        const { error } = await client.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
+        return { error: authErrorMessage(error, 'recovery') };
+      } catch (error) {
+        return { error: authErrorMessage(error, 'recovery') };
+      }
     },
     async updatePassword(password) {
       if (typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) {

@@ -1,20 +1,26 @@
 function setHidden(element, hidden) {
-  element.hidden = hidden;
+  if (element) element.hidden = hidden;
 }
 
 export function renderAccountState(elements, state) {
   const authenticated = Boolean(state.user);
   const recovery = authenticated && state.recoverySession;
+  const loading = state.initialized === false;
+  setHidden(elements.sessionLoading, !loading);
+  setHidden(elements.accountPanel, loading || (authenticated && !recovery));
+  setHidden(elements.appContent, loading || !authenticated || recovery);
+  setHidden(elements.accountNavigation, loading || !authenticated || recovery);
+  if (loading) return;
   setHidden(elements.signedOut, authenticated);
   setHidden(elements.signedIn, !authenticated || recovery);
   setHidden(elements.recoveryPanel, !recovery);
   setHidden(elements.providersLocked, authenticated && !recovery);
   setHidden(elements.providersPlaceholder, !authenticated || recovery);
-  elements.accountStatus.textContent = recovery ? 'recuperação' : authenticated ? 'autenticado' : 'desconectado';
+  elements.accountStatus.textContent = recovery ? 'recuperação' : authenticated ? state.user.email || 'conta' : 'desconectado';
   elements.userEmail.textContent = authenticated ? state.user.email || 'Conta autenticada' : '';
 
   if (!state.configured && !authenticated) {
-    elements.feedback.textContent = 'Contas indisponíveis neste ambiente. O compilador local continua disponível.';
+    elements.feedback.textContent = 'Contas indisponíveis neste ambiente.';
   }
   if (state.recoverySession) {
     elements.feedback.textContent = 'Defina uma nova senha para concluir a recuperação segura.';
@@ -64,6 +70,26 @@ export function initializeAuthUI(controller, elements, request = fetch) {
   elements.signOut.addEventListener('click', async () => {
     const result = await run(() => controller.signOut(), 'Saindo…');
     if (!result?.error) elements.feedback.textContent = 'Sessão encerrada.';
+  });
+
+  elements.changePasswordSubmit?.addEventListener('click', async () => {
+    const password = elements.changePassword.value;
+    if (password !== elements.changePasswordConfirm.value) {
+      elements.changePasswordFeedback.textContent = 'As senhas não coincidem.';
+      return;
+    }
+    elements.changePasswordSubmit.disabled = true;
+    elements.changePasswordFeedback.textContent = 'Atualizando senha…';
+    try {
+      const result = await controller.updatePassword(password);
+      elements.changePasswordFeedback.textContent = result.error || 'Senha alterada. Suas chaves de API foram preservadas.';
+    } catch {
+      elements.changePasswordFeedback.textContent = 'Não foi possível alterar a senha.';
+    } finally {
+      elements.changePassword.value = '';
+      elements.changePasswordConfirm.value = '';
+      elements.changePasswordSubmit.disabled = false;
+    }
   });
 
   elements.recovery.addEventListener('click', async () => {

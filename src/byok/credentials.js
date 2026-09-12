@@ -187,7 +187,7 @@ export function renderCredentialProviders(elements, providers, credentials, hand
     const save = button(credential ? 'Substituir' : 'Adicionar', 'save');
     save.type = 'submit';
     actions.append(save);
-    if (credential) actions.append(button('Testar integridade', 'test', true), button('Remover', 'remove', true));
+    if (credential) actions.append(button(['openrouter', 'openai', 'xai', 'deepseek', 'groqcloud', 'mistral'].includes(provider.slug) ? 'Validar no provedor' : 'Testar integridade', 'test', true), button('Remover', 'remove', true));
     form.append(secretLabel, secret, label, actions);
 
     form.addEventListener('submit', (event) => {
@@ -247,6 +247,7 @@ export function initializeCredentialManager(controller, elements, request = fetc
     if (!requestedForUser || requestedForUser !== activeUserId) return;
     providers = providersPayload.providers || [];
     credentials = credentialsPayload.credentials || [];
+    elements.onChange?.(credentials);
     render();
     message(credentials.length ? 'Credenciais carregadas.' : 'Nenhuma credencial configurada.', 'success');
   };
@@ -276,11 +277,12 @@ export function initializeCredentialManager(controller, elements, request = fetc
       });
     },
     test(slug, form) {
-      return operation(form, 'Testando integridade…', async () => {
+      return operation(form, ['openrouter', 'openai', 'xai', 'deepseek', 'groqcloud', 'mistral'].includes(slug) ? 'Validando no provedor…' : 'Testando integridade…', async () => {
         const response = await authorized(`/api/credentials/${encodeURIComponent(slug)}/test`, { method: 'POST' });
         const result = await payload(response);
         if (!response.ok) throw new Error(result.error || 'Não foi possível testar a credencial.');
-        message(result.message || 'Integridade verificada localmente.', 'success');
+        await refresh();
+        message(result.message || 'Validação concluída.', result.validationStatus === 'valid' ? 'success' : 'error');
       });
     },
     remove(slug, name, form) {
@@ -303,6 +305,7 @@ export function initializeCredentialManager(controller, elements, request = fetc
     if (!userId || state.recoverySession) {
       activeUserId = null;
       credentials = [];
+      elements.onChange?.([]);
       providers = [];
       elements.list.replaceChildren();
       message(state.recoverySession ? 'O cofre fica oculto durante a recuperação.' : 'Entre em sua conta para gerenciar credenciais.');

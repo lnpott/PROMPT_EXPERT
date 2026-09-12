@@ -38,6 +38,8 @@ test('rich provider endpoint exposes explicit presentation/model allowlists only
   await providersHandler({ method: 'GET' }, result);
   assert.equal(result.statusCode, 200);
   assert.equal(result.body.providers[0].models[0].model_id, 'openrouter/free');
+  assert.equal(result.body.providers[0].generation.generationSupported, true);
+  assert.deepEqual(result.body.providers[0].generation.credentialSources, ['byok']);
   const serialized = JSON.stringify(result.body);
   assert.doesNotMatch(serialized, /base_url|auth_scheme|internal|user_api_credentials|ciphertext|auth_tag/);
   assert.equal(result.body.providers[0].media_url, null);
@@ -49,6 +51,18 @@ test('allowlist helpers safely represent unknown provider and pricing fields as 
   assert.equal(allowlistedProvider({ slug: 'minimal' }).models.length, 0);
   assert.equal(allowlistedModel({ model_id: 'minimal' }).input_price, null);
   assert.equal(allowlistedModel({ model_id: 'minimal' }).official_url, null);
+});
+
+test('Google Gemini is exposed as provider with the real platform model allowlist', async () => {
+  globalThis.fetch = (url) => url.includes('ai_models')
+    ? jsonResponse([{ ...model, model_id: 'gemini-3.8-flash', api_providers: { slug: 'google-gemini' } }])
+    : jsonResponse([{ ...provider, slug: 'google-gemini', display_name: 'Google Gemini' }]);
+  const result = response();
+  await providersHandler({ method: 'GET' }, result);
+  assert.equal(result.body.providers[0].display_name, 'Google Gemini');
+  assert.equal(result.body.providers[0].generation.generationSupported, true);
+  assert.deepEqual(result.body.providers[0].generation.credentialSources, ['platform', 'byok']);
+  assert.ok(result.body.providers[0].models.some(({ model_id }) => model_id === 'gemini-3.5-flash-lite'));
 });
 
 test('all catalog mutation methods are blocked before database access', async () => {

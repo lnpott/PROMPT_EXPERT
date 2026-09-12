@@ -60,7 +60,7 @@ test('POST /api/generate rejects invalid input before accessing services', async
   globalThis.fetch = () => assert.fail('Invalid input must not access an external service');
   const response = createResponse();
 
-  await generate({ method: 'POST', body: { brief: '  ', model: 'grok' } }, response);
+  await generate({ method: 'POST', body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: '  ', targetModel: 'grok' } }, response);
 
   assert.equal(response.statusCode, 400);
   assert.match(response.body.error, /6\.000 caracteres/);
@@ -70,7 +70,7 @@ test('POST /api/generate rejects task types outside the public contract', async 
   delete process.env.GEMINI_API_KEY;
   const response = createResponse();
 
-  await generate({ method: 'POST', body: { brief: 'Crie uma página.', model: 'grok', taskType: 'complex' } }, response);
+  await generate({ method: 'POST', body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: 'Crie uma página.', targetModel: 'grok', taskType: 'complex' } }, response);
 
   assert.equal(response.statusCode, 400);
 });
@@ -78,7 +78,7 @@ test('POST /api/generate rejects task types outside the public contract', async 
 test('POST /api/generate rejects compiler models outside the public allowlist', async () => {
   const response = createResponse();
 
-  await generate({ method: 'POST', body: { brief: 'Crie uma página.', model: 'grok', compilerModel: 'arbitrary-model' } }, response);
+  await generate({ method: 'POST', body: { generationProvider: 'platform', generationModel: 'arbitrary-model', brief: 'Crie uma página.', targetModel: 'grok' } }, response);
 
   assert.equal(response.statusCode, 400);
 });
@@ -87,7 +87,7 @@ test('POST /api/generate works locally without API keys', async () => {
   delete process.env.GEMINI_API_KEY;
   const response = createResponse();
 
-  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'local-mode' }, body: { brief: 'Crie uma página acessível', model: 'claude' } }, response);
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'local-mode' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: 'Crie uma página acessível', targetModel: 'claude' } }, response);
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.source, 'local');
@@ -96,29 +96,26 @@ test('POST /api/generate works locally without API keys', async () => {
   assert.equal(JSON.stringify(response.body).includes('API_KEY'), false);
 });
 
-test('POST /api/generate accesses the knowledge base and Gemini with a valid request', async () => {
+test('POST /api/generate uses only the verified local methodology corpus before Gemini', async () => {
   process.env.GEMINI_API_KEY = 'test-only-key';
   const calls = [];
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url, options });
-    if (url.includes('model_profiles')) {
-      return jsonResponse([{ id: 7, display_name: 'Grok', system_guidance: 'Seja objetivo.', output_contract: 'Use Markdown.' }]);
-    }
-    if (url.includes('prompt_rules')) return jsonResponse([{ rule_text: 'Inclua critérios de aceite.', priority: 1 }]);
     return jsonResponse({ candidates: [{ content: { parts: [{ text: '# Prompt validado' }] } }] });
   };
   const response = createResponse();
 
-  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'gemini-mode' }, body: { brief: 'Crie uma página acessível', model: 'grok' } }, response);
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'gemini-mode' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: 'Crie uma página acessível', targetModel: 'grok' } }, response);
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.prompt, '# Prompt validado');
   assert.equal(response.body.source, 'gemini');
   assert.match(response.body.requestId, /^[a-f0-9-]+$/);
-  assert.equal(calls.length, 3);
-  assert.equal(calls[2].options.headers['x-goog-api-key'], 'test-only-key');
-  assert.match(calls[2].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
-  assert.match(JSON.parse(calls[2].options.body).contents[0].parts[0].text, /Inclua critérios de aceite/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.headers['x-goog-api-key'], 'test-only-key');
+  assert.match(calls[0].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
+  assert.match(JSON.parse(calls[0].options.body).contents[0].parts[0].text, /critérios de aceite observáveis/);
+  assert.ok(!calls.some(({ url }) => url.includes('model_profiles') || url.includes('prompt_rules')));
 });
 
 test('POST /api/generate uses the compiler model selected by the user', async () => {
@@ -131,10 +128,10 @@ test('POST /api/generate uses the compiler model selected by the user', async ()
   };
   const response = createResponse();
 
-  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'selected-compiler' }, body: { brief: 'Crie uma página acessível', model: 'grok', compilerModel: 'gemini-3.8-flash' } }, response);
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'selected-compiler' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.8-flash', brief: 'Crie uma página acessível', targetModel: 'grok' } }, response);
 
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.compilerModel, 'gemini-3.8-flash');
+  assert.equal(response.body.generationModel, 'gemini-3.8-flash');
   assert.match(calls.at(-1), /models\/gemini-3\.8-flash:generateContent$/);
 });
 
@@ -145,7 +142,7 @@ test('POST /api/generate falls back locally when Gemini rejects the request', as
     : jsonResponse({ error: 'invalid key' }, { ok: false, status: 400 });
   const response = createResponse();
 
-  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'provider-rejection' }, body: { brief: 'Crie um formulário seguro.', model: 'gemini' } }, response);
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'provider-rejection' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: 'Crie um formulário seguro.', targetModel: 'gemini' } }, response);
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.source, 'local-fallback');
@@ -165,7 +162,7 @@ test('generation telemetry is sanitized and request identifiers match the respon
   const response = createResponse();
 
   try {
-    await generate({ method: 'POST', headers: { 'x-forwarded-for': 'telemetry-test' }, body: { brief: privateBrief, model: 'grok' } }, response);
+    await generate({ method: 'POST', headers: { 'x-forwarded-for': 'telemetry-test' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: privateBrief, targetModel: 'grok' } }, response);
   } finally {
     console.info = originalInfo;
   }
@@ -186,7 +183,7 @@ test('POST /api/generate rate limits a client and provides Retry-After', async (
   try {
     for (let requestNumber = 0; requestNumber < 21; requestNumber += 1) {
       response = createResponse();
-      await generate({ method: 'POST', headers: { 'x-forwarded-for': 'rate-limit-test' }, body: { brief: 'Crie uma página.', model: 'grok' } }, response);
+      await generate({ method: 'POST', headers: { 'x-forwarded-for': 'rate-limit-test' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: 'Crie uma página.', targetModel: 'grok' } }, response);
     }
   } finally {
     console.info = originalInfo;
@@ -203,7 +200,7 @@ test('POST /api/generate falls back locally on an empty Gemini response', async 
     : jsonResponse({ candidates: [] });
   const response = createResponse();
 
-  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'empty-provider' }, body: { brief: 'Refatore o módulo.', model: 'openai', taskType: 'refactor' } }, response);
+  await generate({ method: 'POST', headers: { 'x-forwarded-for': 'empty-provider' }, body: { generationProvider: 'platform', generationModel: 'gemini-3.5-flash-lite', brief: 'Refatore o módulo.', targetModel: 'openai', taskType: 'refactor' } }, response);
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.source, 'local-fallback');

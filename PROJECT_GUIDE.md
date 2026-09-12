@@ -1,6 +1,8 @@
 # PROMPT_EXPERT — Guia vivo do projeto
 
-> Atualização de planejamento: 7 de setembro de 2026 — ciclo de contas, cofre BYOK e múltiplos provedores.
+> Estado revisado em 12 de setembro de 2026 — account-first, cofre BYOK,
+> geração multi-provider e catálogo operacional auditado. As seções datadas
+> abaixo preservam o histórico e não substituem este estado presente.
 
 ## Propósito
 
@@ -21,6 +23,14 @@ O produto não é um arquivo de prompt estático. A pessoa descreve o que quer c
 - Qualquer recuperação de acesso deve preservar a regra de que segredos salvos não são recuperados por terceiros nem reaparecem após um reset destrutivo do cofre.
 
 ## Estado atual
+
+O contrato atual separa `generationProvider`, `generationModel`,
+`credentialSource`, `taskType` e `targetModel`. Google Gemini aceita
+Plataforma ou BYOK; OpenRouter, OpenAI, xAI, Anthropic, DeepSeek, Mistral,
+GroqCloud e Kimi usam BYOK; local é uma estratégia separada. Alibaba/Qwen
+permanece inativo e sujeito a autorização de rollout. O catálogo definitivo e
+suas ressalvas estão na seção do Passo 19.1; bullets antigos abaixo descrevem o
+estado existente quando cada marco foi registrado.
 
 ### Implementado
 
@@ -752,3 +762,210 @@ Mudanças que afetem autenticação, criptografia, RLS, provedores ou recuperaç
 - Rollback: reverter o commit desta entrega; não há mudança de banco nesta etapa e as regras canônicas continuam inativas.
 - Preview: deployment Vercel `READY`; health, nove perfis e proveniência responderam HTTP 200. Em três gerações reais, a primeira e a segunda usaram o fallback local seguro por indisponibilidade/timeout transitório e a terceira respondeu pela Gemini, comprovando os dois caminhos sem interromper o produto.
 - Estado final: núcleo funcional concluído; expansões futuras dependem de requisito de negócio, evidência nova ou escala operacional.
+
+#### Passo 17 — OpenRouter BYOK — 2026-09-09
+
+- O gerador aceita explicitamente `platform`, `local` e `openrouter`. O modo local nunca consulta API externa; o modo plataforma mantém Gemini e seu fallback histórico; o modo OpenRouter não faz fallback para Gemini nem para geração local.
+- O adapter dedicado fixa `https://openrouter.ai/api/v1` no servidor, valida a chave em `GET /key` e gera em `POST /chat/completions`, com bearer construído exclusivamente no backend, timeout de 12 segundos, limite de resposta e parsing defensivo.
+- O fluxo OpenRouter autentica pelo Supabase, consulta provider/modelo ativos e apenas a credencial visível ao próprio JWT/RLS, autentica AES-GCM/AAD e descriptografa somente no servidor. A validação persiste `valid`, `invalid` ou `error` e `last_validated_at`; apenas 401/403 tornam a chave inválida. 402, 404, 429, 5xx, timeout, rede e resposta malformada são erros operacionais.
+- A interface oferece Plataforma, Somente local e OpenRouter BYOK. Exibe apenas `secretLast4` e os estados `untested`, `valid`, `invalid` e `error`; nenhum segredo completo retorna do backend.
+- Somente OpenRouter foi implementado. Nenhuma API key real foi usada nesta validação automatizada e um smoke pago não foi declarado. O Passo 18 não foi iniciado.
+
+#### Passo 18A — providers BYOK diretos OpenAI-compatible — 2026-09-09
+
+- **Escopo:** foram adicionados exclusivamente OpenAI, xAI, DeepSeek, GroqCloud e Mistral. Gemini BYOK, Anthropic/Claude, Alibaba/Qwen, Kimi e demais providers permanecem fora de escopo; nenhuma migration, secret de plataforma ou mudança criptográfica foi necessária.
+- **Pesquisa oficial (verificada em 2026-09-09):** OpenAI documenta [Models](https://platform.openai.com/docs/api-reference/models/list) e [Chat Completions](https://platform.openai.com/docs/api-reference/chat/create); xAI documenta sua [API Reference](https://docs.x.ai/docs/api-reference) e [Chat](https://docs.x.ai/docs/guides/chat); DeepSeek documenta [List Models](https://api-docs.deepseek.com/api/list-models) e [Create Chat Completion](https://api-docs.deepseek.com/api/create-chat-completion); GroqCloud documenta [API Reference](https://console.groq.com/docs/api-reference) e [Text/Chat](https://console.groq.com/docs/text-chat); Mistral documenta a [API](https://docs.mistral.ai/api/) e [Chat Completion](https://docs.mistral.ai/capabilities/completion/). A validação usa `GET /models`, operação oficial, autenticada, somente leitura e menos destrutiva que uma geração. Não se consulta saldo/plano nem se infere free tier.
+- **Destinos fixos:** OpenAI `https://api.openai.com/v1`; xAI `https://api.x.ai/v1`; DeepSeek `https://api.deepseek.com`; GroqCloud `https://api.groq.com/openai/v1`; Mistral `https://api.mistral.ai/v1`. Todos usam bearer, `GET /models` para validação e `POST /chat/completions` para geração. Redirects são rejeitados; URL, endpoint, host, headers, auth e corpo bruto nunca vêm do cliente.
+- **Arquitetura compartilhada:** `openai-compatible.js` concentra AbortController/timeout de 12s, fetch, bearer, limite de 1 MB, parsing, payload de chat allowlisted, resposta/usage normalizados e taxonomia segura. `direct-providers.js` é um registry imutável das peculiaridades de destino e faz o vínculo `groq` (seleção pública) → `groqcloud` (slug do catálogo/cofre). A abstração cobre somente os endpoints OpenAI-compatible efetivamente comuns.
+- **Validação e erros:** 401/403 são a única evidência de `invalid`; 402 é crédito insuficiente; 429, 5xx, timeout, rede, redirects e resposta malformada persistem `error`. 404 de geração é modelo indisponível. Respostas brutas e mensagens upstream não atravessam a API.
+- **Cofre/RLS/modelos:** o fluxo existente autentica JWT, resolve provider ativo, lê uma única credencial sob RLS, autentica AES-256-GCM/AAD vinculada ao provider e descriptografa server-side. O modelo precisa pertencer ao mesmo provider e estar ativo, público e não depreciado no catálogo. Não existe reutilização cross-provider nem segundo armazenamento.
+- **Fallback:** falha em qualquer BYOK retorna diretamente ao navegador e nunca chama Gemini, OpenRouter, outro provider ou local. Foi corrigida uma regressão herdada do Passo 17 em que qualquer HTTP 404 no frontend acionava compilação local; agora esse fallback de compatibilidade é exclusivo de `platform`.
+- **UI:** as oito origens explícitas são Plataforma, Somente local, OpenRouter BYOK e os cinco providers deste lote. Modelos são montados a partir do catálogo público e filtrados pelo provider selecionado; o navegador envia apenas provider e model IDs. Cards continuam mostrando somente máscara/metadados/status e usam o mesmo endpoint dinâmico, sem novas Vercel Functions.
+- **Riscos e rollback:** disponibilidade/modelos/status HTTP dos providers podem mudar e exigem revisão das fontes; `GET /models` prova aceitação da key naquele instante, não saldo ou acesso a cada modelo. Rate limiting continua best-effort por instância. Rollback consiste em reverter o commit do Passo 18A; credenciais permanecem cifradas no cofre e não devem ser apagadas. O Passo 18B não foi iniciado.
+
+#### Passo 18.5 — workspace autenticado e coerência provider/model — 2026-09-09
+
+- **Account-first e loading:** a aplicação inicia somente com “Verificando sessão…”. Depois de `getSession`, visitante vê “Sua conta”; workspace, resultado, navegação privada e cofre permanecem ocultos. Sessão válida substitui a porta de entrada pelo gerador. A capacidade técnica local/backend permanece, mas a UI principal agora exige conta.
+- **Sessão e recovery:** a renderização deriva exclusivamente do snapshot real do controller Supabase, que passou a expor `initialized`. Logout limpa briefing, resultado, origem/modelo BYOK, metadados locais e volta a `#login`. `PASSWORD_RECOVERY` tem precedência, mantém workspace/menu/cofre ocultos e preserva integralmente purge → troca de senha → sign-out.
+- **Navegação:** hashes `#login`, `#app`, `#account`, `#providers` e `#account-recovery` fornecem estados SPA leves sem Functions ou rewrites. Rotas privadas são normalizadas conforme sessão: visitante é levado a login, autenticado em login vai ao app e recovery só mostra a conta destrutiva. O header autenticado exibe email/estado e links para Gerador, APIs e provedores e Sessão/Sair.
+- **Provider/model:** “Modelo de destino” foi renomeado para “Perfil do prompt”, pois adapta o conteúdo e não escolhe a API. O antigo “Motor de compilação” era efetivamente o seletor Gemini da plataforma e agora se chama “Modelo da plataforma”, visível somente em `platform`. Para BYOK existe um único seletor “Modelo”, reconstruído do catálogo a cada troca de provider; Groq mapeia para `groqcloud`. Modelo anterior é removido por `replaceChildren`, e geração fica bloqueada sem modelo.
+- **Credencial ausente:** providers BYOK continuam descobríveis. Sem credencial própria, a UI bloqueia antes do request, explica que a API não está configurada e oferece CTA para `#providers`; não seleciona Gemini, local, OpenRouter ou outro provider. Backend e suas validações provider/model/no-fallback continuam como autoridade e não foram alterados.
+- **Escopo e segurança:** nenhuma migration, API backend, RLS, crypto, master key, variável Supabase, service role ou provider foi alterado/adicionado. O limite segue em 12 Functions. Gemini BYOK, Anthropic, Qwen/Alibaba e Kimi não foram iniciados.
+- **Testes e rollback:** regressões cobrem loading sem flash, visitante, sessão restaurada, logout, recovery, rotas, header, CTA, todos os vínculos provider/model, remoção de modelo stale, seletor Gemini exclusivo da plataforma e no-fallback. Rollback é reverter o commit de UI; não há estado remoto/schema a desfazer.
+
+#### Diagnóstico e tratamento de conectividade do Supabase Auth — 2026-09-09
+
+- **Diagnóstico:** a Production do commit `332da41` foi auditada sem criar usuário. O bundle publicado contém uma única origem Supabase, `pqprtkdvzyhqlidlcpxg.supabase.co`, e uma chave com formato publicável `sb_publishable_`; não contém host `undefined` nem domínio Supabase alternativo. Na Vercel, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` existem como encrypted em Preview e Production. Nenhuma variável foi lida integralmente ou alterada.
+- **Conectividade externa:** DNS resolveu o host esperado para endereços públicos Cloudflare. A raiz respondeu 404 esperado para path inválido; `/auth/v1/health` respondeu 200 com GoTrue `v2.196.0` quando recebeu apenas a chave publicável. Um POST `/auth/v1/signup` deliberadamente inválido (`{}`) respondeu 422 sem usuário/token, comprovando DNS/TLS/rota Auth sem criar fixture.
+- **Configuração Auth:** a API administrativa somente leitura informou email/password habilitado, signup permitido (`disable_signup=false`), confirmação por email ativa (`mailer_autoconfirm=false`), CAPTCHA desabilitado, Site URL da Production e quatro redirect URLs allowlisted. SMTP customizado não está configurado, portanto limites/entrega do mailer padrão continuam risco operacional; o limite configurado de emails é baixo e pode causar 429, mas não `ERR_NAME_NOT_RESOLVED`. Nenhuma configuração remota foi modificada.
+- **Causa:** não foi encontrado erro de URL, env, build, payload ou SDK. `auth.signUp({ email, password })` usa diretamente `@supabase/supabase-js`, sem fetch wrapper, callback customizado ou fallback. `ERR_NAME_NOT_RESOLVED` é falha DNS no cliente e, diante da resolução remota saudável, permanece compatível com rede/DNS/browser local. Eventos `gc.kis.v2.scr.kaspersky-labs.com` demonstram injeção/bloqueio local do Kaspersky, mas não provam que ele bloqueou Supabase; não foi criado contorno.
+- **Bug de UX corrigido:** o SDK pode rejeitar a Promise com `TypeError: Failed to fetch`/`AuthRetryableFetchError`. O controller não capturava essa rejeição, deixando “Criando conta…” e uma exceção no console. Sign-up, login e recuperação agora convertem somente falhas de transporte inequívocas em orientação sanitizada sobre conexão/DNS/bloqueio. Erros estruturados (`invalid_credentials`, confirmação, conta existente, signup desabilitado e 429) continuam distintos e não são rotulados como rede.
+- **Escopo e rollback:** Supabase Auth segue como autoridade única. Não houve conta local, retry infinito, proxy, migration, RLS, crypto, vault, provider, master key ou `service_role`. Rollback consiste em reverter apenas o commit de tratamento de erro; não existe estado remoto a desfazer.
+
+#### Passo 18.6 — modelo executor e modelo-alvo de otimização — 2026-09-10
+
+- **Problema anterior e decisão:** a interface e o contrato de `/api/generate` sobrepunham “modelo”, “modelo do provider” e o antigo “motor de compilação”. O contrato definitivo separa os quatro eixos `generationProvider`, `generationModel`, `taskType` e `targetModel`. O primeiro escolhe a integração realmente chamada, o segundo é o API model ID executável, o terceiro altera a estrutura da tarefa e o quarto escolhe somente a metodologia. IDs/slugs estáveis são autoridade; `displayName` é exclusivamente apresentação.
+- **Catálogos distintos:** o catálogo de geração é composto pelos modelos públicos, ativos e não depreciados de `ai_models`, associados a `api_providers`; pelos modelos Gemini allowlisted da Plataforma; e pela estratégia técnica estável `local-deterministic`. O catálogo de otimização é composto somente pelos nove `model_profiles` versionados e revisados. Um target é disponibilizado apenas quando seu profile local existe; o sistema não inventa versões nem expõe como suportado conteúdo apenas planejado. A base de Notebook não está disponível neste clone além dos exports já incorporados e documentados.
+- **Metodologia:** `targetModel` resolve `model_profile` e `prompt_rules`; a instrução é compilada com briefing e `taskType` antes de ser enviada ao executor. `prompt_examples` está modelado no schema, mas não participa hoje do runtime de `getModelKnowledge`; sua incorporação exige corpus revisado e precedência explícita em etapa futura. Não existe fallback silencioso de target inválido/sem metodologia para família genérica, executor ou Gemini.
+- **Execução e BYOK:** `generationProvider` seleciona o adapter; `generationModel` é validado server-side contra o mesmo provider e fornece o API model ID. Uma credencial BYOK é necessária somente para o provedor que executa a geração. O modelo-alvo de otimização não exige credencial e não é chamado pela aplicação. Um modelo DeepSeek pode gerar um prompt otimizado para Claude. Nesse caso, somente a API do DeepSeek é chamada. Existência de metadado no cofre aparece como “Use your own key” com o status persistido, não como prova de validade, saldo ou acesso; ausência aparece como “Configure your key first”, bloqueia gerar e oferece CTA, sem esconder o provider nem causar fallback. Nenhum teste remoto de chave ocorre no carregamento, restauração de sessão ou seleção.
+- **Plataforma e local:** Plataforma permanece um serviço da aplicação e usa somente sua allowlist Gemini server-side; o fallback local histórico da Plataforma continua explícito na resposta. “Somente local” foi segregado visualmente como estratégia sem API, usa `local-deterministic` e preserva a capacidade backend, mas não é tratado como provider externo ou BYOK. Providers BYOK continuam sem fallback pago ou local.
+- **Autoridade e contrato:** o navegador envia somente `brief`, `generationProvider`, `generationModel`, `taskType` e `targetModel`. Campos legados ambíguos (`provider`, `model`, `providerModel`, `compilerModel`) não são normalizados silenciosamente. O backend valida target/profile, provider executável, modelo da Plataforma ou vínculo provider/model no catálogo e credencial vinculada ao usuário/provider sob JWT/RLS. Labels, URL, host, headers e chaves enviados pelo cliente não controlam execução.
+- **Segurança e schema:** nenhuma migration foi necessária. AES-256-GCM, HKDF-SHA-256, AAD, key version, user/provider binding, RLS, Auth, recovery destrutivo e limite de 12 Functions permanecem inalterados. Nenhum adapter do Passo 18B, configuração remota, secret ou teste pago foi adicionado.
+- **Testes, limitações e rollback:** regressões cobrem filtro e troca de modelos executores, IDs estáveis, targets cross-family, target inválido fail-closed, contrato inequívoco, estado/CTA BYOK, ausência de teste automático de chave, seleção de adapter/model ID e compatibilidade de Plataforma/local/Auth/recovery/vault. A expansão do catálogo metodológico depende de fontes incorporadas e revisadas; exemplos ainda não são carregados no runtime. Rollback é reverter este commit de frontend/API/testes/documentação; não há schema ou estado remoto a desfazer.
+
+#### Roadmap futuro após o Passo 18.6
+
+| Marco | Estado e direção |
+| --- | --- |
+| 18.5 — account-first e coerência inicial provider/model | Concluído; Auth real libera workspace e protege navegação privada. |
+| 18.6 — executor versus alvo metodológico | Esta entrega; consolida contrato, catálogos e validação independentes. |
+| 18.6.1 — catálogo real de geração | Corrige provider, adapter, disponibilidade e origem/status de credencial sem alterar o target. |
+| Account Security / Password Lifecycle | Planejado, sem implementação neste passo; detalhes abaixo. |
+| 18B — adapters especializados | Futuro; expansão separada para providers ainda não executáveis. |
+| Hardening e rollout | Futuro; observabilidade, segurança operacional e promoção controlada após os marcos anteriores. |
+
+##### Marco planejado — gestão do ciclo de senha via Supabase Auth
+
+- **Alteração voluntária autenticada:** estudar a tela Conta → Segurança → Alterar senha usando `supabase.auth.updateUser({ password })`. A dependência instalada é `@supabase/supabase-js ^2.109.0`; seus tipos incluem `current_password` e o cliente inclui `reauthenticate()`, mas suporte/configuração e regressões precisam ser auditados antes de uso. Se “Secure password change” exigir reautenticação, o fluxo oficial deverá obter nonce/OTP por `reauthenticate()` e fornecê-lo ao update. Como a master key não deriva da senha, esse fluxo deve preservar integralmente o vault.
+- **Senha esquecida:** preservar `resetPasswordForEmail(email, { redirectTo })`, a sessão `PASSWORD_RECOVERY`, purge das credenciais do próprio usuário, `updateUser({ password })` e logout obrigatório já implementados no Passo 16. Esse fluxo permanece destrutivo para o vault e exige novo cadastro das chaves; não usar `service_role` nem `admin.updateUserById`.
+- **Separação e privacidade:** mudança voluntária autenticada preserva o vault; recuperação por email destrói o vault conforme contrato. A resposta pública de recuperação deve continuar semanticamente equivalente a “Se houver uma conta associada a este email, enviaremos as instruções”, sem enumeração de usuários.
+- **Redirects e entrega:** antes da implementação, auditar Production, Preview, Site URL, allowlist, `#account-recovery`, refresh e sessão recovery. Confirmação de cadastro, recovery e reautenticação dependem de email; o mailer padrão atual do Supabase deve ser reavaliado para SMTP próprio no hardening, sem alterar SMTP agora.
+- **Testes planejados:** cobrir senha atual incorreta quando aplicável, change password, reauthenticate/nonce, vault preservado na alteração voluntária, `resetPasswordForEmail`, `PASSWORD_RECOVERY`, purge destrutivo, `updateUser`, logout obrigatório, redirect inválido, link expirado, rate limit, não enumeração, rede, ausência de password armazenado e ausência de `service_role`.
+
+#### Passo 18.6.1 — catálogo de geração, adapter e credencial — 2026-09-10
+
+- **Correção após 18.6:** a separação executor/target estava correta, mas a UI ainda apresentava `platform` como se fosse um fornecedor e construía a lista a partir dos adapters já conhecidos no frontend. A regra definitiva passa a ser: provider no catálogo não implica adapter; adapter disponível não implica credencial cadastrada; credencial cadastrada não torna disponível um adapter inexistente.
+- **Autoridade:** `server/providers/generation-registry.js` deriva os providers OpenAI-compatible do registry já existente e centraliza capability de geração, adapter e origens de credencial. `/api/providers` combina esses dados calculados com o catálogo público. Nenhum campo de schema foi necessário: `is_active`/`is_public`/`is_deprecated` continuam descrevendo catálogo, enquanto suporte de execução é derivado do código realmente instalado.
+- **Provider real e origem:** Google Gemini (`google-gemini`) é o provider real. A Plataforma é apenas `credentialSource=platform`, suportada exclusivamente para Gemini por meio do adapter interno `gemini-platform` e `GEMINI_API_KEY`. A UI nunca lista “Plataforma” como vendor. O alias de request `generationProvider=platform` permanece temporariamente no backend apenas para clientes anteriores, é normalizado explicitamente para Google Gemini e deve ser removido depois da migração desses consumidores. Gemini BYOK não existe e continua reservado ao Passo 18B.
+- **Local:** `local-deterministic` permanece funcional como estratégia técnica selecionada por controle próprio, fora do select de providers externos. Seu contrato usa `generationProvider=local` e `credentialSource=local`; não representa empresa, adapter remoto ou credencial.
+- **Catálogo visível:** o select é preenchido exclusivamente pelo `GET /api/providers`. Providers ativos sem adapter, hoje Anthropic e Kimi, continuam visíveis com seus modelos catalogados e rótulo “Em breve”; o botão permanece bloqueado, ainda que exista metadata de chave. Alibaba Cloud Model Studio existe no schema versionado, mas está inativo e, conforme RLS/public availability, não integra o catálogo público nem a UI.
+- **Estados independentes:** disponibilidade mostra `Disponível`, `Disponível com BYOK` ou `Execução ainda não disponível`. Origem mostra `Chave da plataforma`, `Sua chave` ou nenhuma origem executável. Status mostra `Nenhuma chave pessoal necessária`, `Configure sua chave`, `Chave configurada · status …` ou adapter indisponível. “Use your own key” deixou de ser usado como status. O status persistido continua informativo e existência não é apresentada como validação.
+- **Contrato e segurança:** o contrato preserva `generationProvider`, `generationModel`, `taskType` e `targetModel` e acrescenta o eixo inequívoco `credentialSource`. O backend rejeita origem não permitida, provider sem adapter e modelo inválido; BYOK continua consultando somente a credencial vinculada ao provider canônico e ao JWT/RLS. Nenhuma chave é testada no page load, nenhum host vem do browser e falhas BYOK não caem em Gemini/local.
+- **OpenRouter:** permanece o provider de API/agregador. Seus IDs de modelo continuam pertencendo ao catálogo OpenRouter, mesmo quando o modelo subjacente pertence a outra família; não há reclassificação automática nem sincronização externa do catálogo.
+- **Schema, escopo e rollback:** nenhuma migration local/remota, Auth, recovery, password lifecycle, crypto, RLS, variável ou configuração remota foi alterada. Nenhum adapter 18B foi implementado. Rollback consiste em reverter código/UI/testes/documentação; o catálogo e o cofre remotos permanecem intactos.
+
+##### Catálogo versionado auditado no Passo 18.6.1
+
+| Provider (slug) | Modelos versionados | Ativo | Adapter | BYOK | Plataforma | Estado na UI |
+| --- | --- | --- | --- | --- | --- | --- |
+| OpenRouter (`openrouter`) | `openrouter/free` | Sim | OpenRouter | Sim | Não | Disponível com BYOK |
+| Google Gemini (`google-gemini`) | `gemini-3.8-flash`; allowlist executável também contém `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite` | Sim | Gemini da plataforma | Não | Sim | Disponível, chave da plataforma |
+| xAI (`xai`) | `grok-4.6`, `grok-code-fast-1` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| OpenAI (`openai`) | `gpt-5.6-sol` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| Anthropic (`anthropic`) | `claude-sonnet-5` | Sim | Não implementado | Não executável | Não | Em breve |
+| DeepSeek (`deepseek`) | `deepseek-v4-flash` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| Mistral (`mistral`) | `mistral-small-latest` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| GroqCloud (`groqcloud`) | `openai/gpt-oss-120b` | Sim | OpenAI-compatible | Sim | Não | Disponível com BYOK |
+| Alibaba Cloud Model Studio (`alibaba-model-studio`) | `qwen3.7-plus` | Não | Não implementado | Não executável | Não | Oculto pela política de catálogo inativo |
+| Kimi (`kimi`) | `kimi-k3`, `kimi-k2.7-code-highspeed` | Sim | Não implementado | Não executável | Não | Em breve |
+
+Todos os 12 registros de `ai_models` versionados têm defaults `is_active=true`, `is_public=true` e `is_deprecated=false`; o modelo Qwen permanece invisível porque seu provider está inativo. Os dados de source, modalidades, coding suitability e capabilities continuam nos registros da migration `20260908230000_enrich_provider_model_catalog.sql` e são expostos somente por allowlist. Para Gemini, a UI usa a allowlist realmente executável da Plataforma em vez de afirmar que apenas o único registro comercial de `ai_models` é chamável.
+
+#### Passo 18B — conclusão da geração multi-provider — 2026-09-10
+
+- **Registry e contrato:** o registry central agora declara adapter, status, `credentialSources` e suporte de validação. `credentialSource` escolhe `platform` ou `byok` sem alterar `generationProvider`; modelos continuam vinculados server-side ao provider e `targetModel` permanece metodológico e independente.
+- **Google Gemini:** fontes oficiais consultadas em 2026-09-10: [GenerateContent](https://ai.google.dev/api/generate-content) e [Models](https://ai.google.dev/api/models). O adapter fixa `https://generativelanguage.googleapis.com/v1beta`, autentica por `x-goog-api-key`, valida por `GET /models?pageSize=1` e gera por `POST /models/{model}:generateContent`. BYOK exige JWT/vault e nunca usa `GEMINI_API_KEY` ou fallback; Plataforma nunca lê o vault e preserva somente seu fallback histórico.
+- **Anthropic:** fontes oficiais: [Messages](https://platform.claude.com/docs/en/api/messages) e [List Models](https://platform.claude.com/docs/en/api/models/list). Adapter nativo fixa `https://api.anthropic.com/v1`, `POST /messages`, `GET /models?limit=1`, `x-api-key`, `anthropic-version: 2023-06-01`, `system`, mensagem `user` e `max_tokens`. Não é tratado como OpenAI-compatible.
+- **Kimi/Moonshot:** [Overview](https://platform.moonshot.ai/docs/overview) e [Chat](https://platform.moonshot.ai/docs/api/chat) confirmam `https://api.moonshot.ai/v1`, bearer, OpenAI compatibility, `/models`, `/chat/completions`, `kimi-k3` e `kimi-k2.7-code-highspeed`. O provider versionado corresponde à Kimi API Platform internacional.
+- **Alibaba/Qwen:** [OpenAI compatibility](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope) e [Models](https://www.alibabacloud.com/help/en/model-studio/models) confirmam bearer, `/models`, `/chat/completions`, `qwen3.7-plus` e destinos regionais. Foi escolhido o host fixo US/Virginia `https://dashscope-us.aliyuncs.com/compatible-mode/v1`. A proposta manual `supabase/rollout/activate_alibaba_us_generation.sql` registra ativação, URLs e aviso regional; ela fica deliberadamente fora de `supabase/migrations`, **não foi aplicada remotamente** e requer autorização explícita. Até isso ocorrer, Qwen continua indisponível na UI remota.
+- **Providers preservados:** OpenRouter continua adapter próprio. OpenAI, xAI, DeepSeek, GroqCloud e Mistral continuam no transporte OpenAI-compatible com host fixo, bearer server-side, redirects bloqueados, timeout de 12 s, resposta máxima de 1 MB e erros normalizados. Kimi e Alibaba reutilizam esse transporte porque as fontes oficiais confirmam o contrato.
+- **Modelos e validação:** foram confirmados nas fontes consultadas `claude-sonnet-5`, `kimi-k3`, `kimi-k2.7-code-highspeed`, `qwen3.7-plus` e os modelos Gemini versionados. Testes de credencial são explícitos e usam Models. 401/403 são `invalid`; timeout, rede, 429, 5xx, malformed e oversized são erros operacionais. Nenhuma substituição remota silenciosa foi feita.
+- **Password Lifecycle:** a troca voluntária autenticada foi exposta em Conta → Segurança usando `auth.updateUser({ password })`, com confirmação e limpeza dos inputs; não chama purge e preserva o vault. Forgot-password permanece `resetPasswordForEmail` → `PASSWORD_RECOVERY` → purge → `updateUser` → logout. `current_password`/`reauthenticate()` dependem da configuração remota Secure Password Change e permanecem pendentes; nenhuma configuração Auth foi alterada. SMTP próprio continua hardening futuro.
+- **Prompt examples:** não há seed versionado de exemplos revisados; portanto eles não foram incorporados nem inventados. Profiles e rules continuam a metodologia autoritativa.
+- **Roadmap:** 18.5, 18.6 e 18.6.1 permanecem concluídos; 18B entrega o código multi-provider. O Passo 19 cobre hardening/security/observability e o Passo 20, rollout. A ativação remota Alibaba e QA com chaves reais permanecem gates explícitos.
+
+#### Passo 19 — auditoria operacional do catálogo — 2026-09-11
+
+- **Reconstrução verificável:** a auditoria partiu da `main` sincronizada no commit `d3dd377c094875efa55bc7c9de4df40f42a65125`, merge do PR #26, e releu o guia, código, migrations, testes e configuração versionados. O inventário resultante mantém 12 Functions, seis módulos de provider, dez providers no seed e 12 modelos no catálogo versionado. O deployment Vercel desse commit estava `success`; `/`, `/api/health` e `/api/providers` responderam 200 em leitura.
+- **Catálogo remoto observado:** `/api/providers` retornou nove providers ativos: OpenRouter (1 modelo), Google Gemini (5), xAI (2), OpenAI (1), Anthropic (1), DeepSeek (1), Mistral (1), GroqCloud (1) e Kimi (2). Alibaba/Qwen permaneceu ausente, coerente com `is_active=false`; nenhuma escrita remota foi realizada.
+- **Correção da geração:** executores BYOK recebiam o prompt candidato como pedido direto e podiam executar a tarefa em vez de fabricar o prompt final. Agora Gemini BYOK, Anthropic, OpenRouter e todos os adapters OpenAI-compatible recebem uma meta-instrução comum, delimitada, que identifica o conteúdo como dado, proíbe execução/código e exige somente o prompt final. `targetModel` continua determinando a metodologia.
+- **Classificação Anthropic:** falha de leitura do catálogo agora produz `provider_unavailable`/503; somente uma consulta bem-sucedida sem o modelo solicitado produz `provider_model_unavailable`/404.
+- **Gate Alibaba:** um comentário não impede `supabase db push`. Por isso, o SQL de ativação foi removido da sequência ordenada e colocado em `supabase/rollout`, que não é executado automaticamente. Após autorização, a proposta deve ser revisada e copiada para uma nova migration; ela não deve ser executada diretamente.
+- **Escopo remoto e rollback:** não houve alteração de Supabase, Vercel, Auth, RLS, secrets, vault ou catálogo remoto. Rollback local consiste em reverter a meta-instrução e a reorganização da proposta, sem qualquer estado remoto a desfazer.
+
+#### Auditoria definitiva do catálogo — Passo 19.1 — 2026-09-12
+
+- **Escopo e fonte:** foram auditados os 16 IDs distintos presentes no seed de `ai_models` e/ou na allowlist Gemini do runtime. O artefato legível por máquina `docs/model-catalog-audit-2026-09-12.json` registra status, ID oficial, depreciação, compatibilidade de endpoint e URL primária por item. A conferência usou somente documentação oficial atual e, para OpenRouter, também o catálogo público oficial `GET /api/v1/models`.
+- **Resultado:** 14 IDs são `CONFIRMED`, um é `RENAMED` e um é `REGIONAL`; não há `DEPRECATED` como status primário, `INVALID` ou `UNVERIFIED`. `deepseek-v4-flash` é um alias legado ainda aceito, mas o modelo correspondente foi retirado e a documentação manda usar `deepseek-flash`; por isso ele é `RENAMED` e possui `deprecated=true`. `qwen3.7-plus` é oficial e compatível, mas classificado `REGIONAL` porque a ativação proposta fixa US/Virginia.
+- **Gemini Plataforma:** `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.8-flash`, `gemini-3.7-flash` e `gemini-3.1-flash-lite` possuem páginas oficiais individuais, versões estáveis documentadas e suporte ao fluxo GenerateContent. Nenhum ID histórico inexistente permaneceu na allowlist.
+- **Consistência executor/catálogo:** todos os dez providers presentes no seed possuem entrada no generation registry; os nove providers ativos do Supabase Production são expostos por `/api/providers`. Todos os modelos expostos possuem adapter e endpoint compatível. A única divergência material é o alias DeepSeek retirado, ainda exposto até autorização do rollout de substituição. Alibaba possui adapter, porém permanece fora da API pública porque seu provider está inativo.
+- **Correção local e gate remoto:** `supabase/rollout/replace_deepseek_legacy_model.sql` propõe a substituição inequívoca `deepseek-v4-flash` → `deepseek-flash`, sem fallback e sem alterar migrations aplicadas. Não foi executado. Após autorização, a proposta deve ser revisada, receber precondition contra colisão e ser copiada para uma nova migration. Até lá, Production continua aceitando/expondo o alias legado documentado.
+
+##### Providers e execução
+
+| Provider | Adapter | credentialSource | Modelos confirmados | Problema | Estado remoto |
+| --- | --- | --- | --- | --- | --- |
+| OpenRouter | Próprio | BYOK | `openrouter/free` | Nenhum | Ativo |
+| Google Gemini | Próprio | Plataforma, BYOK | 5 IDs da allowlist | Catálogo da API substitui a única linha Gemini do banco pela allowlist | Ativo |
+| xAI | OpenAI-compatible | BYOK | `grok-4.6`, `grok-code-fast-1` | Nenhum | Ativo |
+| OpenAI | OpenAI-compatible | BYOK | `gpt-5.6-sol` | Nenhum | Ativo |
+| Anthropic | Messages nativo | BYOK | `claude-sonnet-5` | Nenhum | Ativo |
+| DeepSeek | OpenAI-compatible | BYOK | `deepseek-flash` | Runtime ainda expõe alias legado `deepseek-v4-flash` | Ativo; correção pendente |
+| Mistral | OpenAI-compatible | BYOK | `mistral-small-latest` | Nenhum | Ativo |
+| GroqCloud | OpenAI-compatible | BYOK | `openai/gpt-oss-120b` | Nenhum | Ativo |
+| Kimi | OpenAI-compatible | BYOK | `kimi-k3`, `kimi-k2.7-code-highspeed` | Nenhum | Ativo |
+| Alibaba/Qwen | OpenAI-compatible | BYOK | `qwen3.7-plus` regional | Região precisa de aceite explícito | Inativo |
+
+##### Model IDs auditados
+
+| Provider | model_id atual | Encontrado oficialmente? | Status | ID oficial atual | Deprecated? | Endpoint compatível? | Fonte oficial | Alteração necessária |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| OpenRouter | `openrouter/free` | Sim | CONFIRMED | `openrouter/free` | Não | Chat Completions | [Free Models Router](https://openrouter.ai/docs/guides/routing/routers/free-router) | Nenhuma |
+| Google Gemini | `gemini-3.5-flash-lite` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite) | Nenhuma |
+| Google Gemini | `gemini-3.5-flash` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash) | Nenhuma |
+| Google Gemini | `gemini-3.8-flash` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) | Nenhuma |
+| Google Gemini | `gemini-3.7-flash` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash) | Nenhuma |
+| Google Gemini | `gemini-3.1-flash-lite` | Sim | CONFIRMED | igual | Não | GenerateContent | [Models](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite) | Nenhuma |
+| xAI | `grok-4.6` | Sim | CONFIRMED | igual | Não | Chat Completions | [Models](https://docs.x.ai/developers/models/grok-4.6) | Nenhuma |
+| xAI | `grok-code-fast-1` | Sim | CONFIRMED | igual | Não | Chat Completions | [Models](https://docs.x.ai/developers/models) | Nenhuma |
+| OpenAI | `gpt-5.6-sol` | Sim | CONFIRMED | igual | Não | Chat Completions | [Model](https://developers.openai.com/api/docs/models/gpt-5.6-sol) | Nenhuma |
+| Anthropic | `claude-sonnet-5` | Sim | CONFIRMED | igual | Não | Messages | [Models overview](https://platform.claude.com/docs/en/models/overview) | Nenhuma |
+| DeepSeek | `deepseek-v4-flash` | Sim, como alias legado | RENAMED | `deepseek-flash` | Sim; modelo retirado | Chat Completions | [Pricing/model aliases](https://api-docs.deepseek.com/quick_start/pricing/) | Aplicar rollout autorizado |
+| Mistral | `mistral-small-latest` | Sim | CONFIRMED | igual | Não | Chat Completions | [API reference](https://docs.mistral.ai/api/) | Nenhuma |
+| GroqCloud | `openai/gpt-oss-120b` | Sim | CONFIRMED | igual | Não | Chat Completions | [Model](https://console.groq.com/docs/model/openai/gpt-oss-120b) | Nenhuma |
+| Kimi | `kimi-k3` | Sim | CONFIRMED | igual | Não | Chat Completions | [Kimi K3](https://platform.kimi.ai/docs/guide/kimi-k3-quickstart) | Nenhuma |
+| Kimi | `kimi-k2.7-code-highspeed` | Sim | CONFIRMED | igual | Não | Chat Completions | [Overview](https://platform.kimi.ai/docs/overview) | Nenhuma |
+| Alibaba/Qwen | `qwen3.7-plus` | Sim | REGIONAL | igual | Não | Chat Completions | [Models](https://www.alibabacloud.com/help/en/model-studio/models) | Manter inativo até autorização regional |
+
+##### Cobertura metodológica
+
+O runtime local oferece os nove targets abaixo. Apenas Grok também existe no Supabase Production, com cinco `prompt_rules` ativos. `prompt_rules` não possui campo de verificação nem vínculo com `canonical_prompt_rules`; portanto “verified rules” não pode ser inferido e é registrado como zero formalmente verificável. As 12 regras canônicas versionadas permanecem inativas/`supplied_unverified` e não são regras de profile. `prompt_examples` possui zero registros remotos e nenhum seed.
+
+| targetModel/profile | prompt_rules total | active | verified | prompt_examples | cobertura estimada | lacunas |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| `grok` | 5 local + 5 remotas | 5 remotas | 0 formalmente vinculadas | 0 | Base local e remota | Sem proveniência por regra de profile |
+| `openai` | 6 locais | 6 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `claude` | 6 locais | 6 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `gemini` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `deepseek` | 6 locais | 6 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `qwen` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `codestral` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `kimi` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+| `llama` | 5 locais | 5 locais | 0 formalmente vinculadas | 0 | Baseline local | Sem profile/rules remotos e exemplos |
+
+- **Prompt examples:** quantidade real remota e versionada: zero; ativos: zero; verificados: zero; targets cobertos: zero; proveniência: inexistente. Não há corpus suficiente para integração futura.
+- **Drift read-only:** o repositório contém dez providers/12 linhas de `ai_models`; o Supabase público retorna nove providers ativos/11 modelos porque Alibaba está inativo; a Production API retorna esses mesmos nove providers e substitui o único modelo Gemini do banco pela allowlist de cinco IDs, totalizando 15 opções. Esse desvio Gemini é intencional e documentado; o drift DeepSeek requer rollout. Nenhum write foi realizado.
+- **Alibaba:** endpoint proposto `https://dashscope-us.aliyuncs.com/compatible-mode/v1`, região US/Virginia, modelo `qwen3.7-plus`, bearer e Chat Completions são confirmados pelas páginas oficiais de [compatibilidade](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope) e [modelos](https://www.alibabacloud.com/help/en/model-studio/models). Rollback e gate estão preservados fora de migrations. Classificação: **READY_FOR_AUTHORIZATION**, condicionada à aceitação explícita de região, residência/latência e aplicação de uma nova migration revisada.
+- **Próxima prioridade:** autorizar e aplicar primeiro a correção DeepSeek; depois decidir o rollout regional Alibaba. Em seguida, modelar proveniência verificável para `prompt_rules` e criar um corpus revisado de `prompt_examples`, antes de integrar exemplos ao compilador.
+
+#### Passo 19.2 — rollout DeepSeek — 2026-09-12
+
+- **Preconditions observadas antes do write:** o Supabase Production continha exatamente um provider `deepseek`, ativo e com `supports_generation=true`; exatamente uma linha vinculada `deepseek-v4-flash`, ativa, pública e não marcada como depreciada; e nenhuma linha `deepseek-flash`. Alibaba permanecia inativo com `qwen3.7-plus` intacto.
+- **Migration aplicada:** `20260912010000_replace_deepseek_legacy_model.sql` valida novamente essas condições dentro do banco, aborta diante de conflito, atualiza exatamente uma linha e verifica `row_count=1`. O UUID, `provider_id`, flags ativa/pública e vínculo com DeepSeek foram preservados. Foram atualizados somente `model_id`, nome, família, descrição, URLs oficiais e `last_verified_at`; o registro final permanece não depreciado porque agora representa o alias oficial atual.
+- **Estado posterior:** o Supabase e `/api/providers` de Production expõem `deepseek-flash`, não `deepseek-v4-flash`. DeepSeek continua ativo; Alibaba continua inativo. A versão `20260912010000` foi registrada em `supabase_migrations.schema_migrations`. Nenhum alias antigo existe no código de runtime: requests antigos falham na validação provider/model, enquanto `generationProvider=deepseek`, `generationModel=deepseek-flash` e `credentialSource=byok` avançam até a exigência normal de JWT/vault.
+- **Compatibilidade:** o adapter permanece o transporte OpenAI-compatible existente em `https://api.deepseek.com`, com `POST /chat/completions`; nenhuma chave real ou chamada paga foi usada. A identidade antiga aparece apenas em migrations/documentação/testes históricos e no rollback, não na UI.
+- **Escopo remoto:** somente a linha de modelo DeepSeek foi alterada. Não houve alteração de Alibaba, outro provider/modelo, Auth, RLS, vault, crypto, secrets, Vercel, target profiles ou `targetModel`.
+- **Rollback:** se estritamente necessário, criar uma nova migration revisada com o bloco documentado ao final da migration aplicada. Não editar ou remover `20260912010000` do histórico; o rollback restaura metadados legados, mas não torna o modelo retirado novamente atual.
+
+#### Passo 20 — base metodológica verificável — 2026-09-12
+
+- **Diagnóstico:** os nove profiles locais continham orientações sem proveniência legível pelo runtime; somente Grok possuía cinco `prompt_rules` remotas, sem vínculo formal de evidência. As 12 `canonical_prompt_rules` continuavam corretamente inativas e `supplied_unverified`; `prompt_examples` não possuía seed nem corpus remoto. O inventário completo e a classificação histórica estão em `docs/methodology-audit-2026-09-12.md`.
+- **Corpus versionado:** `docs/methodology-corpus-v1.json` é a autoridade metodológica auditável desta versão. Ele cobre somente `grok`, `openai`, `claude`, `gemini`, `deepseek`, `qwen`, `codestral`, `kimi` e `llama`, com 18 regras target-specific oficiais, quatro regras gerais empíricas e 18 exemplos editoriais revisados. Cada item referencia uma fonte com URL/tipo, data, status e notas. Não foram criados targets ou IDs operacionais.
+- **Estados e ativação:** somente `VERIFIED_OFFICIAL` e `VERIFIED_EMPIRICAL` ativos entram na compilação. `PROJECT_HEURISTIC`, `UNVERIFIED`, `DEPRECATED` e `CONFLICTING` ficam preservados para auditoria, mas excluídos por padrão. Assim, as regras Grok remotas e o corpus canônico histórico não entram silenciosamente no prompt final.
+- **Precedência determinística:** versão/modelo explicitamente solicitado → família/target → regra geral → fallback local seguro. Um `conflictGroup` admite apenas a regra de maior precedência; no mesmo nível, vence menor prioridade numérica e, por fim, ID lexical. Escopo de `taskType` é aplicado antes da ordenação; Codestral FIM, por exemplo, só usa a regra FIM quando o tipo é `fim`.
+- **Examples:** há exatamente dois exemplos por target, um de correção de bug e um de implementação estruturada. O runtime seleciona no máximo um, somente por match exato de target + `taskType`, com teto de 3.500 caracteres e aviso para reutilizar apenas a estrutura, nunca fatos ou requisitos. Não há chain-of-thought, segredo ou exemplo indiscriminado.
+- **Runtime:** `api/model-profiles.js` carrega o corpus versionado e expõe seleção fail-closed de regras/exemplo. Todos os executores recebem a mesma compilação definida por `targetModel`; o executor não altera a metodologia. O caminho Gemini Plataforma deixou de concatenar `prompt_rules` remotas sem proveniência e usa a mesma seleção verificada. `server/knowledge-base.js` permanece para catálogo/evidência e compatibilidade de health, mas não é autoridade metodológica da geração.
+- **Evaluation:** além dos 54 casos de qualidade existentes, nove casos usam o mesmo briefing e verificam invariantes observáveis distintos por target, sem igualdade textual e sem solicitar raciocínio interno. Regressões cobrem proveniência, nove targets, exclusão de status não aprovados, precedência/conflitos, task scope, limite de examples, fallback e independência do target.
+- **Schema e remoto:** nenhuma migration foi necessária e nenhuma escrita Supabase/Vercel foi realizada. Popular Production ainda não é recomendado: exige revisão humana dos 18 exemplos e uma futura proposta normalizada para ligar proveniência a `prompt_rules`/`prompt_examples`. Nesta entrega não há SQL remoto nem autorização solicitada.
+- **Escopo preservado:** providers, adapters, Auth, vault, crypto, RLS, secrets, catálogo operacional e Alibaba não foram alterados. Alibaba continua inativo; DeepSeek continua operacionalmente em `deepseek-flash`; `targetModel` permanece independente. Rollback local é reverter corpus, loader, testes e documentação, sem estado remoto a desfazer.
+- **Manutenção:** revisar fontes trimestralmente ou após mudança oficial; toda promoção exige fonte específica, data, status, revisão editorial e regressão. Próximo gate: avaliação humana comparativa por target; somente depois projetar/popular a base remota e reavaliar a integração em Production.
