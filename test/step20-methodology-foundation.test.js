@@ -14,8 +14,8 @@ import {
 const rawCorpus = readFileSync(new URL('../docs/methodology-corpus-v1.json', import.meta.url), 'utf8');
 const allowed = new Set(methodologyCorpus.runtimePolicy.allowedStatuses);
 
-test('versioned corpus covers exactly nine targets with traceable verified content', () => {
-  assert.deepEqual(modelProfiles.map(({ slug }) => slug).sort(),
+test('versioned corpus preserves nine methodology families with traceable verified content', () => {
+  assert.deepEqual(methodologyCorpus.targets.map(({ slug }) => slug).sort(),
     ['claude', 'codestral', 'deepseek', 'gemini', 'grok', 'kimi', 'llama', 'openai', 'qwen']);
   const sources = new Map(methodologyCorpus.sources.map((source) => [source.id, source]));
   for (const rule of [...methodologyCorpus.generalRules, ...methodologyCorpus.targets.flatMap(({ rules }) => rules)]) {
@@ -28,10 +28,11 @@ test('versioned corpus covers exactly nine targets with traceable verified conte
   }
 });
 
-test('corpus contains two reviewed task-scoped examples per target', () => {
+test('corpus contains two reviewed task-scoped examples per methodology family', () => {
   assert.equal(methodologyCorpus.examples.length, 18);
-  for (const profile of modelProfiles) {
-    const examples = methodologyCorpus.examples.filter(({ target }) => target === profile.slug);
+  for (const target of methodologyCorpus.targets) {
+    const profile = findProfile(target.slug);
+    const examples = methodologyCorpus.examples.filter(({ target: exampleTarget }) => exampleTarget === target.slug);
     assert.deepEqual(examples.map(({ taskType }) => taskType).sort(), ['application', 'debug']);
     assert.ok(examples.every(({ status, active, sourceId, rationale, verifiedAt }) =>
       status === 'VERIFIED_EMPIRICAL' && active && sourceId && rationale && verifiedAt));

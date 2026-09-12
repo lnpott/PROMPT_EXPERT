@@ -1,5 +1,5 @@
 {
-  "corpusVersion": "1.0.0",
+  "corpusVersion": "1.1.0",
   "verifiedAt": "2026-09-12",
   "statusVocabulary": [
     "VERIFIED_OFFICIAL",
@@ -15,7 +15,9 @@
       "VERIFIED_EMPIRICAL"
     ],
     "precedence": [
+      "version",
       "model",
+      "family",
       "target",
       "general",
       "fallback"
@@ -23,7 +25,7 @@
     "conflictResolution": "Keep the highest-precedence active rule; at equal scope keep the lowest numeric priority, then rule id.",
     "examples": {
       "maximum": 1,
-      "match": "exact target and taskType",
+      "match": "nearest inherited target and exact taskType",
       "maximumCharacters": 3500
     }
   },
@@ -765,6 +767,129 @@
       "active": true,
       "createdAt": "2026-09-12",
       "verifiedAt": "2026-09-12"
+    }
+  ],
+  "specificTargets": [
+    {
+      "slug": "grok-4.6",
+      "displayName": "Grok 4.6",
+      "provider": "xAI",
+      "parentSlug": "grok",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "grok-code-fast-1",
+      "displayName": "Grok Code Fast 1",
+      "provider": "xAI",
+      "parentSlug": "grok",
+      "level": "model",
+      "rules": []
+    },
+    {
+      "slug": "gpt-5.6-sol",
+      "displayName": "GPT-5.6 Sol",
+      "provider": "OpenAI",
+      "parentSlug": "openai",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "claude-sonnet",
+      "displayName": "Claude Sonnet",
+      "provider": "Anthropic",
+      "parentSlug": "claude",
+      "level": "model",
+      "rules": [],
+      "public": false
+    },
+    {
+      "slug": "claude-sonnet-5",
+      "displayName": "Claude Sonnet 5",
+      "provider": "Anthropic",
+      "parentSlug": "claude-sonnet",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "gemini-3.8-flash",
+      "displayName": "Gemini 3.8 Flash",
+      "provider": "Google",
+      "parentSlug": "gemini",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "gemini-3.7-flash",
+      "displayName": "Gemini 3.7 Flash",
+      "provider": "Google",
+      "parentSlug": "gemini",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "gemini-3.5-flash",
+      "displayName": "Gemini 3.5 Flash",
+      "provider": "Google",
+      "parentSlug": "gemini",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "gemini-3.5-flash-lite",
+      "displayName": "Gemini 3.5 Flash-Lite",
+      "provider": "Google",
+      "parentSlug": "gemini",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "gemini-3.1-flash-lite",
+      "displayName": "Gemini 3.1 Flash-Lite",
+      "provider": "Google",
+      "parentSlug": "gemini",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "deepseek-flash",
+      "displayName": "DeepSeek Flash",
+      "provider": "DeepSeek",
+      "parentSlug": "deepseek",
+      "level": "model",
+      "rules": []
+    },
+    {
+      "slug": "qwen3.7-plus",
+      "displayName": "Qwen 3.7 Plus",
+      "provider": "Alibaba/Qwen",
+      "parentSlug": "qwen",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "kimi-k3",
+      "displayName": "Kimi K3",
+      "provider": "Moonshot AI",
+      "parentSlug": "kimi",
+      "level": "model",
+      "rules": []
+    },
+    {
+      "slug": "kimi-k2.7-code-highspeed",
+      "displayName": "Kimi K2.7 Code Highspeed",
+      "provider": "Moonshot AI",
+      "parentSlug": "kimi",
+      "level": "version",
+      "rules": []
+    },
+    {
+      "slug": "llama-3.1",
+      "displayName": "Llama 3.1",
+      "provider": "Meta",
+      "parentSlug": "llama",
+      "level": "version",
+      "rules": []
     }
   ]
 }

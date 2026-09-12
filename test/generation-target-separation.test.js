@@ -56,7 +56,7 @@ test('optimization targets are methodological profiles independent from executor
   assert.ok(targetIds.includes('deepseek'));
   assert.equal(generationModelsForProvider([], 'google-gemini').length, 0);
   assert.match(main, /option\.value = profile\.slug/);
-  assert.match(html, /Otimização para modelo/);
+  assert.match(html, /Otimizado para/);
 });
 
 test('a local executor can generate for a cross-family Claude target without credentials', async () => {

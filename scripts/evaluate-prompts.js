@@ -41,7 +41,7 @@ const methodologyResults = modelProfiles.map((profile) => {
   const prompt = compilePrompt({ brief: methodologyBrief, profile, taskType: 'debug', includeExample: false });
   return {
     profile: profile.slug,
-    passed: prompt.includes(methodologyBrief) && methodologyInvariants[profile.slug].test(prompt),
+    passed: prompt.includes(methodologyBrief) && methodologyInvariants[profile.familySlug].test(prompt),
   };
 });
 

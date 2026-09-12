@@ -24,7 +24,7 @@ test('anonymous product shell defaults to local and identifies the optimized pro
   assert.match(html, /id="local-generation" type="checkbox" checked/);
   assert.match(html, /Prompt otimizado/);
   assert.match(html, /Copiar prompt/);
-  assert.match(html, /Otimização para modelo/);
+  assert.match(html, /Otimizado para/);
   assert.match(main, /currentRoute[\s\S]*: '#app'/);
 });
 
@@ -46,7 +46,7 @@ test('local target generation needs neither account nor target credential', asyn
 });
 
 test('step 20 corpus is unchanged and operational catalog gates remain intact', () => {
-  assert.equal(createHash('sha256').update(corpus).digest('hex'), '9e5827a12f9c2cb40c93100c41aa1f73c33dd946ea3917e78df919ac481f20f6');
+  assert.equal(createHash('sha256').update(corpus).digest('hex'), 'b95970895c3a3fbcc37be95763800dc25fd0a477b7420582927b8836a2932e7c');
   const migrations = readFileSync(new URL('../supabase/migrations/20260912010000_replace_deepseek_legacy_model.sql', import.meta.url), 'utf8');
   const alibaba = readFileSync(new URL('../supabase/rollout/activate_alibaba_us_generation.sql', import.meta.url), 'utf8');
   assert.match(migrations, /deepseek-flash/);

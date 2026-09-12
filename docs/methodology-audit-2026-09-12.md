@@ -96,3 +96,13 @@ Nenhuma das cinco conflita diretamente com fonte oficial, mas nenhuma possui pro
 ## Recomendação
 
 O corpus local está pronto para uso e os examples estão integrados sob política explícita. **Production não deve ser populada ainda**: primeiro revisar editorialmente os 18 prompts com avaliação humana por target e projetar o vínculo normalizado de proveniência no schema. Nenhuma autorização remota é solicitada neste passo.
+
+## Extensão auditada — Passo 20.2
+
+A releitura do repositório e do Supabase confirmou que a autoridade efetivamente usada pelo runtime é o corpus local versionado, não `model_profiles`, `prompt_rules`, `prompt_examples`, `canonical_prompt_rules` ou `ai_models`. Em Production há um profile Grok, cinco regras históricas ativas sem classificação de proveniência no próprio schema, zero examples e 12 regras canônicas inativas. `ai_models` é somente catálogo operacional e não foi reutilizado como autoridade metodológica.
+
+O repositório contém `base-canonica-regras.md`, `notebook-auditoria-fontes.md` e referências a um notebook Google. Esses exports provam que houve uma consolidação declarada a partir de materiais fornecidos, mas não permitem verificar a sessão, cadeia de custódia ou conteúdo original do NotebookLM. **NÃO FOI POSSÍVEL CONFIRMAR** a origem NotebookLM de forma independente. Nada foi promovido por essa alegação.
+
+Foram adicionados targets específicos somente como identidades metodológicas que herdam famílias já verificadas. Não foi criada diferença por versão sem fonte. Todos os novos targets possuem zero regras próprias e herdam a família. A fonte Llama 3.1 é específica de versão, mas as regras históricas continuam no nó familiar para preservar o comportamento anterior; refinar esse escopo exige uma revisão separada, em vez de inferir novos contrastes nesta etapa.
+
+Examples continuam sendo selecionados pelo `taskType` exato e pelo ancestral metodológico mais próximo. O runtime não injeta mais o conteúdo do example no prompt: inclui apenas uma referência de estrutura e uma proibição explícita de copiar linguagem, framework, banco, arquitetura, ferramenta, biblioteca ou requisito. Assim, examples não se tornam uma segunda fonte de requisitos.

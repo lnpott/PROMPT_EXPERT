@@ -231,12 +231,12 @@ test('GET /api/health confirms local fallback when the knowledge base is inacces
   assert.deepEqual(response.body, { status: 'ok', knowledgeBase: 'local', generator: 'gemini' });
 });
 
-test('GET /api/profiles exposes nine safe public profiles', () => {
+test('GET /api/profiles exposes family and specific safe public profiles', () => {
   const response = createResponse();
   profiles({ method: 'GET' }, response);
 
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.profiles.length, 9);
+  assert.equal(response.body.profiles.length, 23);
   assert.equal(response.body.profiles.some((profile) => 'rules' in profile), false);
 });
 
