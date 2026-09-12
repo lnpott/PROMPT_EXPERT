@@ -55,17 +55,17 @@
           <span>Escreva como você falaria com alguém</span>
         </div>
         <textarea id="brief" rows="7" placeholder="Ex.: Quero uma página de login escura, com uma imagem de fundo discreta, campos de e-mail e senha e um botão bem destacado."></textarea>
+        <label class="local-strategy"><input id="local-generation" type="checkbox" checked /> <span><strong>Compilação local determinística</strong><small>Sem conta, sem chave e sem chamada externa. Não usa IA.</small></span></label>
         <div class="controls controls-grid">
-          <label class="model-picker" for="generation-provider"><span>Provedor de geração</span><small>Integração usada para construir o prompt.</small><select id="generation-provider"><option value="">Carregando catálogo…</option></select></label>
-          <label class="model-picker" for="generation-model"><span>Modelo de geração</span><small>IA usada para gerar ou refinar o prompt.</small><select id="generation-model" aria-describedby="generation-model-description"></select></label>
+          <label class="model-picker external-generation-control" for="generation-provider"><span>Provedor de geração — IA chamada</span><small>Empresa cuja IA será realmente chamada.</small><select id="generation-provider"><option value="">Carregando catálogo…</option></select></label>
+          <label class="model-picker" for="generation-model"><span>Modelo de geração — específico</span><small id="generation-model-help">Modelo chamado para gerar ou refinar o prompt.</small><select id="generation-model" aria-describedby="generation-model-help generation-model-description"></select></label>
           <label class="model-picker" for="task-type"><span>Tipo de tarefa</span><select id="task-type"><option value="cited">Tarefas citadas</option><option value="application">Aplicação completa</option><option value="refactor">Refatoração</option><option value="debug">Correção de bug</option><option value="agent">Agente autônomo</option><option value="fim">Fill-in-the-Middle</option></select></label>
           <label class="model-picker target-picker" for="target-model"><span>Otimizado para</span><small>Modelo-alvo metodológico; não será chamado e não exige chave.</small><select id="target-model" aria-describedby="target-model-description"><option value="grok">Grok</option></select></label>
           <button id="generate" type="button">Gerar prompt <span aria-hidden="true">↗</span></button>
         </div>
-        <label class="local-strategy"><input id="local-generation" type="checkbox" checked /> Usar geração local gratuita, sem conta, chave ou IA externa</label>
         <p class="model-description" id="generation-model-description">Carregando modelos executáveis…</p>
         <p class="model-description" id="target-model-description">O alvo seleciona a metodologia e não será chamado.</p>
-        <div class="provider-guidance" id="provider-guidance"><p><strong>Disponibilidade:</strong> <span id="execution-status">Verificando catálogo…</span></p><p><label for="credential-source-select"><strong>Origem da credencial:</strong></label> <select id="credential-source-select"></select></p><p><strong>Status da credencial:</strong> <span id="credential-state">—</span> <a id="credential-cta" href="#providers" hidden>APIs e provedores</a></p></div>
+        <div class="provider-guidance external-generation-control" id="provider-guidance"><p><strong>Disponibilidade:</strong> <span id="execution-status">Verificando catálogo…</span></p><p><label for="credential-source-select"><strong>Origem da credencial:</strong></label> <select id="credential-source-select"></select></p><p><strong>Status da credencial:</strong> <span id="credential-state">—</span> <a id="credential-cta" href="#providers" hidden>APIs e provedores</a></p></div>
       </section>
 
       <section class="providers-panel" id="providers" aria-labelledby="providers-title" hidden>

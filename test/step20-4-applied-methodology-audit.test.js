@@ -21,6 +21,15 @@ test('audit covers every public target across every real task type', () => {
   }
 });
 
+test('audit-all enumerates targets from the supplied release instead of the bundled snapshot', () => {
+  const custom = structuredClone(corpus);
+  custom.specificTargets = custom.specificTargets.filter(({ slug }) => slug !== 'grok-4.6');
+  custom.specificTargets.push({ slug: 'audit-only-target', displayName: 'Audit Only', provider: 'OpenAI', parentSlug: 'openai', level: 'model', rules: [] });
+  const targets = new Set(auditAll({ sourceCorpus: custom }).map(({ target }) => target));
+  assert.ok(targets.has('audit-only-target'));
+  assert.ok(!targets.has('grok-4.6'));
+});
+
 test('every selected rule has allowed provenance and a resolvable source', () => {
   for (const item of auditAll()) for (const rule of [...item.selectedPromptRules, ...item.orchestrationRules]) {
     assert.ok(allowed.has(rule.provenance), `${item.target}/${item.taskType}/${rule.ruleId}`);

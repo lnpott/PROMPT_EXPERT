@@ -65,7 +65,8 @@ export function auditResolution(target, taskType, { platform = '', sourceCorpus 
 }
 
 export function auditAll(options = {}) {
-  return publicProfiles(corpus).flatMap(({ slug }) => Object.keys(taskTypes).map((taskType) => auditResolution(slug, taskType, options)));
+  const sourceCorpus = options.sourceCorpus || corpus;
+  return publicProfiles(sourceCorpus).flatMap(({ slug }) => Object.keys(taskTypes).map((taskType) => auditResolution(slug, taskType, { ...options, sourceCorpus })));
 }
 
 function valueAfter(flag) { const index = process.argv.indexOf(flag); return index >= 0 ? process.argv[index + 1] : null; }
