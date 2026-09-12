@@ -58,8 +58,9 @@ briefing → generationProvider/generationModel → taskType → targetModel
 | Passo | Estado | Objetivo |
 | --- | --- | --- |
 | 20 | Concluído no PR #30 | Base metodológica verificável, corpus 1.0.0 e runtime fail-closed. |
-| 20.1 | Atual | Alinhar o fluxo real: core local público, prompt como resultado e conta apenas quando necessária. |
-| 20.2 | Planejado | Benchmark metodológico end-to-end do fluxo `briefing → geração → taskType → target → compiler → output`, medindo o prompt final recebido, não JSON isolado. |
+| 20.1 | Concluído no PR #31 | Alinhar o fluxo real: core local público, prompt como resultado e conta apenas quando necessária. |
+| 20.1-A/B | Atual | Desbloquear o catálogo de providers e exibir labels PT-BR de credencial no gerador. |
+| 20.2 | Planejado | Pesquisa editorial de diferenças metodológicas por versão específica de modelo. |
 | 20.3 | Planejado | Revisar o corpus para 1.0.1 ou 1.1.0 com base no benchmark. |
 | 21 | Planejado | Persistência/proveniência metodológica no Supabase, somente se justificada e autorizada. |
 | 22 | Planejado | Hardening operacional e UX. |
@@ -1003,3 +1004,11 @@ O runtime local oferece os nove targets abaixo. Apenas Grok também existe no Su
 - **Schema e remoto:** nenhuma migration foi necessária e nenhuma escrita Supabase/Vercel foi realizada. Popular Production ainda não é recomendado: exige revisão humana dos 18 exemplos e uma futura proposta normalizada para ligar proveniência a `prompt_rules`/`prompt_examples`. Nesta entrega não há SQL remoto nem autorização solicitada.
 - **Escopo preservado:** providers, adapters, Auth, vault, crypto, RLS, secrets, catálogo operacional e Alibaba não foram alterados. Alibaba continua inativo; DeepSeek continua operacionalmente em `deepseek-flash`; `targetModel` permanece independente. Rollback local é reverter corpus, loader, testes e documentação, sem estado remoto a desfazer.
 - **Manutenção:** revisar fontes trimestralmente ou após mudança oficial; toda promoção exige fonte específica, data, status, revisão editorial e regressão. Próximo gate: avaliação humana comparativa por target; somente depois projetar/popular a base remota e reavaliar a integração em Production.
+
+#### Passo 20.1-A/B — catálogo visível e labels de credencial — 2026-09-12
+
+- **Causa do provider preso em Gemini:** após carregar `/api/providers`, `src/main.js` forçava `generationProvider.value = 'google-gemini'` sempre que o slug existia no catálogo. O select era preenchido corretamente; a linha de inicialização remanescente da fase Gemini/Plataforma revertia a escolha. A linha foi removida. O primeiro item do catálogo ordenado permanece o default do `<select>`.
+- **Geração local:** o checkbox continua `checked` no HTML para o visitante anônimo gerar sem conta. Depois da sessão autenticada, a geração local passa a ser opt-in (`preferLocal = !authenticated`), sem alterar a escolha se a pessoa já tiver mexido no controle e sem `localGeneration.checked = false` literal. Logout de quem não tocou o controle restaura o default local público.
+- **Labels de credencial:** `generationUiState` passa a reutilizar `STATUS_LABELS` de `src/byok/credentials.js`. O painel do gerador mostra `Ainda não testada`, `Validada no provedor`, `Inválida` ou `Erro na última validação` em vez do status bruto `untested`.
+- **Fora de escopo:** nenhuma migration, Auth, vault, RLS, adapter, model ID, corpus ou ativação Alibaba. `20.2`–`20.6` continuam dependentes de pesquisa editorial ou autorização explícita.
+- **Nomenclatura:** o compilador local permanece `local-deterministic` / “Compilador determinístico local”. Não é um modelo de IA; é compilação por template.

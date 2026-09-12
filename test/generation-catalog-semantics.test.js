@@ -69,8 +69,20 @@ test('adapter availability and credential presence remain independent', () => {
   assert.equal(generationUiState({ provider: openai }).credentialStatus, 'Configure sua chave');
   const configured = generationUiState({ provider: openai, credential: { validationStatus: 'untested' } });
   assert.equal(configured.executable, true);
-  assert.match(configured.credentialStatus, /^Chave configurada/);
-  assert.doesNotMatch(configured.credentialStatus, /validada/i);
+  assert.equal(configured.credentialStatus, 'Chave configurada · Ainda não testada');
+  assert.doesNotMatch(configured.credentialStatus, /untested|validada/i);
+  assert.equal(
+    generationUiState({ provider: openai, credential: { validationStatus: 'valid' } }).credentialStatus,
+    'Chave configurada · Validada no provedor',
+  );
+  assert.equal(
+    generationUiState({ provider: openai, credential: { validationStatus: 'invalid' } }).credentialStatus,
+    'Chave configurada · Inválida',
+  );
+  assert.equal(
+    generationUiState({ provider: openai, credential: { validationStatus: 'error' } }).credentialStatus,
+    'Chave configurada · Erro na última validação',
+  );
 });
 
 test('platform Gemini executes without BYOK and returns canonical provider semantics', async () => {

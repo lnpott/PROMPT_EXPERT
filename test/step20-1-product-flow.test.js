@@ -28,6 +28,13 @@ test('anonymous product shell defaults to local and identifies the optimized pro
   assert.match(main, /currentRoute[\s\S]*: '#app'/);
 });
 
+test('catalog selection is not hardcoded to Gemini and local is opt-in after authentication', () => {
+  assert.doesNotMatch(main, /generationProvider\.value = 'google-gemini'/);
+  assert.match(main, /localGenerationTouched/);
+  assert.match(main, /preferLocal = !authenticated/);
+  assert.match(main, /applyLocalGenerationPreference\(authenticated\)/);
+});
+
 test('local target generation needs neither account nor target credential', async () => {
   const claude = await localGeneration('claude');
   const openai = await localGeneration('openai');

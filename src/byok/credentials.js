@@ -1,4 +1,4 @@
-const STATUS_LABELS = Object.freeze({
+export const STATUS_LABELS = Object.freeze({
   untested: 'Ainda não testada',
   valid: 'Validada no provedor',
   invalid: 'Inválida',

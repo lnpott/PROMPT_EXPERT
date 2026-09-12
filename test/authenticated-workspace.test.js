@@ -30,6 +30,8 @@ test('logout keeps public core available while recovery remains prioritized', ()
 });
 
 test('logout preserves the public local draft and in-flight generation locks controls', () => {
+  assert.match(main, /localGenerationTouched/);
+  assert.match(main, /preferLocal = !authenticated/);
   assert.doesNotMatch(main, /localGeneration\.checked = false/);
   assert.match(main, /generationBusy \|\| models\.length === 0 \|\| !state\.executable/);
   assert.match(main, /for \(const control of \[brief, generationModel, targetModel, taskType, localGeneration\]\) control\.disabled = busy/);
