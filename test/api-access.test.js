@@ -96,15 +96,11 @@ test('POST /api/generate works locally without API keys', async () => {
   assert.equal(JSON.stringify(response.body).includes('API_KEY'), false);
 });
 
-test('POST /api/generate accesses the knowledge base and Gemini with a valid request', async () => {
+test('POST /api/generate uses only the verified local methodology corpus before Gemini', async () => {
   process.env.GEMINI_API_KEY = 'test-only-key';
   const calls = [];
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url, options });
-    if (url.includes('model_profiles')) {
-      return jsonResponse([{ id: 7, display_name: 'Grok', system_guidance: 'Seja objetivo.', output_contract: 'Use Markdown.' }]);
-    }
-    if (url.includes('prompt_rules')) return jsonResponse([{ rule_text: 'Inclua critérios de aceite.', priority: 1 }]);
     return jsonResponse({ candidates: [{ content: { parts: [{ text: '# Prompt validado' }] } }] });
   };
   const response = createResponse();
@@ -115,10 +111,11 @@ test('POST /api/generate accesses the knowledge base and Gemini with a valid req
   assert.equal(response.body.prompt, '# Prompt validado');
   assert.equal(response.body.source, 'gemini');
   assert.match(response.body.requestId, /^[a-f0-9-]+$/);
-  assert.equal(calls.length, 3);
-  assert.equal(calls[2].options.headers['x-goog-api-key'], 'test-only-key');
-  assert.match(calls[2].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
-  assert.match(JSON.parse(calls[2].options.body).contents[0].parts[0].text, /Inclua critérios de aceite/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.headers['x-goog-api-key'], 'test-only-key');
+  assert.match(calls[0].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
+  assert.match(JSON.parse(calls[0].options.body).contents[0].parts[0].text, /critérios de aceite observáveis/);
+  assert.ok(!calls.some(({ url }) => url.includes('model_profiles') || url.includes('prompt_rules')));
 });
 
 test('POST /api/generate uses the compiler model selected by the user', async () => {
