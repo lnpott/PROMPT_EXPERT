@@ -1012,3 +1012,34 @@ O runtime local oferece os nove targets abaixo. Apenas Grok também existe no Su
 - **Labels de credencial:** `generationUiState` passa a reutilizar `STATUS_LABELS` de `src/byok/credentials.js`. O painel do gerador mostra `Ainda não testada`, `Validada no provedor`, `Inválida` ou `Erro na última validação` em vez do status bruto `untested`.
 - **Fora de escopo:** nenhuma migration, Auth, vault, RLS, adapter, model ID, corpus ou ativação Alibaba. `20.2`–`20.6` continuam dependentes de pesquisa editorial ou autorização explícita.
 - **Nomenclatura:** o compilador local permanece `local-deterministic` / “Compilador determinístico local”. Não é um modelo de IA; é compilação por template.
+
+#### Passo 20.1-C — auditoria de GENERATION MODEL por provider — 2026-09-12
+
+- **SHA inicial:** `0232959` (main, PR #33 já mergeado — 20.1-A/B confirmados presentes antes de qualquer alteração).
+- **Branch:** nenhuma criada. Não houve código para commitar: a auditoria concluiu que o defeito relatado no teste manual já havia sido corrigido pelo PR #33, e uma tentativa de correção adicional foi revertida (ver abaixo). O working tree está idêntico ao HEAD de `main` (`git diff` vazio).
+- **Auditoria realizada (somente leitura):**
+  - `api/providers.js`, `server/providers/generation-registry.js`, `server/providers/direct-providers.js`, `server/providers/gemini.js`, `api/generate.js`, `src/generation/provider-options.js`, `src/main.js`, `index.html`.
+  - Catálogo real do Supabase Production (`pqprtkdvzyhqlidlcpxg`) consultado via conector OAuth já autorizado nesta sessão, sem uso de `service_role key` nem de qualquer segredo colado em texto — apenas `SELECT` em `api_providers`/`ai_models`.
+  - Testes: `test/step19-1-model-catalog-audit.test.js`, `test/authenticated-workspace.test.js`, `test/step20-1-product-flow.test.js`.
+- **Causa raiz do sintoma relatado ("Modelo de geração preso no Compilador determinístico local"):** já eliminada no PR #33. Antes dele, `src/main.js` reatribuía `generationProvider.value = 'google-gemini'` depois de popular o `<select>`, resetando a escolha da pessoa. Hoje isso não existe mais; o provider selecionado é preservado e `updateGenerationModels()` já troca a lista de modelos corretamente a cada `change` do `<select id="generation-provider">`.
+- **Tentativa de correção adicional (revertida):** por hipótese, cheguei a alterar (a) o atributo `checked` padrão do checkbox `#local-generation` em `index.html` e (b) o listener de `change` do provider para forçar `localGeneration.checked = false`. Isso quebrou dois testes que protegem decisões já tomadas no Passo 20: `id="local-generation" type="checkbox" checked` é o default intencional para visitante anônimo (gerar sem conta), e a proibição literal de `localGeneration.checked = false` no código impede que qualquer interação futura desmarque a geração local sem um clique explícito da pessoa no próprio checkbox. As duas alterações foram revertidas; suíte voltou a 242/242 sem falhas.
+- **Estado confirmado por provider (leitura direta do Supabase, sem escrita):**
+
+  | Provider | Generation models expostos (ativos/públicos/não-depreciados) | Adapter | Credential source | Estado |
+  |---|---|---|---|---|
+  | google-gemini | 5 (allowlist auditada em `docs/model-catalog-audit-2026-09-12.json`, protegida por `test/step19-1-model-catalog-audit.test.js`); somente 1 (`gemini-3.8-flash`) existe hoje em `ai_models` | gemini | platform, byok | operacional; catálogo do app é a fonte correta, Supabase está incompleto (ver pendência) |
+  | deepseek | 1 (`deepseek-flash`) | openai-compatible | byok | operacional |
+  | openai | 1 (`gpt-5.6-sol`) | openai-compatible | byok | operacional |
+  | xai | 2 (`grok-4.6`, `grok-code-fast-1`) | openai-compatible | byok | operacional |
+  | groqcloud | 1 (`openai/gpt-oss-120b`) | openai-compatible | byok | operacional |
+  | mistral | 1 (`mistral-small-latest`) | openai-compatible | byok | operacional |
+  | kimi | 2 (`kimi-k3`, `kimi-k2.7-code-highspeed`) | openai-compatible | byok | operacional |
+  | anthropic | 1 (`claude-sonnet-5`) | anthropic | byok | operacional |
+  | openrouter | 1 (`openrouter/free`) | openrouter | byok | operacional |
+  | alibaba-model-studio | 1 (`qwen3.7-plus`) | openai-compatible | byok | inativo (`is_active=false`), como já era |
+
+- **Pendência formal (não implementada nesta etapa — exige aprovação e migration, proibida pela seção 13 deste passo):** popular `ai_models` no Supabase Production com os 4 modelos Gemini já confirmados na auditoria oficial e ausentes na tabela hoje: `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-3.7-flash`, `gemini-3.1-flash-lite`. Enquanto isso não é feito, `api/providers.js` continua deliberadamente usando o allowlist estático de `api/compiler-models.js` para o Google Gemini (mecanismo do Passo 19.1, com teste de regressão dedicado) em vez da tabela `ai_models` — não é bug, é o workaround documentado e testado até a migration ser autorizada.
+- **Testes executados:** `npm test` → 242/242 (`pass 242, fail 0`). Nenhum `npm run build` foi necessário porque nenhum arquivo de produto foi alterado nesta etapa.
+- **PR:** nenhum aberto. Não há conector do GitHub disponível nesta sessão para autenticar push/PR sem expor token em texto; o repositório foi apenas clonado publicamente para leitura. Nenhuma alteração de código resultou desta auditoria para ser enviada.
+- **Preview:** nenhum gerado (nenhum deploy realizado).
+- **Confirmações finais:** provider não fica preso em Gemini (já corrigido no PR #33); `generationModel` muda conforme provider (confirmado por leitura de código + testes existentes); local não é confundido com modelo externo (comportamento é o default intencional documentado, protegido por teste); `targetModel` permanece independente (não tocado); BYOK permanece seguro (não tocado); nenhuma migration aplicada; nenhuma escrita remota; nenhum secret alterado ou usado (as credenciais coladas em chat pelo usuário nunca foram utilizadas e devem ser rotacionadas); nenhuma API paga chamada; DeepSeek permanece `deepseek-flash`; Alibaba permanece inativo; nenhum PR foi aberto ou mergeado.
