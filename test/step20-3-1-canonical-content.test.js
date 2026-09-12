@@ -57,3 +57,21 @@ test('local fallback is checksummed and semantically identical to release 2.1', 
   assert.deepEqual(release.corpus, corpus);
   clearCanonicalMethodologyCache();
 });
+
+test('invalid remote schemas fail closed and fallback failures are not cached', async () => {
+  clearCanonicalMethodologyCache();
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    return { ok: true, json: async () => [{ version: 'broken', payload: { sources: [], targets: [], generalRules: [], specificTargets: [], runtimePolicy: { allowedStatuses: ['VERIFIED_OFFICIAL'] } }, content_sha256: '0'.repeat(64) }] };
+  };
+  assert.equal((await loadCanonicalMethodology({ fetchImpl })).origin, 'versioned-safe-fallback');
+  assert.equal((await loadCanonicalMethodology({ fetchImpl })).origin, 'versioned-safe-fallback');
+  assert.equal(calls, 2);
+  clearCanonicalMethodologyCache();
+});
+
+test('platform generator filters orchestration rules before model instruction construction', () => {
+  const source = readFileSync(new URL('../api/generate.js', import.meta.url), 'utf8');
+  assert.match(source, /methodologyPackage\.rules\s*\.filter\(\(rule\) => !\['API_PARAMETER', 'API_CONSTRAINT', 'CACHE', 'PLATFORM'\]\.includes\(rule\.ruleType\)\)/);
+});
