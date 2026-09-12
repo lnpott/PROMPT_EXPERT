@@ -8,8 +8,10 @@ export function renderAccountState(elements, state) {
   const loading = state.initialized === false;
   setHidden(elements.sessionLoading, !loading);
   setHidden(elements.accountPanel, loading || (authenticated && !recovery));
-  setHidden(elements.appContent, loading || !authenticated || recovery);
-  setHidden(elements.accountNavigation, loading || !authenticated || recovery);
+  // The public compiler is part of the product core. Authentication gates
+  // personal areas (account/providers), not the generator shell.
+  setHidden(elements.appContent, loading || recovery);
+  setHidden(elements.accountNavigation, loading || recovery);
   if (loading) return;
   setHidden(elements.signedOut, authenticated);
   setHidden(elements.signedIn, !authenticated || recovery);

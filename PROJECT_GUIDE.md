@@ -1,7 +1,7 @@
 # PROMPT_EXPERT — Guia vivo do projeto
 
-> Estado revisado em 12 de setembro de 2026 — account-first, cofre BYOK,
-> geração multi-provider e catálogo operacional auditado. As seções datadas
+> Estado revisado em 12 de setembro de 2026 — core público, cofre BYOK,
+> geração multi-provider e metodologia verificável. As seções datadas
 > abaixo preservam o histórico e não substituem este estado presente.
 
 ## Propósito
@@ -31,6 +31,40 @@ GroqCloud e Kimi usam BYOK; local é uma estratégia separada. Alibaba/Qwen
 permanece inativo e sujeito a autorização de rollout. O catálogo definitivo e
 suas ressalvas estão na seção do Passo 19.1; bullets antigos abaixo descrevem o
 estado existente quando cada marco foi registrado.
+
+## Fluxo oficial de uso do produto
+
+O produto transforma um pedido em linguagem natural em um **prompt otimizado**:
+
+```text
+briefing → generationProvider/generationModel → taskType → targetModel
+         → gerar → prompt otimizado → copiar
+```
+
+- O core local/determinístico é público: visitante pode abrir o gerador,
+  escolher tipo e target, gerar e copiar sem conta, chave ou API paga.
+- Conta é opcional para o core e obrigatória somente para identidade persistente,
+  gerenciamento de credenciais e execução BYOK. Selecionar BYOK deslogado mostra
+  um CTA para entrar, sem expulsar o visitante do gerador.
+- `generationProvider` e `generationModel` identificam quem efetivamente refina
+  o prompt. `targetModel` seleciona somente a metodologia: não é executado, não
+  exige credencial e pode pertencer a outra família.
+- Google Gemini com `credentialSource=platform` conserva a política existente:
+  exige sessão na UI para limitar risco de quota. O backend histórico não foi
+  ampliado nem recebeu novo segredo neste passo. BYOK nunca faz fallback oculto.
+
+### Roadmap oficial a partir do Passo 20
+
+| Passo | Estado | Objetivo |
+| --- | --- | --- |
+| 20 | Concluído no PR #30 | Base metodológica verificável, corpus 1.0.0 e runtime fail-closed. |
+| 20.1 | Atual | Alinhar o fluxo real: core local público, prompt como resultado e conta apenas quando necessária. |
+| 20.2 | Planejado | Benchmark metodológico end-to-end do fluxo `briefing → geração → taskType → target → compiler → output`, medindo o prompt final recebido, não JSON isolado. |
+| 20.3 | Planejado | Revisar o corpus para 1.0.1 ou 1.1.0 com base no benchmark. |
+| 21 | Planejado | Persistência/proveniência metodológica no Supabase, somente se justificada e autorizada. |
+| 22 | Planejado | Hardening operacional e UX. |
+
+O rollout Alibaba/Qwen continua opcional, separado e não bloqueia este roadmap.
 
 ### Implementado
 
