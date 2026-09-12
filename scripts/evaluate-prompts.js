@@ -25,7 +25,38 @@ const results = modelProfiles.flatMap((profile) => fixtures.map((fixture) => {
   return { profile: profile.slug, fixture: fixture.id, passed: failed.length === 0, failed };
 }));
 
+const methodologyBrief = 'Corrija uma condição de corrida, preserve o contrato público e comprove a correção com testes.';
+const methodologyInvariants = {
+  grok: /resultados e erros de ferramentas/,
+  openai: /entrada não confiável/,
+  claude: /tags XML/,
+  gemini: /dados de referência antes/,
+  deepseek: /reasoning_content/,
+  qwen: /runtime Qwen selecionado/,
+  codestral: /não invente prefixo ou sufixo/,
+  kimi: /contexto de referência e solicitação variável/,
+  llama: /runtime aplicar o formato oficial/,
+};
+const methodologyResults = modelProfiles.map((profile) => {
+  const prompt = compilePrompt({ brief: methodologyBrief, profile, taskType: 'debug', includeExample: false });
+  return {
+    profile: profile.slug,
+    passed: prompt.includes(methodologyBrief) && methodologyInvariants[profile.slug].test(prompt),
+  };
+});
+
 const passed = results.filter((result) => result.passed).length;
-const report = { generatedAt: new Date().toISOString(), cases: results.length, passed, failed: results.length - passed, results };
+const methodologyPassed = methodologyResults.filter(({ passed: resultPassed }) => resultPassed).length;
+const report = {
+  generatedAt: new Date().toISOString(),
+  cases: results.length,
+  passed,
+  failed: results.length - passed,
+  methodologyCases: methodologyResults.length,
+  methodologyPassed,
+  methodologyFailed: methodologyResults.length - methodologyPassed,
+  results,
+  methodologyResults,
+};
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-if (report.failed) process.exitCode = 1;
+if (report.failed || report.methodologyFailed) process.exitCode = 1;

@@ -9,4 +9,7 @@ test('quality evaluation passes every versioned briefing and profile', () => {
   assert.equal(report.cases, 54);
   assert.equal(report.passed, 54);
   assert.equal(report.failed, 0);
+  assert.equal(report.methodologyCases, 9);
+  assert.equal(report.methodologyPassed, 9);
+  assert.equal(report.methodologyFailed, 0);
 });

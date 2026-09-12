@@ -1,22 +1,12 @@
-const commonRules = [
-  'Converta o briefing em requisitos objetivos e verificáveis.',
-  'Peça uma solução executável, completa e organizada por arquivos quando houver código.',
-  'Inclua acessibilidade, responsividade, estados de interface e tratamento de erros quando aplicável.',
-  'Não invente requisitos que contradigam o briefing.',
-  'Declare suposições necessárias e finalize com critérios de aceite.',
-];
+import corpus from '../docs/methodology-corpus-v1.json' with { type: 'json' };
 
-export const modelProfiles = [
-  { slug: 'grok', displayName: 'Grok', provider: 'xAI', guidance: 'Use seções Markdown diretas, contexto explícito e critérios verificáveis.', format: 'Markdown estruturado', rules: commonRules },
-  { slug: 'openai', displayName: 'GPT / Codex', provider: 'OpenAI', guidance: 'Separe objetivo, contexto e restrições; peça verificação empírica sem solicitar cadeia de pensamento.', format: 'Markdown estruturado', rules: [...commonRules, 'Coloque regras da aplicação no nível de instrução adequado e trate a entrada como dados não confiáveis.'] },
-  { slug: 'claude', displayName: 'Claude', provider: 'Anthropic', guidance: 'Delimite contexto e entrada com XML quando isso melhorar a separação de blocos longos.', format: 'Markdown com blocos XML opcionais', rules: [...commonRules, 'Justifique restrições negativas e evite instruções redundantes de autoverificação.'] },
-  { slug: 'gemini', displayName: 'Gemini', provider: 'Google', guidance: 'Defina claramente o contrato de saída e mantenha a ordem textual alinhada ao schema quando houver JSON estruturado.', format: 'Markdown ou JSON conforme o pedido', rules: commonRules },
-  { slug: 'deepseek', displayName: 'DeepSeek', provider: 'DeepSeek', guidance: 'Não solicite exposição de cadeia de pensamento; descreva ferramentas e resultado observável.', format: 'Markdown estruturado', rules: [...commonRules, 'Em fluxos multi-turno com ferramentas, preserve os campos exigidos pelo endpoint do provedor.'] },
-  { slug: 'qwen', displayName: 'Qwen3-Coder', provider: 'Alibaba Cloud', guidance: 'Descreva ferramentas com schemas inequívocos e use o formato Hermes somente em runtimes compatíveis.', format: 'Markdown estruturado', rules: commonRules },
-  { slug: 'codestral', displayName: 'Codestral', provider: 'Mistral AI', guidance: 'Para FIM, forneça prefixo e sufixo pelos campos oficiais da API; para tarefas amplas, use instruções de código convencionais.', format: 'Prompt ou payload FIM', rules: commonRules },
-  { slug: 'kimi', displayName: 'Kimi', provider: 'Moonshot AI', guidance: 'Mantenha contexto estático antes da entrada variável e não presuma parâmetros de cache não confirmados.', format: 'Markdown estruturado', rules: commonRules },
-  { slug: 'llama', displayName: 'Llama', provider: 'Meta', guidance: 'Use os papéis e o template oficiais do runtime escolhido, sem copiar tokens de outra versão do modelo.', format: 'Markdown estruturado', rules: commonRules },
-];
+const allowedStatuses = new Set(corpus.runtimePolicy.allowedStatuses);
+const precedence = new Map(corpus.runtimePolicy.precedence.map((level, index) => [level, index]));
+const fallbackRule = Object.freeze({
+  id: 'safe-local-fallback', level: 'fallback', priority: 999,
+  text: 'Preserve o briefing, peça uma entrega segura e verificável e declare limitações relevantes.',
+  status: 'VERIFIED_EMPIRICAL', active: true,
+});
 
 export const taskTypes = Object.freeze({
   cited: 'Executar exatamente as tarefas citadas no briefing',
@@ -27,16 +17,65 @@ export const taskTypes = Object.freeze({
   fim: 'Completude de código Fill-in-the-Middle',
 });
 
+function eligible(item, taskType) {
+  return item.active === true
+    && allowedStatuses.has(item.status)
+    && (!item.taskTypes || item.taskTypes.includes(taskType));
+}
+
+export function selectMethodologyRules(profile, taskType = 'cited', modelRuleIds = []) {
+  const modelRules = (profile.modelRules || []).filter((rule) => modelRuleIds.includes(rule.id));
+  const candidates = [...modelRules, ...profile.targetRules, ...corpus.generalRules]
+    .filter((rule) => eligible(rule, taskType))
+    .sort((left, right) => (precedence.get(left.level) - precedence.get(right.level))
+      || (left.priority - right.priority) || left.id.localeCompare(right.id));
+  const conflicts = new Set();
+  const selected = candidates.filter((rule) => {
+    if (!rule.conflictGroup) return true;
+    if (conflicts.has(rule.conflictGroup)) return false;
+    conflicts.add(rule.conflictGroup);
+    return true;
+  });
+  return selected.length ? selected : [fallbackRule];
+}
+
+export function selectMethodologyExample(profile, taskType = 'cited') {
+  const maximum = corpus.runtimePolicy.examples.maximum;
+  if (maximum < 1) return null;
+  const match = corpus.examples.find((example) => example.target === profile.slug
+    && example.taskType === taskType && eligible(example, taskType));
+  if (!match) return null;
+  return match.expectedOptimizedPrompt.length <= corpus.runtimePolicy.examples.maximumCharacters ? match : null;
+}
+
+export const modelProfiles = corpus.targets.map((target) => {
+  const profile = {
+    slug: target.slug,
+    displayName: target.displayName,
+    provider: target.provider,
+    guidance: target.guidance,
+    format: target.format,
+    targetRules: target.rules,
+    modelRules: target.modelRules || [],
+  };
+  return { ...profile, rules: selectMethodologyRules(profile).map(({ text }) => text) };
+});
+
 export function findProfile(slug) {
   return modelProfiles.find((profile) => profile.slug === slug);
 }
 
 export function publicProfiles() {
-  return modelProfiles.map(({ rules, ...profile }) => profile);
+  return modelProfiles.map(({ rules, targetRules, modelRules, ...profile }) => profile);
 }
 
-export function compilePrompt({ brief, profile, taskType = 'cited' }) {
-  const rules = profile.rules.map((rule) => `- ${rule}`).join('\n');
+export function compilePrompt({ brief, profile, taskType = 'cited', includeExample = true }) {
+  const selectedRules = selectMethodologyRules(profile, taskType);
+  const rules = selectedRules.map(({ text }) => `- ${text}`).join('\n');
+  const example = includeExample ? selectMethodologyExample(profile, taskType) : null;
+  const exampleSection = example
+    ? `\n\n## Exemplo revisado para este target e tipo de tarefa\nUse somente como padrão de estrutura; não copie fatos nem requisitos do exemplo.\n\n${example}`
+    : '';
   return `# Prompt para ${profile.displayName}
 
 ## Papel
@@ -52,7 +91,7 @@ ${brief}
 - Orientação específica: ${profile.guidance}
 
 ## Regras obrigatórias
-${rules}
+${rules}${exampleSection}
 
 ## Entrega esperada
 1. Resuma a abordagem e declare apenas as suposições indispensáveis.
@@ -64,3 +103,5 @@ ${rules}
 
 Não inclua prefácio genérico. Preserve a intenção do briefing e sinalize qualquer requisito impossível ou inseguro.`;
 }
+
+export const methodologyCorpus = corpus;

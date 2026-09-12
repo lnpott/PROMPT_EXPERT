@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
-import { getModelKnowledge } from '../server/knowledge-base.js';
 import { compilerApiKey, findCompilerModel } from './compiler-models.js';
-import { compilePrompt, findProfile, taskTypes } from './model-profiles.js';
+import { compilePrompt, findProfile, selectMethodologyRules, taskTypes } from './model-profiles.js';
 import { openRouterCredential, ownedCredential } from '../server/credential-service.js';
 import { userDatabaseRequest } from '../server/security/supabase-user.js';
 import { generateWithOpenRouter, OpenRouterError } from '../server/providers/openrouter.js';
@@ -210,17 +209,13 @@ export default async function handler(request, response) {
   }
 
   try {
-    const remoteKnowledge = await getModelKnowledge(profile.slug);
-    const generationProfile = remoteKnowledge ? {
-      display_name: remoteKnowledge.profile.display_name,
-      system_guidance: remoteKnowledge.profile.system_guidance,
-      output_contract: remoteKnowledge.profile.output_contract,
-    } : {
+    const generationProfile = {
       display_name: profile.displayName,
       system_guidance: profile.guidance,
       output_contract: profile.format,
     };
-    const rules = remoteKnowledge?.rules || profile.rules.map((rule, priority) => ({ rule_text: rule, priority }));
+    const rules = selectMethodologyRules(profile, taskType)
+      .map((rule) => ({ rule_text: rule.text, priority: rule.priority }));
     const { response: geminiResponse, attempts } = await requestGemini(
       `https://generativelanguage.googleapis.com/v1beta/models/${compiler.slug}:generateContent`,
       {
