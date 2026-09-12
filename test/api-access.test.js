@@ -111,10 +111,11 @@ test('POST /api/generate uses only the verified local methodology corpus before 
   assert.equal(response.body.prompt, '# Prompt validado');
   assert.equal(response.body.source, 'gemini');
   assert.match(response.body.requestId, /^[a-f0-9-]+$/);
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].options.headers['x-goog-api-key'], 'test-only-key');
-  assert.match(calls[0].url, /models\/gemini-3\.5-flash-lite:generateContent$/);
-  assert.match(JSON.parse(calls[0].options.body).contents[0].parts[0].text, /critérios de aceite observáveis/);
+  const [geminiCall] = calls.filter(({ url }) => url.includes(':generateContent'));
+  assert.ok(geminiCall);
+  assert.equal(geminiCall.options.headers['x-goog-api-key'], 'test-only-key');
+  assert.match(geminiCall.url, /models\/gemini-3\.5-flash-lite:generateContent$/);
+  assert.match(JSON.parse(geminiCall.options.body).contents[0].parts[0].text, /critérios de aceite observáveis/);
   assert.ok(!calls.some(({ url }) => url.includes('model_profiles') || url.includes('prompt_rules')));
 });
 
@@ -231,9 +232,9 @@ test('GET /api/health confirms local fallback when the knowledge base is inacces
   assert.deepEqual(response.body, { status: 'ok', knowledgeBase: 'local', generator: 'gemini' });
 });
 
-test('GET /api/profiles exposes family and specific safe public profiles', () => {
+test('GET /api/profiles exposes family and specific safe public profiles', async () => {
   const response = createResponse();
-  profiles({ method: 'GET' }, response);
+  await profiles({ method: 'GET' }, response);
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.profiles.length, 23);

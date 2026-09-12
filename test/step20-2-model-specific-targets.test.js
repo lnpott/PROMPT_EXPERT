@@ -51,7 +51,7 @@ test('generation executor and optimization target remain separate and targets re
   assert.match(claudeTarget, /tags XML/);
   assert.match(geminiTarget, /campos obrigatórios/);
   assert.doesNotMatch(claudeTarget + geminiTarget, /API key|credencial/i);
-  assert.match(generateSource, /findProfile\(targetModel\)/);
+  assert.match(generateSource, /resolveMethodologyPackage\(targetModel, taskType/);
   assert.match(generateSource, /directProvider\(canonicalProvider\)/);
   assert.match(main, /generationModel: generationModel\.value[\s\S]*targetModel: targetModel\.value/);
   assert.match(html, /não será chamado e não exige chave/);

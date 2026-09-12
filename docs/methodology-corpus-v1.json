@@ -1,5 +1,5 @@
 {
-  "corpusVersion": "1.1.0",
+  "corpusVersion": "2.0.0",
   "verifiedAt": "2026-09-12",
   "statusVocabulary": [
     "VERIFIED_OFFICIAL",
@@ -36,7 +36,14 @@
       "type": "internal_empirical",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_EMPIRICAL",
-      "notes": "Baseline reviewed by PROMPT_EXPERT; does not assert provider behavior."
+      "notes": "Baseline reviewed by PROMPT_EXPERT; does not assert provider behavior.",
+      "sourceType": "internal_empirical",
+      "organization": "PROMPT_EXPERT",
+      "title": "Baseline reviewed by PROMPT_EXPERT",
+      "canonicalUrl": "PROJECT_GUIDE.md",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "empirical"
     },
     {
       "id": "xai-function-calling",
@@ -44,7 +51,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Tool schemas and observable tool results."
+      "notes": "Tool schemas and observable tool results.",
+      "sourceType": "official",
+      "organization": "xAI",
+      "title": "Tool schemas and observable tool results",
+      "canonicalUrl": "https://docs.x.ai/developers/tools/function-calling",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "openai-prompt-engineering",
@@ -52,7 +66,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Instruction hierarchy, delimiters and verification for coding tasks."
+      "notes": "Instruction hierarchy, delimiters and verification for coding tasks.",
+      "sourceType": "official",
+      "organization": "OpenAI",
+      "title": "Instruction hierarchy, delimiters and verification for coding tasks",
+      "canonicalUrl": "https://developers.openai.com/api/docs/guides/prompt-engineering",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "claude-prompting",
@@ -60,7 +81,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Clear instructions, context, examples and XML separation."
+      "notes": "Clear instructions, context, examples and XML separation.",
+      "sourceType": "official",
+      "organization": "Anthropic",
+      "title": "Clear instructions, context, examples and XML separation",
+      "canonicalUrl": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "gemini-prompting",
@@ -68,7 +96,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Clear constraints, few-shot consistency and context placement."
+      "notes": "Clear constraints, few-shot consistency and context placement.",
+      "sourceType": "official",
+      "organization": "Google",
+      "title": "Clear constraints, few-shot consistency and context placement",
+      "canonicalUrl": "https://ai.google.dev/gemini-api/docs/prompting-strategies",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "deepseek-thinking",
@@ -76,7 +111,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Thinking/tool contract; does not justify requesting hidden reasoning."
+      "notes": "Thinking/tool contract; does not justify requesting hidden reasoning.",
+      "sourceType": "official",
+      "organization": "DeepSeek",
+      "title": "Thinking/tool contract",
+      "canonicalUrl": "https://api-docs.deepseek.com/guides/thinking_mode",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "qwen-function-calling",
@@ -84,7 +126,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Tool schema and runtime-specific templates."
+      "notes": "Tool schema and runtime-specific templates.",
+      "sourceType": "official",
+      "organization": "Qwen Team",
+      "title": "Tool schema and runtime-specific templates",
+      "canonicalUrl": "https://qwen.readthedocs.io/en/latest/framework/function_call.html",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "mistral-fim",
@@ -92,7 +141,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "FIM is scoped to compatible coding requests with prefix and suffix."
+      "notes": "FIM is scoped to compatible coding requests with prefix and suffix.",
+      "sourceType": "official",
+      "organization": "Mistral AI",
+      "title": "FIM is scoped to compatible coding requests with prefix and suffix",
+      "canonicalUrl": "https://docs.mistral.ai/api/endpoint/fim",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "kimi-overview",
@@ -100,7 +156,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Kimi platform context and API behavior; no undocumented caching claim."
+      "notes": "Kimi platform context and API behavior; no undocumented caching claim.",
+      "sourceType": "official",
+      "organization": "Moonshot AI",
+      "title": "Kimi platform context and API behavior",
+      "canonicalUrl": "https://platform.kimi.ai/docs/overview",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     },
     {
       "id": "llama-prompt-format",
@@ -108,7 +171,14 @@
       "type": "official",
       "verifiedAt": "2026-09-12",
       "status": "VERIFIED_OFFICIAL",
-      "notes": "Family/version-specific roles and prompt format; do not copy special tokens across versions."
+      "notes": "Family/version-specific roles and prompt format; do not copy special tokens across versions.",
+      "sourceType": "official",
+      "organization": "Meta",
+      "title": "Family/version-specific roles and prompt format",
+      "canonicalUrl": "https://developer.meta.com/ai/docs/model-cards-and-prompt-formats/llama3_1/",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     }
   ],
   "generalRules": [
@@ -127,7 +197,12 @@
       ],
       "sourceId": "project-quality-baseline",
       "status": "VERIFIED_EMPIRICAL",
-      "active": true
+      "active": true,
+      "ruleType": "PROMPT_STRUCTURE",
+      "evidenceReference": "general-objective",
+      "confidence": "medium",
+      "supersedes": null,
+      "notes": "Runtime rule reviewed under fail-closed policy."
     },
     {
       "id": "general-preserve-intent",
@@ -144,7 +219,12 @@
       ],
       "sourceId": "project-quality-baseline",
       "status": "VERIFIED_EMPIRICAL",
-      "active": true
+      "active": true,
+      "ruleType": "SECURITY",
+      "evidenceReference": "general-preserve-intent",
+      "confidence": "medium",
+      "supersedes": null,
+      "notes": "Runtime rule reviewed under fail-closed policy."
     },
     {
       "id": "general-verification",
@@ -159,7 +239,12 @@
       ],
       "sourceId": "project-quality-baseline",
       "status": "VERIFIED_EMPIRICAL",
-      "active": true
+      "active": true,
+      "ruleType": "CODING_AGENT",
+      "evidenceReference": "general-verification",
+      "confidence": "medium",
+      "supersedes": null,
+      "notes": "Runtime rule reviewed under fail-closed policy."
     },
     {
       "id": "general-safety",
@@ -175,7 +260,12 @@
       ],
       "sourceId": "project-quality-baseline",
       "status": "VERIFIED_EMPIRICAL",
-      "active": true
+      "active": true,
+      "ruleType": "SECURITY",
+      "evidenceReference": "general-safety",
+      "confidence": "medium",
+      "supersedes": null,
+      "notes": "Runtime rule reviewed under fail-closed policy."
     }
   ],
   "targets": [
@@ -197,7 +287,12 @@
           ],
           "sourceId": "xai-function-calling",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "TOOL_USE",
+          "evidenceReference": "grok-tool-schema",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "grok-tool-results",
@@ -211,7 +306,12 @@
           ],
           "sourceId": "xai-function-calling",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "TOOL_USE",
+          "evidenceReference": "grok-tool-results",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -236,7 +336,12 @@
           ],
           "sourceId": "openai-prompt-engineering",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "INSTRUCTION_STYLE",
+          "evidenceReference": "openai-instruction-boundary",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "openai-agent-verification",
@@ -251,7 +356,12 @@
           ],
           "sourceId": "openai-prompt-engineering",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "CODING_AGENT",
+          "evidenceReference": "openai-agent-verification",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -276,7 +386,12 @@
           ],
           "sourceId": "claude-prompting",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "PROMPT_STRUCTURE",
+          "evidenceReference": "claude-xml-boundaries",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "claude-positive-directions",
@@ -293,7 +408,12 @@
           ],
           "sourceId": "claude-prompting",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "INSTRUCTION_STYLE",
+          "evidenceReference": "claude-positive-directions",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -318,7 +438,12 @@
           ],
           "sourceId": "gemini-prompting",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "STRUCTURED_OUTPUT",
+          "evidenceReference": "gemini-output-contract",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "gemini-context-order",
@@ -334,7 +459,12 @@
           ],
           "sourceId": "gemini-prompting",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "CONTEXT_STRUCTURE",
+          "evidenceReference": "gemini-context-order",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -360,7 +490,12 @@
           ],
           "sourceId": "deepseek-thinking",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "REASONING_GUIDANCE",
+          "evidenceReference": "deepseek-no-reasoning-request",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "deepseek-tool-continuity",
@@ -373,7 +508,12 @@
           ],
           "sourceId": "deepseek-thinking",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "TOOL_USE",
+          "evidenceReference": "deepseek-tool-continuity",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -395,7 +535,12 @@
           ],
           "sourceId": "qwen-function-calling",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "TOOL_USE",
+          "evidenceReference": "qwen-tool-schema",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "qwen-runtime-template",
@@ -408,7 +553,12 @@
           ],
           "sourceId": "qwen-function-calling",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "API_CONSTRAINT",
+          "evidenceReference": "qwen-runtime-template",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -429,7 +579,12 @@
           ],
           "sourceId": "mistral-fim",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "FIM",
+          "evidenceReference": "codestral-fim-fields",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "codestral-no-forced-fim",
@@ -445,7 +600,12 @@
           ],
           "sourceId": "mistral-fim",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "FIM",
+          "evidenceReference": "codestral-no-forced-fim",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -470,7 +630,12 @@
           ],
           "sourceId": "kimi-overview",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "CONTEXT_STRUCTURE",
+          "evidenceReference": "kimi-context-boundary",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "kimi-no-cache-assumption",
@@ -486,7 +651,12 @@
           ],
           "sourceId": "kimi-overview",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "CACHE",
+          "evidenceReference": "kimi-no-cache-assumption",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     },
@@ -511,7 +681,12 @@
           ],
           "sourceId": "llama-prompt-format",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "PROMPT_STRUCTURE",
+          "evidenceReference": "llama-runtime-roles",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         },
         {
           "id": "llama-no-special-token-copy",
@@ -528,7 +703,12 @@
           ],
           "sourceId": "llama-prompt-format",
           "status": "VERIFIED_OFFICIAL",
-          "active": true
+          "active": true,
+          "ruleType": "PROMPT_STRUCTURE",
+          "evidenceReference": "llama-no-special-token-copy",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "Runtime rule reviewed under fail-closed policy."
         }
       ]
     }

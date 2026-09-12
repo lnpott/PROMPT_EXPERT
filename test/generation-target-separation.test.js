@@ -112,8 +112,8 @@ test('BYOK presence is not presented as validation and no key test runs on page 
 });
 
 test('backend selects methodology from target and adapters from generation provider', () => {
-  assert.match(generation, /findProfile\(targetModel\)/);
-  assert.match(generation, /compilePrompt\(\{ brief, profile, taskType \}\)/);
+  assert.match(generation, /resolveMethodologyPackage\(targetModel, taskType/);
+  assert.match(generation, /compilePrompt\(\{ brief, profile, taskType, methodologyPackage \}\)/);
   assert.match(generation, /generateWithDirectProvider\(canonicalProvider/);
   assert.match(generation, /model: allowedModel\.model_id/);
   assert.doesNotMatch(generation, /request\.body\?\.(?:baseUrl|endpoint|apiKey|headers)/);
