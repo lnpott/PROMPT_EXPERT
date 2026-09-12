@@ -1,0 +1,173 @@
+{
+  "verifiedOn": "2026-09-12",
+  "statusVocabulary": [
+    "CONFIRMED",
+    "DEPRECATED",
+    "RENAMED",
+    "INVALID",
+    "UNVERIFIED",
+    "REGIONAL"
+  ],
+  "models": [
+    {
+      "provider": "openrouter",
+      "modelId": "openrouter/free",
+      "status": "CONFIRMED",
+      "officialModelId": "openrouter/free",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://openrouter.ai/docs/guides/routing/routers/free-router",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "google-gemini",
+      "modelId": "gemini-3.5-flash-lite",
+      "status": "CONFIRMED",
+      "officialModelId": "gemini-3.5-flash-lite",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+      "runtime": "Platform/BYOK; exposed"
+    },
+    {
+      "provider": "google-gemini",
+      "modelId": "gemini-3.5-flash",
+      "status": "CONFIRMED",
+      "officialModelId": "gemini-3.5-flash",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash",
+      "runtime": "Platform/BYOK; exposed"
+    },
+    {
+      "provider": "google-gemini",
+      "modelId": "gemini-3.8-flash",
+      "status": "CONFIRMED",
+      "officialModelId": "gemini-3.8-flash",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+      "runtime": "Platform/BYOK; exposed; also ai_models"
+    },
+    {
+      "provider": "google-gemini",
+      "modelId": "gemini-3.7-flash",
+      "status": "CONFIRMED",
+      "officialModelId": "gemini-3.7-flash",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash",
+      "runtime": "Platform/BYOK; exposed"
+    },
+    {
+      "provider": "google-gemini",
+      "modelId": "gemini-3.1-flash-lite",
+      "status": "CONFIRMED",
+      "officialModelId": "gemini-3.1-flash-lite",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite",
+      "runtime": "Platform/BYOK; exposed"
+    },
+    {
+      "provider": "xai",
+      "modelId": "grok-4.6",
+      "status": "CONFIRMED",
+      "officialModelId": "grok-4.6",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://docs.x.ai/developers/models/grok-4.6",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "xai",
+      "modelId": "grok-code-fast-1",
+      "status": "CONFIRMED",
+      "officialModelId": "grok-code-fast-1",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://docs.x.ai/developers/models",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "openai",
+      "modelId": "gpt-5.6-sol",
+      "status": "CONFIRMED",
+      "officialModelId": "gpt-5.6-sol",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "anthropic",
+      "modelId": "claude-sonnet-5",
+      "status": "CONFIRMED",
+      "officialModelId": "claude-sonnet-5",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://platform.claude.com/docs/en/models/overview",
+      "runtime": "BYOK Messages; exposed"
+    },
+    {
+      "provider": "deepseek",
+      "modelId": "deepseek-v4-flash",
+      "status": "RENAMED",
+      "officialModelId": "deepseek-flash",
+      "deprecated": true,
+      "endpointCompatible": true,
+      "officialSource": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "runtime": "Legacy alias exposed; manual rollout required"
+    },
+    {
+      "provider": "mistral",
+      "modelId": "mistral-small-latest",
+      "status": "CONFIRMED",
+      "officialModelId": "mistral-small-latest",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://docs.mistral.ai/api/",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "groqcloud",
+      "modelId": "openai/gpt-oss-120b",
+      "status": "CONFIRMED",
+      "officialModelId": "openai/gpt-oss-120b",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://console.groq.com/docs/model/openai/gpt-oss-120b",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "kimi",
+      "modelId": "kimi-k3",
+      "status": "CONFIRMED",
+      "officialModelId": "kimi-k3",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "kimi",
+      "modelId": "kimi-k2.7-code-highspeed",
+      "status": "CONFIRMED",
+      "officialModelId": "kimi-k2.7-code-highspeed",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://platform.kimi.ai/docs/overview",
+      "runtime": "BYOK; exposed"
+    },
+    {
+      "provider": "alibaba-model-studio",
+      "modelId": "qwen3.7-plus",
+      "status": "REGIONAL",
+      "officialModelId": "qwen3.7-plus",
+      "deprecated": false,
+      "endpointCompatible": true,
+      "officialSource": "https://www.alibabacloud.com/help/en/model-studio/models",
+      "runtime": "US rollout proposed; inactive and not exposed"
+    }
+  ]
+}
