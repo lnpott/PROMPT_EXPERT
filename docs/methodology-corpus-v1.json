@@ -1,5 +1,5 @@
 {
-  "corpusVersion": "2.0.0",
+  "corpusVersion": "2.1.0",
   "verifiedAt": "2026-09-12",
   "statusVocabulary": [
     "VERIFIED_OFFICIAL",
@@ -179,6 +179,216 @@
       "retrievedAt": "2026-09-12T00:00:00Z",
       "updatedAt": "2026-09-12T00:00:00Z",
       "authority": "official"
+    },
+    {
+      "id": "openai-structured-outputs",
+      "url": "https://developers.openai.com/api/docs/guides/structured-outputs",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Schema-constrained output is an API/output contract.",
+      "sourceType": "official",
+      "organization": "OpenAI",
+      "title": "Structured Outputs",
+      "canonicalUrl": "https://developers.openai.com/api/docs/guides/structured-outputs",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "openai-reasoning",
+      "url": "https://developers.openai.com/api/docs/guides/reasoning",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Reasoning effort is an API parameter, not prompt prose.",
+      "sourceType": "official",
+      "organization": "OpenAI",
+      "title": "Reasoning models",
+      "canonicalUrl": "https://developers.openai.com/api/docs/guides/reasoning",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "anthropic-tool-use",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Tool descriptions and schemas determine tool behavior.",
+      "sourceType": "official",
+      "organization": "Anthropic",
+      "title": "Tool use with Claude",
+      "canonicalUrl": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "anthropic-extended-thinking",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/extended-thinking",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Thinking configuration is an API concern.",
+      "sourceType": "official",
+      "organization": "Anthropic",
+      "title": "Extended thinking",
+      "canonicalUrl": "https://platform.claude.com/docs/en/build-with-claude/extended-thinking",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "anthropic-prompt-caching",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Cache breakpoints are API/infrastructure configuration.",
+      "sourceType": "official",
+      "organization": "Anthropic",
+      "title": "Prompt caching",
+      "canonicalUrl": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "gemini-structured-output",
+      "url": "https://ai.google.dev/gemini-api/docs/structured-output",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "JSON Schema and property ordering are output constraints.",
+      "sourceType": "official",
+      "organization": "Google",
+      "title": "Structured outputs",
+      "canonicalUrl": "https://ai.google.dev/gemini-api/docs/structured-output",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "gemini-function-calling",
+      "url": "https://ai.google.dev/gemini-api/docs/function-calling",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Function declarations and response loop contract.",
+      "sourceType": "official",
+      "organization": "Google",
+      "title": "Function calling",
+      "canonicalUrl": "https://ai.google.dev/gemini-api/docs/function-calling",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "gemini-thinking",
+      "url": "https://ai.google.dev/gemini-api/docs/thinking",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Thinking budget/configuration belongs to API payload.",
+      "sourceType": "official",
+      "organization": "Google",
+      "title": "Thinking",
+      "canonicalUrl": "https://ai.google.dev/gemini-api/docs/thinking",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "xai-structured-outputs",
+      "url": "https://docs.x.ai/developers/model-capabilities/structured-outputs",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Schema constrained output.",
+      "sourceType": "official",
+      "organization": "xAI",
+      "title": "Structured Outputs",
+      "canonicalUrl": "https://docs.x.ai/developers/model-capabilities/structured-outputs",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "deepseek-json-output",
+      "url": "https://api-docs.deepseek.com/guides/json_mode",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "JSON mode requires API response format and explicit JSON instruction.",
+      "sourceType": "official",
+      "organization": "DeepSeek",
+      "title": "JSON Output",
+      "canonicalUrl": "https://api-docs.deepseek.com/guides/json_mode",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "qwen-agent-function-calling",
+      "url": "https://qwen.readthedocs.io/en/latest/framework/function_call.html",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Runtime-specific tool templates.",
+      "sourceType": "official",
+      "organization": "Qwen Team",
+      "title": "Qwen-Agent function calling",
+      "canonicalUrl": "https://qwen.readthedocs.io/en/latest/framework/function_call.html",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "mistral-agents",
+      "url": "https://docs.mistral.ai/agents/agents",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Agent/tool orchestration is distinct from Codestral FIM.",
+      "sourceType": "official",
+      "organization": "Mistral AI",
+      "title": "Agents and conversations",
+      "canonicalUrl": "https://docs.mistral.ai/agents/agents",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "mistral-structured-output",
+      "url": "https://docs.mistral.ai/capabilities/structured_output/custom_structured_output",
+      "type": "official",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "JSON schema output constraint.",
+      "sourceType": "official",
+      "organization": "Mistral AI",
+      "title": "Custom structured outputs",
+      "canonicalUrl": "https://docs.mistral.ai/capabilities/structured_output/custom_structured_output",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
+    },
+    {
+      "id": "meta-llama31-model-card",
+      "url": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md",
+      "type": "official_repository",
+      "verifiedAt": "2026-09-12",
+      "status": "VERIFIED_OFFICIAL",
+      "notes": "Version-scoped model behavior and prompt format.",
+      "sourceType": "official_repository",
+      "organization": "Meta",
+      "title": "Llama 3.1 model card",
+      "canonicalUrl": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md",
+      "retrievedAt": "2026-09-12T00:00:00Z",
+      "updatedAt": "2026-09-12T00:00:00Z",
+      "authority": "official"
     }
   ],
   "generalRules": [
@@ -202,7 +412,8 @@
       "evidenceReference": "general-objective",
       "confidence": "medium",
       "supersedes": null,
-      "notes": "Runtime rule reviewed under fail-closed policy."
+      "notes": "Runtime rule reviewed under fail-closed policy.",
+      "effect": "prompt"
     },
     {
       "id": "general-preserve-intent",
@@ -224,7 +435,8 @@
       "evidenceReference": "general-preserve-intent",
       "confidence": "medium",
       "supersedes": null,
-      "notes": "Runtime rule reviewed under fail-closed policy."
+      "notes": "Runtime rule reviewed under fail-closed policy.",
+      "effect": "prompt"
     },
     {
       "id": "general-verification",
@@ -244,7 +456,8 @@
       "evidenceReference": "general-verification",
       "confidence": "medium",
       "supersedes": null,
-      "notes": "Runtime rule reviewed under fail-closed policy."
+      "notes": "Runtime rule reviewed under fail-closed policy.",
+      "effect": "prompt"
     },
     {
       "id": "general-safety",
@@ -265,7 +478,8 @@
       "evidenceReference": "general-safety",
       "confidence": "medium",
       "supersedes": null,
-      "notes": "Runtime rule reviewed under fail-closed policy."
+      "notes": "Runtime rule reviewed under fail-closed policy.",
+      "effect": "prompt"
     }
   ],
   "targets": [
@@ -292,7 +506,8 @@
           "evidenceReference": "grok-tool-schema",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "grok-tool-results",
@@ -311,7 +526,45 @@
           "evidenceReference": "grok-tool-results",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "grok-structured-schema",
+          "level": "target",
+          "priority": 30,
+          "text": "Quando exigir JSON consumível, associe a resposta a um schema suportado e valide recusas/erros.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "xai-structured-outputs",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "STRUCTURED_OUTPUT",
+          "effect": "prompt",
+          "evidenceReference": "grok-structured-schema",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "grok-conversation-id-unverified",
+          "level": "target",
+          "priority": 40,
+          "text": "Envie x-grok-conv-id em toda conversa.",
+          "taskTypes": [
+            "agent"
+          ],
+          "sourceId": "xai-function-calling",
+          "status": "UNVERIFIED",
+          "active": false,
+          "ruleType": "API_CONSTRAINT",
+          "effect": "orchestrator",
+          "evidenceReference": "grok-conversation-id-unverified",
+          "confidence": "low",
+          "supersedes": null,
+          "notes": "Historical claim not confirmed by current official source; excluded fail-closed."
         }
       ]
     },
@@ -341,7 +594,8 @@
           "evidenceReference": "openai-instruction-boundary",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "openai-agent-verification",
@@ -361,7 +615,71 @@
           "evidenceReference": "openai-agent-verification",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "openai-structured-schema",
+          "level": "target",
+          "priority": 30,
+          "text": "Quando a saída precisar ser consumida por máquina, defina um schema explícito e trate recusa ou saída incompleta separadamente.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "openai-structured-outputs",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "STRUCTURED_OUTPUT",
+          "effect": "prompt",
+          "evidenceReference": "openai-structured-schema",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "openai-reasoning-effort-api",
+          "level": "target",
+          "priority": 40,
+          "text": "Configure reasoning effort no payload compatível; não o converta em instrução textual do prompt.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "openai-reasoning",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_PARAMETER",
+          "effect": "orchestrator",
+          "evidenceReference": "openai-reasoning-effort-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "openai-no-hidden-cot",
+          "level": "target",
+          "priority": 50,
+          "text": "Peça conclusão concisa e evidências verificáveis, não a exposição de cadeia de pensamento privada.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "openai-reasoning",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "ANTI_PATTERN",
+          "effect": "prompt",
+          "evidenceReference": "openai-no-hidden-cot",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
         }
       ]
     },
@@ -391,7 +709,8 @@
           "evidenceReference": "claude-xml-boundaries",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "claude-positive-directions",
@@ -413,7 +732,71 @@
           "evidenceReference": "claude-positive-directions",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "claude-tool-description",
+          "level": "target",
+          "priority": 30,
+          "text": "Para ferramentas, descreva finalidade, parâmetros e situações de uso com precisão no schema.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "anthropic-tool-use",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "TOOL_USE",
+          "effect": "prompt",
+          "evidenceReference": "claude-tool-description",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "claude-thinking-api",
+          "level": "target",
+          "priority": 40,
+          "text": "Configure extended thinking/effort somente no payload de modelos compatíveis; não solicite a transcrição do raciocínio.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "anthropic-extended-thinking",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_PARAMETER",
+          "effect": "orchestrator",
+          "evidenceReference": "claude-thinking-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "claude-cache-breakpoint-api",
+          "level": "target",
+          "priority": 50,
+          "text": "Defina cache breakpoints na API para conteúdo estável; não inclua comandos de cache no texto do prompt.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "anthropic-prompt-caching",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "CACHE",
+          "effect": "orchestrator",
+          "evidenceReference": "claude-cache-breakpoint-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
         }
       ]
     },
@@ -443,7 +826,8 @@
           "evidenceReference": "gemini-output-contract",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "gemini-context-order",
@@ -464,7 +848,69 @@
           "evidenceReference": "gemini-context-order",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "gemini-json-schema-api",
+          "level": "target",
+          "priority": 30,
+          "text": "Use response schema na API quando houver contrato JSON e preserve a ordem semântica documentada das propriedades.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "agent"
+          ],
+          "sourceId": "gemini-structured-output",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_CONSTRAINT",
+          "effect": "orchestrator",
+          "evidenceReference": "gemini-json-schema-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "gemini-function-declarations",
+          "level": "target",
+          "priority": 40,
+          "text": "Defina funções com nomes, descrições e parâmetros inequívocos e processe a resposta da ferramenta no loop.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "gemini-function-calling",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "TOOL_USE",
+          "effect": "prompt",
+          "evidenceReference": "gemini-function-declarations",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "gemini-thinking-budget-api",
+          "level": "target",
+          "priority": 50,
+          "text": "Configure thinking budget/level no payload de modelos compatíveis; não peça cadeia de pensamento no prompt.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "gemini-thinking",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_PARAMETER",
+          "effect": "orchestrator",
+          "evidenceReference": "gemini-thinking-budget-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
         }
       ]
     },
@@ -495,7 +941,8 @@
           "evidenceReference": "deepseek-no-reasoning-request",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "deepseek-tool-continuity",
@@ -513,7 +960,66 @@
           "evidenceReference": "deepseek-tool-continuity",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "deepseek-json-mode-api",
+          "level": "target",
+          "priority": 30,
+          "text": "Para JSON mode, configure response_format no payload e explicite JSON no pedido; valide saída vazia ou incompleta.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "deepseek-json-output",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_CONSTRAINT",
+          "effect": "orchestrator",
+          "evidenceReference": "deepseek-json-mode-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "deepseek-reasoning-passback-api",
+          "level": "target",
+          "priority": 40,
+          "text": "Em conversas thinking multi-turn compatíveis, trate reasoning_content conforme o contrato do endpoint; não o transforme em conteúdo do briefing.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "deepseek-thinking",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_CONSTRAINT",
+          "effect": "orchestrator",
+          "evidenceReference": "deepseek-reasoning-passback-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "deepseek-sampling-effort-unverified",
+          "level": "target",
+          "priority": 50,
+          "text": "Use um parâmetro effort proprietário no deepseek-flash.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "agent"
+          ],
+          "sourceId": "deepseek-thinking",
+          "status": "UNVERIFIED",
+          "active": false,
+          "ruleType": "API_PARAMETER",
+          "effect": "orchestrator",
+          "evidenceReference": "deepseek-sampling-effort-unverified",
+          "confidence": "low",
+          "supersedes": null,
+          "notes": "No official evidence for this operational alias/parameter; excluded."
         }
       ]
     },
@@ -540,7 +1046,8 @@
           "evidenceReference": "qwen-tool-schema",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "qwen-runtime-template",
@@ -558,7 +1065,48 @@
           "evidenceReference": "qwen-runtime-template",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "orchestrator"
+        },
+        {
+          "id": "qwen-tool-template-orchestrator",
+          "level": "target",
+          "priority": 30,
+          "text": "Delegue ao runtime compatível a renderização do chat/tool template; não injete tokens especiais manualmente.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "qwen-agent-function-calling",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_CONSTRAINT",
+          "effect": "orchestrator",
+          "evidenceReference": "qwen-tool-template-orchestrator",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "qwen-coder-version-unverified",
+          "level": "target",
+          "priority": 40,
+          "text": "Aplique instruções exclusivas de Qwen3-Coder ao alias qwen3.7-plus.",
+          "taskTypes": [
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "qwen-agent-function-calling",
+          "status": "UNVERIFIED",
+          "active": false,
+          "ruleType": "CODING_AGENT",
+          "effect": "prompt",
+          "evidenceReference": "qwen-coder-version-unverified",
+          "confidence": "low",
+          "supersedes": null,
+          "notes": "Operational alias and Qwen3-Coder are not proven equivalent; excluded."
         }
       ]
     },
@@ -584,7 +1132,8 @@
           "evidenceReference": "codestral-fim-fields",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "codestral-no-forced-fim",
@@ -605,7 +1154,46 @@
           "evidenceReference": "codestral-no-forced-fim",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "mistral-structured-schema-api",
+          "level": "target",
+          "priority": 30,
+          "text": "Use custom structured output/schema no endpoint compatível; não substitua isso por exemplos textuais frágeis.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "mistral-structured-output",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "API_CONSTRAINT",
+          "effect": "orchestrator",
+          "evidenceReference": "mistral-structured-schema-api",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "devstral-agent-separation",
+          "level": "target",
+          "priority": 40,
+          "text": "Não aplique o contrato FIM de Codestral a fluxos chat/agent de Devstral; selecione endpoint e modelo no orquestrador.",
+          "taskTypes": [
+            "application",
+            "agent"
+          ],
+          "sourceId": "mistral-agents",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "PLATFORM",
+          "effect": "orchestrator",
+          "evidenceReference": "devstral-agent-separation",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
         }
       ]
     },
@@ -635,7 +1223,8 @@
           "evidenceReference": "kimi-context-boundary",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "kimi-no-cache-assumption",
@@ -656,7 +1245,48 @@
           "evidenceReference": "kimi-no-cache-assumption",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "orchestrator"
+        },
+        {
+          "id": "kimi-cache-claim-unverified",
+          "level": "target",
+          "priority": 30,
+          "text": "Presuma cache automático entre requisições Kimi.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "agent"
+          ],
+          "sourceId": "kimi-overview",
+          "status": "UNVERIFIED",
+          "active": false,
+          "ruleType": "CACHE",
+          "effect": "orchestrator",
+          "evidenceReference": "kimi-cache-claim-unverified",
+          "confidence": "low",
+          "supersedes": null,
+          "notes": "Historical cache claim lacks current official evidence; excluded."
+        },
+        {
+          "id": "kimi-effort-claim-unverified",
+          "level": "target",
+          "priority": 40,
+          "text": "Envie effort em todos os modelos Kimi.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "agent"
+          ],
+          "sourceId": "kimi-overview",
+          "status": "UNVERIFIED",
+          "active": false,
+          "ruleType": "API_PARAMETER",
+          "effect": "orchestrator",
+          "evidenceReference": "kimi-effort-claim-unverified",
+          "confidence": "low",
+          "supersedes": null,
+          "notes": "No current official evidence in audited material; excluded."
         }
       ]
     },
@@ -686,7 +1316,8 @@
           "evidenceReference": "llama-runtime-roles",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
         },
         {
           "id": "llama-no-special-token-copy",
@@ -708,7 +1339,52 @@
           "evidenceReference": "llama-no-special-token-copy",
           "confidence": "high",
           "supersedes": null,
-          "notes": "Runtime rule reviewed under fail-closed policy."
+          "notes": "Runtime rule reviewed under fail-closed policy.",
+          "effect": "prompt"
+        },
+        {
+          "id": "llama31-special-tokens-version",
+          "level": "target",
+          "priority": 30,
+          "text": "Para Llama 3.1, deixe o runtime aplicar os tokens e cabeçalhos oficiais da versão; expresse papéis semanticamente no briefing.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "meta-llama31-model-card",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "PLATFORM",
+          "effect": "orchestrator",
+          "evidenceReference": "llama31-special-tokens-version",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
+        },
+        {
+          "id": "llama-cross-version-format-antipattern",
+          "level": "target",
+          "priority": 40,
+          "text": "Não reutilize automaticamente tokens ou chat template de Llama 3.1 em versões 3.2/3.3.",
+          "taskTypes": [
+            "cited",
+            "application",
+            "refactor",
+            "debug",
+            "agent"
+          ],
+          "sourceId": "meta-llama31-model-card",
+          "status": "VERIFIED_OFFICIAL",
+          "active": true,
+          "ruleType": "ANTI_PATTERN",
+          "effect": "prompt",
+          "evidenceReference": "llama-cross-version-format-antipattern",
+          "confidence": "high",
+          "supersedes": null,
+          "notes": "20.3.1 official revalidation; scope kept at family unless the source is version-specific."
         }
       ]
     }
